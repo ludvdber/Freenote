@@ -4,7 +4,7 @@
 
 ### Le hub de documents des étudiants de l'ISFCE — *éclaire ta promo.*
 
-Synthèses, notes de cours, anciens examens et exercices, partagés entre étudiants vérifiés.
+Synthèses, notes de cours et exercices, partagés entre étudiants vérifiés.
 
 [![Java](https://img.shields.io/badge/Java-25-orange)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -21,8 +21,7 @@ Synthèses, notes de cours, anciens examens et exercices, partagés entre étudi
 **Freenote** est une plateforme d'entraide **privée et gratuite**, réservée aux membres
 vérifiés de la communauté ISFCE (Bruxelles). Chaque étudiant se connecte via Discord, vérifie
 son adresse `@isfce.be`, puis accède à une bibliothèque de documents partagés par ses pairs —
-recherche instantanée, notes, favoris, classement XP, et une interface soignée *cosmic +
-glassmorphism*.
+recherche instantanée, notes, favoris, classement XP, et une interface soignée.
 
 > Monorepo : backend **Spring Boot 4 / Java 25** à la racine, frontend **React 19 / Vite** dans
 > [`frontend/`](frontend/). Le tout se construit en **un seul fat jar** auto-suffisant (API +
@@ -105,24 +104,6 @@ cd frontend && npm run build   # tsc + build de prod
 ./gradlew bootJar   # → build/libs/freenote-0.0.1-SNAPSHOT.jar  (backend + SPA embarqués)
 java -jar build/libs/freenote-*.jar --spring.profiles.active=prod
 ```
-
-## Déploiement & test réel
-
-- **[docs/INFRA-SETUP.md](docs/INFRA-SETUP.md)** — guide infra complet : Discord, Brevo, DNS,
-  Cloudflare, nginx, Proxmox LXC, Docker, variables d'env, premier admin, sauvegardes, checklist
-  de mise en ligne.
-- **[docs/TEST-LOCAL-REEL.md](docs/TEST-LOCAL-REEL.md)** — tester le site en conditions réelles
-  sur ta machine (vrai Discord, vrai email, sans données de test).
-
-Cible : `freenote.be` derrière **Cloudflare → nginx → un LXC Proxmox** (app jar + systemd,
-services data en Docker).
-
-## Contribuer
-
-1. Crée une branche : `git checkout -b feat/ma-feature`
-2. Commits en [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `refactor:`)
-3. Vérifie que `./gradlew test` et `npm run build` passent
-4. Ouvre une Pull Request vers `main`
 
 ## Licence
 
