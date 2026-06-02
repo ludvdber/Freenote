@@ -40,6 +40,7 @@ class AuthServiceImplTest {
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private JavaMailSender mailSender;
+    @Mock private SmtpKeepAliveService smtpKeepAliveService;
     @Mock private ValueOperations<String, String> valueOps;
     @Mock private MimeMessage mimeMessage;
 

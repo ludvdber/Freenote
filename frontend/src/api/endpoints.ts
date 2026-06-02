@@ -24,7 +24,6 @@ import type {
   ReportRequest,
   ReportResponse,
   DonationResponse,
-  LinkedProvider,
 } from '@/types';
 
 // --- Stats ---
@@ -282,12 +281,6 @@ export const confirmVerification = (code: string) =>
 
 export const logout = () =>
   api.post('/auth/logout');
-
-export const getLinkedProviders = () =>
-  api.get<LinkedProvider[]>('/auth/linked-providers').then((r) => r.data);
-
-export const unlinkProvider = (provider: string) =>
-  api.delete(`/auth/linked-providers/${provider}`);
 
 // --- Dev-only ---
 export const devLogin = (username: string) =>

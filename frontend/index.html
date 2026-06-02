@@ -25,8 +25,10 @@
     <title>Freenote — Éclaire ta promo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" /></noscript>
+    <!-- Plain stylesheet link (no inline onload): the preload+JS-swap trick is blocked by the
+         CSP `script-src 'self'`, which left the fonts preloaded-but-never-applied. `display=swap`
+         already avoids the flash of invisible text. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" />
   </head>
   <body>
     <div id="root"></div>

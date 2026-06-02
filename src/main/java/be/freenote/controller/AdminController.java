@@ -11,6 +11,7 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.dto.response.ProfessorResponse;
 import be.freenote.dto.response.ReportResponse;
 import be.freenote.dto.response.SectionResponse;
+import be.freenote.dto.response.SmtpStatusResponse;
 import be.freenote.dto.response.UserResponse;
 import be.freenote.service.*;
 import jakarta.validation.Valid;
@@ -34,6 +35,14 @@ public class AdminController {
     private final SectionService sectionService;
     private final UserService userService;
     private final DonationService donationService;
+    private final SmtpKeepAliveService smtpKeepAliveService;
+
+    // --- System / SMTP keep-alive (the "compteur" of days since the last sent email) ---
+
+    @GetMapping("/smtp-status")
+    public ResponseEntity<SmtpStatusResponse> getSmtpStatus() {
+        return ResponseEntity.ok(smtpKeepAliveService.getStatus());
+    }
 
     // --- Documents ---
 

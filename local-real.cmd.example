@@ -1,0 +1,22 @@
+REM ============================================================
+REM  Secrets pour le test REEL local (profil "local").
+REM  Copie ce fichier en  local-real.cmd  et remplis les valeurs.
+REM  (extension .cmd obligatoire : Windows ne sait pas executer un .env via "call")
+REM  local-real.cmd est gitignore — ne JAMAIS le committer.
+REM ============================================================
+
+REM --- Discord OAuth2 (portail https://discord.com/developers/applications) ---
+REM  Dans ton app Discord > OAuth2 > Redirects, ajoute EXACTEMENT :
+REM    http://localhost:8080/login/oauth2/code/discord
+REM  Scopes utilises par Freenote : identify, email
+set DISCORD_CLIENT_ID=ton-client-id
+set DISCORD_CLIENT_SECRET=ton-client-secret
+
+REM --- SMTP reel (Brevo conseille : https://app.brevo.com > SMTP & API > SMTP) ---
+set SMTP_HOST=smtp-relay.brevo.com
+set SMTP_PORT=587
+set SMTP_USERNAME=ton-login-smtp-brevo
+set SMTP_PASSWORD=ta-cle-smtp-brevo
+REM  En test local : mets l'email valide de ton compte Brevo (pas noreply@freenote.be
+REM  tant que le domaine n'est pas authentifie chez Brevo).
+set MAIL_FROM=ton-email-brevo

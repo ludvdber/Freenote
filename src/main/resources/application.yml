@@ -92,6 +92,13 @@ app:
   email:
     hash-salt: ${EMAIL_HASH_SALT}
     from: ${MAIL_FROM:noreply@freenote.be}
+    keepalive:
+      # Address that receives the automatic SMTP keep-alive email. Blank = feature disabled.
+      # Set it in prod (e.g. an admin inbox) so the Brevo SMTP key never expires during the
+      # Jan–Aug low-traffic months (Brevo deletes keys after ~90 days of inactivity).
+      to: ${MAIL_KEEPALIVE_TO:}
+      # Inactivity (days) before a keep-alive is sent. 80 leaves a 10-day margin before Brevo's 90.
+      threshold-days: ${MAIL_KEEPALIVE_THRESHOLD_DAYS:80}
   kofi:
     verification-token: ${KOFI_VERIFICATION_TOKEN:}
   frontend:

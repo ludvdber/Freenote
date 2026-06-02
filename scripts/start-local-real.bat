@@ -14,13 +14,14 @@ echo  ============================================================
 echo.
 
 REM --- 1. Charger les secrets reels (Discord + SMTP) ---
-if not exist "local-real.env" (
-    echo  [ERREUR] local-real.env introuvable.
-    echo           Copie local-real.env.example en local-real.env et remplis-le.
+REM  Le fichier doit etre un .cmd (Windows ne sait pas executer un .env via "call").
+if not exist "local-real.cmd" (
+    echo  [ERREUR] local-real.cmd introuvable.
+    echo           Copie local-real.cmd.example en local-real.cmd et remplis-le.
     pause
     exit /b 1
 )
-call .\local-real.env
+call .\local-real.cmd
 
 REM --- 2. Infra data (postgres/redis/minio/meili) ---
 echo  [1/3] Demarrage de l'infra Docker...

@@ -11,6 +11,9 @@
     { "name": "app.meilisearch.api-key", "type": "java.lang.String", "description": "Meilisearch API key" },
     { "name": "app.email.hash-salt", "type": "java.lang.String", "description": "Salt for SHA-256 email hashing" },
     { "name": "app.email.from", "type": "java.lang.String", "description": "From address for transactional emails (must match the domain authenticated at the SMTP provider for deliverability)", "defaultValue": "noreply@freenote.be" },
+    { "name": "app.email.keepalive.to", "type": "java.lang.String", "description": "Recipient of the automatic SMTP keep-alive email. Blank disables the feature." },
+    { "name": "app.email.keepalive.threshold-days", "type": "java.lang.Integer", "description": "Days of SMTP inactivity before a keep-alive email is sent", "defaultValue": 80 },
+    { "name": "app.email.keepalive.cron", "type": "java.lang.String", "description": "Cron expression for the daily SMTP keep-alive check", "defaultValue": "0 0 9 * * *" },
     { "name": "app.kofi.verification-token", "type": "java.lang.String", "description": "Ko-fi webhook verification token" },
     { "name": "app.frontend.url", "type": "java.lang.String", "description": "Frontend base URL for OAuth redirects", "defaultValue": "http://localhost:3000" },
     { "name": "freenote.cors.allowed-origins", "type": "java.lang.String", "description": "Comma-separated CORS allowed origins", "defaultValue": "http://localhost:3000" }

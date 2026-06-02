@@ -103,19 +103,22 @@ function ProfileStep({ onDone }: { onDone: (u: import('@/types').User) => void }
         fullWidth
         autoFocus
       />
-      <TextField
-        select
-        label={t('onboarding.sectionLabel')}
-        helperText={t('onboarding.sectionHelp')}
-        value={sectionId}
-        onChange={(e) => setSectionId(e.target.value === '' ? '' : Number(e.target.value))}
-        fullWidth
-      >
-        <MenuItem value="">{t('onboarding.sectionNone')}</MenuItem>
-        {sections.map((s) => (
-          <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-        ))}
-      </TextField>
+      {sections.length > 0 && (
+        <TextField
+          select
+          label={t('onboarding.sectionLabel')}
+          helperText={t('onboarding.sectionHelp')}
+          value={sectionId}
+          onChange={(e) => setSectionId(e.target.value === '' ? '' : Number(e.target.value))}
+          fullWidth
+          slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
+        >
+          <MenuItem value="">{t('onboarding.sectionNone')}</MenuItem>
+          {sections.map((sec) => (
+            <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>
+          ))}
+        </TextField>
+      )}
 
       {mutation.isError && (
         <Alert severity="error">{extractApiError(mutation.error, t('common.error'))}</Alert>

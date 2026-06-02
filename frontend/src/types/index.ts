@@ -27,11 +27,6 @@ export interface User {
   usernameChosen: boolean;
 }
 
-export interface LinkedProvider {
-  provider: 'DISCORD';
-  linkedAt: string;
-}
-
 export interface DocumentResponse {
   id: number;
   title: string;

@@ -48,8 +48,12 @@ export default function Leaderboard() {
     queryFn: () => getLeaderboard(100, filterSection),
   });
 
-  const top3 = entries?.slice(0, 3) ?? [];
-  const rest = entries?.slice(3) ?? [];
+  // The podium splits off the top 3 — but only when there ARE at least 3 entries. With fewer
+  // (a brand-new site, or "Ma section" with few members) we skip the podium and show everyone
+  // in the table instead, otherwise users ranked 1-2 would vanish (podium hidden + sliced out).
+  const showPodium = (entries?.length ?? 0) >= 3;
+  const top3 = showPodium ? entries!.slice(0, 3) : [];
+  const rest = showPodium ? entries!.slice(3) : (entries ?? []);
 
   const myEntry = currentUser
     ? entries?.find((e) => e.userId === currentUser.id) ?? null

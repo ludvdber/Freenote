@@ -313,16 +313,7 @@
     "firstName": "Prénom",
     "lastName": "Nom",
     "displayRealName": "Afficher mon vrai nom",
-    "displayRealNameHelp": "Quand activé, les autres voient « Prénom Nom » au lieu de ton pseudo.",
-    "linkedAccounts": {
-      "title": "Comptes liés",
-      "help": "Lie plusieurs providers à ton compte pour pouvoir te connecter avec n'importe lequel.",
-      "linked": "Lié",
-      "link": "Lier",
-      "unlink": "Délier",
-      "cannotUnlinkLast": "Tu ne peux pas délier ton seul moyen de connexion",
-      "linkSuccess": "Compte {{provider}} lié avec succès"
-    }
+    "displayRealNameHelp": "Quand activé, les autres voient « Prénom Nom » au lieu de ton pseudo."
   },
   "auth": {
     "confirm": "Confirmer",

@@ -22,8 +22,8 @@ pas** le bouton DevLogin, et le profil `local` **ne lance ni le seeder ni `/api/
 
 ```bat
 REM 1. Renseigne tes secrets
-copy local-real.env.example local-real.env
-REM   puis édite local-real.env (Discord + SMTP)
+copy local-real.cmd.example local-real.cmd
+REM   puis édite local-real.cmd (Discord + SMTP)
 
 REM 2. Lance tout (infra Docker + build jar + run profil local)
 scripts\start-local-real.bat
@@ -55,7 +55,8 @@ docker compose down -v && docker compose up -d
 
 ## Notes
 
-- `local-real.env` est **gitignoré** — il ne sera jamais committé.
+- `local-real.cmd` est **gitignoré** — il ne sera jamais committé. (Extension `.cmd`
+  obligatoire : `call` sous Windows ne charge pas les variables d'un fichier `.env`.)
 - Cookies en HTTP local : le profil `local` met `app.cookie.secure=false` (sinon le
   navigateur refuse le cookie JWT sur http).
 - Si l'email n'arrive pas : vérifie les spams, puis les logs Brevo. Une erreur SMTP

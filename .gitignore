@@ -44,6 +44,7 @@ desktop.ini
 .env
 *.env.local
 local-real.env
+local-real.cmd
 
 # --- Application ---
 logs/

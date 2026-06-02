@@ -163,17 +163,6 @@ export const avatarOptions: Sx = {
   gap: 1.5,
 };
 
-export const linkedRow: Sx = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 1,
-  px: 1.5,
-  py: 1,
-  borderRadius: 1.5,
-  bgcolor: (t) =>
-    t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.03)',
-};
-
 export const avatarOption = (selected: boolean, disabled: boolean): Sx => ({
   display: 'flex',
   flexDirection: 'column',

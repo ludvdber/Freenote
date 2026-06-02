@@ -3,7 +3,6 @@ package be.freenote.controller;
 import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.ConfirmCodeRequest;
 import be.freenote.dto.request.VerifyEmailRequest;
-import be.freenote.dto.response.LinkedProviderResponse;
 import be.freenote.security.JwtRevocationService;
 import be.freenote.security.JwtTokenProvider;
 import be.freenote.security.OAuth2LoginSuccessHandler;
@@ -17,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -53,24 +50,6 @@ public class AuthController {
         Long userId = SecurityUtils.currentUserId(authentication);
         String jwt = authService.confirmVerification(userId, request.getCode());
         OAuth2LoginSuccessHandler.addJwtCookie(response, jwt, jwtExpirationMs, cookieSecure);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/linked-providers")
-    public ResponseEntity<List<LinkedProviderResponse>> listLinkedProviders(Authentication authentication) {
-        Long userId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(authService.getLinkedProviders(userId));
-    }
-
-    @DeleteMapping("/linked-providers/{provider}")
-    public ResponseEntity<Void> unlinkProvider(Authentication authentication,
-                                                @PathVariable
-                                                @jakarta.validation.constraints.Pattern(
-                                                    regexp = "^(?i)DISCORD$",
-                                                    message = "Provider must be DISCORD")
-                                                String provider) {
-        Long userId = SecurityUtils.currentUserId(authentication);
-        authService.unlinkProvider(userId, provider);
         return ResponseEntity.noContent().build();
     }
 

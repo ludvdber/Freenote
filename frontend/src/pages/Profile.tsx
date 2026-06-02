@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Typography,
   TextField,
@@ -28,12 +28,11 @@ import {
   Visibility,
   AccountCircle,
   Badge as BadgeIcon,
-  LinkOff,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   getCurrentUser,
   updateProfile,
@@ -42,8 +41,6 @@ import {
   deleteAccount,
   getDelegateHistory,
   getFavorites,
-  getLinkedProviders,
-  unlinkProvider,
 } from '@/api/endpoints';
 import { formatDate, extractApiError } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
@@ -75,11 +72,6 @@ export default function Profile() {
     queryFn: () => getFavorites(0, FAV_PREVIEW_COUNT),
     enabled: !!user?.id,
   });
-  const { data: linkedProviders } = useQuery({
-    queryKey: ['linked-providers'],
-    queryFn: getLinkedProviders,
-    enabled: !!user?.id,
-  });
   const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: getSections });
 
   const [bio, setBio] = useState('');
@@ -97,9 +89,6 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [linkedToast, setLinkedToast] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const linkedFlag = searchParams.get('linked');
 
   // Initialise the editable form from the loaded user. Adjusting state during render
   // (keyed on user.id) instead of an effect is React's recommended pattern and avoids a
@@ -120,21 +109,6 @@ export default function Profile() {
     setDisplayRealName(user.displayRealName);
     setSectionId(user.sectionId ?? '');
   }
-
-  // Reacting to the ?linked=PROVIDER query param (set after an OAuth-link round-trip) is a
-  // legitimate effect: it synchronises with an external system (the URL) and triggers query
-  // invalidation + a transient toast. The setState is intentional here.
-  useEffect(() => {
-    if (!linkedFlag) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLinkedToast(linkedFlag);
-    const timer = setTimeout(() => setLinkedToast(null), 3000);
-    queryClient.invalidateQueries({ queryKey: ['linked-providers'] });
-    queryClient.invalidateQueries({ queryKey: ['me'] });
-    searchParams.delete('linked');
-    setSearchParams(searchParams, { replace: true });
-    return () => clearTimeout(timer);
-  }, [linkedFlag, queryClient, searchParams, setSearchParams]);
 
   const isDirty = !!user && (
     bio !== (user.bio ?? '') ||
@@ -187,25 +161,6 @@ export default function Profile() {
     mutationFn: deleteAccount,
     onSuccess: () => logout(),
   });
-
-  const unlinkMutation = useMutation({
-    mutationFn: (provider: string) => unlinkProvider(provider),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['linked-providers'] });
-      queryClient.invalidateQueries({ queryKey: ['me'] });
-    },
-    onError: (e: unknown) => setSaveError(extractApiError(e, t('common.error'))),
-  });
-
-  const startLink = (provider: string) => {
-    // Full-page navigation — the browser hands the JWT cookie to Spring Security, which
-    // recognises the already-logged-in user and routes the OAuth round-trip through the
-    // linking flow instead of creating a new account.
-    window.location.href = `/oauth2/authorization/${provider.toLowerCase()}`;
-  };
-
-  const availableProviders: ('DISCORD')[] = ['DISCORD'];
-  const linkedSet = new Set((linkedProviders ?? []).map((l) => l.provider));
 
   if (!user) return null;
 
@@ -295,11 +250,6 @@ export default function Profile() {
           {t('profile.saved')} ✓
         </Alert>
       )}
-      {linkedToast && (
-        <Alert severity="success" sx={s.successAlert}>
-          {t('profile.linkedAccounts.linkSuccess', { provider: linkedToast })}
-        </Alert>
-      )}
       {saveError && (
         <Alert severity="error" sx={s.successAlert} onClose={() => setSaveError('')}>
           {saveError}
@@ -378,42 +328,6 @@ export default function Profile() {
                   <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>
                 ))}
               </TextField>
-            </Box>
-          </GlassCard>
-
-          <GlassCard sx={s.sectionCard}>
-            <Typography variant="subtitle1" sx={s.sectionTitle}>
-              <LinkIcon fontSize="small" /> {t('profile.linksSection')}
-            </Typography>
-            <Box sx={s.formStack}>
-              <TextField
-                label={t('profile.website')}
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                fullWidth
-                placeholder="https://…"
-              />
-              <TextField
-                label={t('profile.socialGithub')}
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                fullWidth
-                placeholder="https://github.com/…"
-              />
-              <TextField
-                label={t('profile.socialLinkedin')}
-                value={linkedin}
-                onChange={(e) => setLinkedin(e.target.value)}
-                fullWidth
-                placeholder="https://linkedin.com/in/…"
-              />
-              <TextField
-                label={t('profile.socialDiscord')}
-                value={discord}
-                onChange={(e) => setDiscord(e.target.value)}
-                fullWidth
-                placeholder="username"
-              />
             </Box>
           </GlassCard>
 
@@ -523,51 +437,37 @@ export default function Profile() {
 
           <GlassCard sx={s.sectionCard}>
             <Typography variant="subtitle1" sx={s.sectionTitle}>
-              <LinkIcon fontSize="small" /> {t('profile.linkedAccounts.title')}
+              <LinkIcon fontSize="small" /> {t('profile.linksSection')}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              {t('profile.linkedAccounts.help')}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {availableProviders.map((provider) => {
-                const linked = linkedSet.has(provider);
-                const canUnlink = linked && (linkedProviders?.length ?? 0) > 1;
-                return (
-                  <Box key={provider} sx={s.linkedRow}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
-                      {provider}
-                    </Typography>
-                    {linked ? (
-                      <>
-                        <Chip
-                          size="small"
-                          color="success"
-                          variant="outlined"
-                          label={t('profile.linkedAccounts.linked')}
-                        />
-                        <Button
-                          size="small"
-                          color="error"
-                          startIcon={<LinkOff />}
-                          onClick={() => unlinkMutation.mutate(provider)}
-                          disabled={!canUnlink || unlinkMutation.isPending}
-                          title={!canUnlink ? t('profile.linkedAccounts.cannotUnlinkLast') : ''}
-                        >
-                          {t('profile.linkedAccounts.unlink')}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => startLink(provider)}
-                      >
-                        {t('profile.linkedAccounts.link')}
-                      </Button>
-                    )}
-                  </Box>
-                );
-              })}
+            <Box sx={s.formStack}>
+              <TextField
+                label={t('profile.website')}
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                fullWidth
+                placeholder="https://…"
+              />
+              <TextField
+                label={t('profile.socialGithub')}
+                value={github}
+                onChange={(e) => setGithub(e.target.value)}
+                fullWidth
+                placeholder="https://github.com/…"
+              />
+              <TextField
+                label={t('profile.socialLinkedin')}
+                value={linkedin}
+                onChange={(e) => setLinkedin(e.target.value)}
+                fullWidth
+                placeholder="https://linkedin.com/in/…"
+              />
+              <TextField
+                label={t('profile.socialDiscord')}
+                value={discord}
+                onChange={(e) => setDiscord(e.target.value)}
+                fullWidth
+                placeholder="username"
+              />
             </Box>
           </GlassCard>
 

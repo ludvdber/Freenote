@@ -37,35 +37,19 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String provider = oauthToken.getAuthorizedClientRegistrationId().toUpperCase();
         String oauthId = oauthToken.getPrincipal().getName();
 
-        // If the user was already authenticated, this was a linking flow — keep their session
-        // (do NOT rotate the JWT) and bounce them back to /profile with a success flag.
-        Long currentUserId = readUserIdFromExistingCookie(request);
-        if (currentUserId != null) {
-            getRedirectStrategy().sendRedirect(request, response,
-                    frontendUrl + "/profile?linked=" + provider);
-            return;
-        }
-
-        // Normal sign-in / sign-up flow: look up the user via the freshly-linked (provider, oauthId)
-        // pair and issue a new JWT cookie.
-        User user = oauthLinkRepository.findByProviderAndOauthId(provider, oauthId)
-                .map(link -> link.getUser())
+        // Discord-only sign-in / sign-up: look up the user via the (provider, oauthId) pair and
+        // issue a new JWT cookie. Fetch the User eagerly (JOIN FETCH) — this handler runs outside
+        // any transaction, so a lazy user proxy would throw LazyInitializationException when
+        // generateToken() reads username/role.
+        User user = oauthLinkRepository.findUserByProviderAndOauthId(provider, oauthId)
                 .orElseThrow();
 
         String jwt = jwtTokenProvider.generateToken(user);
         addJwtCookie(response, jwt, expirationMs, cookieSecure);
-        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/");
-    }
-
-    private Long readUserIdFromExistingCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        for (Cookie c : cookies) {
-            if ("jwt".equals(c.getName()) && jwtTokenProvider.validateToken(c.getValue())) {
-                return jwtTokenProvider.getUserIdFromToken(c.getValue());
-            }
-        }
-        return null;
+        // Carry a one-shot flag so the SPA knows a cookie-based login just completed and must
+        // call /api/users/me to hydrate — localStorage is still empty on a first sign-in, so
+        // without this signal useAuthInit would skip the fetch and the user stays "logged out".
+        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/?login=success");
     }
 
     public static void addJwtCookie(HttpServletResponse response, String jwt, long expirationMs, boolean secure) {

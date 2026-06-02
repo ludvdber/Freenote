@@ -235,7 +235,13 @@ export default function Upload() {
           </Select>
         </FormControl>
 
-        <TextField label={t('document.language')} value={language} onChange={(e) => setLanguage(e.target.value)} />
+        <FormControl>
+          <InputLabel>{t('document.language')}</InputLabel>
+          <Select value={language} label={t('document.language')} onChange={(e) => setLanguage(e.target.value)}>
+            <MenuItem value="FR">Français</MenuItem>
+            <MenuItem value="EN">English</MenuItem>
+          </Select>
+        </FormControl>
         <Autocomplete<string, true, false, true>
           multiple
           freeSolo

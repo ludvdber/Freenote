@@ -313,16 +313,7 @@
     "firstName": "First name",
     "lastName": "Last name",
     "displayRealName": "Display my real name",
-    "displayRealNameHelp": "When enabled, others see \"First Last\" instead of your username.",
-    "linkedAccounts": {
-      "title": "Linked accounts",
-      "help": "Link multiple providers to your account so you can sign in with any of them.",
-      "linked": "Linked",
-      "link": "Link",
-      "unlink": "Unlink",
-      "cannotUnlinkLast": "You cannot unlink your only sign-in method",
-      "linkSuccess": "Account {{provider}} linked successfully"
-    }
+    "displayRealNameHelp": "When enabled, others see \"First Last\" instead of your username."
   },
   "auth": {
     "confirm": "Confirm",

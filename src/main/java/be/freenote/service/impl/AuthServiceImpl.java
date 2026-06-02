@@ -1,14 +1,11 @@
 package be.freenote.service.impl;
 
-import be.freenote.dto.response.LinkedProviderResponse;
 import be.freenote.entity.User;
 import be.freenote.entity.UserOauthLink;
 import be.freenote.entity.UserProfile;
 import be.freenote.enums.AvatarSource;
-import be.freenote.exception.DuplicateResourceException;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.RateLimitExceededException;
-import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.exception.ServiceUnavailableException;
 import be.freenote.exception.UnauthorizedException;
 import be.freenote.repository.BanRepository;
@@ -17,6 +14,7 @@ import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.security.JwtTokenProvider;
 import be.freenote.service.AuthService;
+import be.freenote.service.SmtpKeepAliveService;
 import be.freenote.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +32,6 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -52,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
+    private final SmtpKeepAliveService smtpKeepAliveService;
 
     @Value("${app.email.hash-salt}")
     private String emailHashSalt;
@@ -82,66 +80,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Find the linked account, or provision a new one. The JWT cookie is minted later by
-        // OAuth2LoginSuccessHandler — this method only ensures the account exists.
+        // OAuth2LoginSuccessHandler — this method only ensures the account exists. For a returning
+        // user we refresh the captured Discord avatar so a profile-picture change propagates.
         oauthLinkRepository.findByProviderAndOauthId(provider, oauthId)
-                .map(UserOauthLink::getUser)
-                .orElseGet(() -> createUserFromOAuth(oAuth2User, provider, oauthId));
-    }
-
-    /** Adds a (provider, oauthId) link to an already-authenticated user. */
-    @Override
-    @Transactional
-    public void linkProvider(Long currentUserId, OAuth2User oAuth2User, String registrationId) {
-        String provider = registrationId.toUpperCase();
-        String oauthId = oAuth2User.getName();
-
-        oauthLinkRepository.findByProviderAndOauthId(provider, oauthId).ifPresent(existing -> {
-            if (!existing.getUser().getId().equals(currentUserId)) {
-                // Refuse to silently transfer the link from another user — that would let an attacker
-                // who controls a victim's OAuth account hijack their Freenote account.
-                throw new DuplicateResourceException(
-                        "Ce compte " + provider + " est déjà lié à un autre utilisateur Freenote");
-            }
-        });
-
-        // Idempotent: if already linked to the same user, just refresh the avatar.
-        UserOauthLink link = oauthLinkRepository.findByUserIdAndProvider(currentUserId, provider)
-                .orElseGet(() -> {
-                    User user = Repositories.findByIdOrThrow(userRepository, currentUserId, "User");
-                    UserOauthLink fresh = UserOauthLink.builder()
-                            .user(user)
-                            .provider(provider)
-                            .oauthId(oauthId)
-                            .build();
-                    return oauthLinkRepository.save(fresh);
-                });
-        // If the provider returns a different oauthId (re-link after deleting at provider), update it.
-        link.setOauthId(oauthId);
-
-        log.info("Linked provider {} to userId={}", provider, currentUserId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<LinkedProviderResponse> getLinkedProviders(Long userId) {
-        return oauthLinkRepository.findByUserId(userId).stream()
-                .map(l -> new LinkedProviderResponse(l.getProvider(), l.getLinkedAt()))
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public void unlinkProvider(Long userId, String provider) {
-        String up = provider.toUpperCase();
-        UserOauthLink link = oauthLinkRepository.findByUserIdAndProvider(userId, up)
-                .orElseThrow(() -> new ResourceNotFoundException("OAuth link", "provider", up));
-        if (oauthLinkRepository.countByUserId(userId) <= 1) {
-            // Removing the last provider would lock the user out — refuse.
-            throw new DuplicateResourceException(
-                    "Tu ne peux pas délier ton dernier moyen de connexion");
-        }
-        oauthLinkRepository.delete(link);
-        log.info("Unlinked provider {} from userId={}", up, userId);
+                .ifPresentOrElse(
+                        link -> refreshDiscordAvatar(link.getUser(), oAuth2User, oauthId),
+                        () -> createUserFromOAuth(oAuth2User, provider, oauthId));
     }
 
     private User createUserFromOAuth(OAuth2User oAuth2User, String provider, String oauthId) {
@@ -186,6 +130,15 @@ public class AuthServiceImpl implements AuthService {
         Object avatar = oAuth2User.getAttribute("avatar");
         if (avatar == null) return null;
         return "https://cdn.discordapp.com/avatars/" + oauthId + "/" + avatar + ".png";
+    }
+
+    /** Re-captures the latest Discord avatar on each login so a profile-picture change on Discord
+     *  propagates to the user's Freenote avatar (the stored URL is otherwise a one-time snapshot).
+     *  Runs inside the {@code @Transactional} login flow, so the dirty profile is flushed on commit. */
+    private void refreshDiscordAvatar(User user, OAuth2User oAuth2User, String oauthId) {
+        UserProfile profile = user.getProfile();
+        if (profile == null) return;
+        profile.setDiscordAvatarUrl(discordAvatarUrl(oAuth2User, oauthId));
     }
 
     @Override
@@ -272,26 +225,63 @@ public class AuthServiceImpl implements AuthService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(mailFrom);
+            // Display name "Freenote" so the inbox shows "Freenote" rather than the raw address.
+            helper.setFrom(mailFrom, "Freenote");
             helper.setTo(to);
-            helper.setSubject("Freenote - Code de vérification");
+            helper.setSubject("Freenote — Ton code de vérification");
+            // Email-safe HTML: table layout + inline styles + web-safe font fallbacks, in the
+            // Freenote palette (dark navy, violet→cyan gradient). Literal % are doubled (%%) so
+            // String.formatted() leaves the CSS gradient stops untouched and only injects the code.
             helper.setText(
                     """
-                    <html>
-                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #2563eb;">Freenote</h2>
-                        <p>Votre code de vérification est :</p>
-                        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e293b;">%s</span>
-                        </div>
-                        <p style="color: #64748b; font-size: 14px;">Ce code expire dans 15 minutes.</p>
+                    <!DOCTYPE html>
+                    <html lang="fr">
+                    <head>
+                      <meta charset="UTF-8">
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    </head>
+                    <body style="margin:0; padding:0; background-color:#0a0a1a;">
+                      <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#0a0a1a; padding:32px 12px;">
+                        <tr>
+                          <td align="center">
+                            <table role="presentation" cellpadding="0" cellspacing="0" width="480" style="width:480px; max-width:480px; background-color:#12152b; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
+                              <tr>
+                                <td align="center" style="background:linear-gradient(135deg,#7c5cff 0%%,#22d3ee 100%%); background-color:#7c5cff; padding:26px 32px;">
+                                  <span style="font-family:'Segoe UI',Arial,sans-serif; font-size:26px; font-weight:800; color:#ffffff; letter-spacing:0.5px;">Freenote</span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding:32px; font-family:'Segoe UI',Arial,sans-serif;">
+                                  <h1 style="margin:0 0 10px; font-size:20px; font-weight:700; color:#ffffff;">Ton code de vérification</h1>
+                                  <p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#a9b0c6;">Entre ce code pour confirmer ton adresse <strong style="color:#e6e8f0;">@isfce.be</strong> et rejoindre ta promo sur Freenote.</p>
+                                  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                      <td align="center" style="background-color:#0a0a1a; border:1px solid rgba(124,92,255,0.45); border-radius:12px; padding:22px;">
+                                        <span style="font-family:'JetBrains Mono','Courier New',monospace; font-size:34px; font-weight:700; letter-spacing:10px; color:#22d3ee;">%s</span>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                  <p style="margin:24px 0 0; font-size:13px; line-height:1.6; color:#7c8198;">Ce code expire dans <strong style="color:#a9b0c6;">15 minutes</strong>. Si tu n'es pas à l'origine de cette demande, ignore simplement cet email.</p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td align="center" style="padding:18px 32px; border-top:1px solid rgba(255,255,255,0.06);">
+                                  <p style="margin:0; font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#6b7088;">Freenote — Hub des documents des étudiants ISFCE</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
                     </body>
                     </html>
                     """.formatted(code),
                     true
             );
             mailSender.send(message);
-        } catch (MessagingException | org.springframework.mail.MailException e) {
+            smtpKeepAliveService.recordEmailSent(); // reset the SMTP inactivity timer
+        } catch (MessagingException | org.springframework.mail.MailException
+                 | java.io.UnsupportedEncodingException e) {
             // MessagingException (checked, from MimeMessageHelper) and MailException (unchecked,
             // from JavaMailSender.send — e.g. SMTP unreachable) both mean "couldn't send". Surface
             // a clean 503 instead of letting MailException bubble up as a 500 + stack trace.
