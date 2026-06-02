@@ -7,7 +7,6 @@ import be.freenote.enums.AvatarSource;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.RateLimitExceededException;
 import be.freenote.exception.ServiceUnavailableException;
-import be.freenote.exception.UnauthorizedException;
 import be.freenote.repository.BanRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.UserOauthLinkRepository;
@@ -198,7 +197,10 @@ public class AuthServiceImpl implements AuthService {
         String storedValue = redisTemplate.opsForValue().get(redisKey);
 
         if (storedValue == null) {
-            throw new UnauthorizedException("Verification code expired or not found");
+            // 400, not 401: the user IS authenticated (provisional account) — an expired/missing
+            // code is a bad request, not a session failure. A 401 here would trip the SPA's axios
+            // interceptor into logging the user out and bouncing them to the home page.
+            throw new IllegalArgumentException("Ce code a expiré. Demande un nouveau code.");
         }
 
         String[] parts = storedValue.split(":", 2);
@@ -206,7 +208,7 @@ public class AuthServiceImpl implements AuthService {
         String emailHash = parts[1];
 
         if (!storedCode.equals(code)) {
-            throw new UnauthorizedException("Invalid verification code");
+            throw new IllegalArgumentException("Code incorrect. Vérifie les 6 chiffres et réessaie.");
         }
 
         // Defence in depth: a ban could have been issued between request and confirm.

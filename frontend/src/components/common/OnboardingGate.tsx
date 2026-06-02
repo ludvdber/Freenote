@@ -186,15 +186,23 @@ function VerifyStep({ onVerified }: { onVerified: (u: import('@/types').User) =>
       ) : (
         <>
           <Alert severity="success">{t('onboarding.codeSent')}</Alert>
+          <Typography variant="caption" color="text.secondary">
+            {t('onboarding.codeNotice')}
+          </Typography>
           <TextField
             label={t('onboarding.codeLabel')}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 6 } }}
             fullWidth
+            autoFocus
+            error={confirmMutation.isError}
           />
           {confirmMutation.isError && (
             <Alert severity="error">{extractApiError(confirmMutation.error, t('common.error'))}</Alert>
+          )}
+          {sendMutation.isError && (
+            <Alert severity="warning">{extractApiError(sendMutation.error, t('common.error'))}</Alert>
           )}
           <Button
             variant="contained"
@@ -204,9 +212,22 @@ function VerifyStep({ onVerified }: { onVerified: (u: import('@/types').User) =>
           >
             {confirmMutation.isPending ? t('common.loading') : t('onboarding.confirm')}
           </Button>
-          <Button variant="text" size="small" onClick={() => setSent(false)}>
-            {t('onboarding.changeEmail')}
-          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+            <Button
+              variant="text"
+              size="small"
+              disabled={sendMutation.isPending}
+              onClick={() => {
+                confirmMutation.reset();
+                sendMutation.mutate();
+              }}
+            >
+              {sendMutation.isPending ? t('common.loading') : t('onboarding.resendCode')}
+            </Button>
+            <Button variant="text" size="small" onClick={() => setSent(false)}>
+              {t('onboarding.changeEmail')}
+            </Button>
+          </Box>
         </>
       )}
     </Box>

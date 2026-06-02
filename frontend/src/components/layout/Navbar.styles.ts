@@ -15,6 +15,9 @@ export const appBar: Sx = {
 export const toolbar: Sx = { justifyContent: 'space-between', gap: 1 };
 
 export const logo: Sx = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 1,
   fontWeight: 800,
   color: 'text.primary',
   textDecoration: 'none',

@@ -3,7 +3,6 @@ package be.freenote.service;
 import be.freenote.entity.User;
 import be.freenote.entity.UserOauthLink;
 import be.freenote.exception.RateLimitExceededException;
-import be.freenote.exception.UnauthorizedException;
 import be.freenote.repository.BanRepository;
 import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
@@ -232,8 +231,8 @@ class AuthServiceImplTest {
         when(valueOps.get("verify:1")).thenReturn("123456:somehash");
 
         assertThatThrownBy(() -> authService.confirmVerification(1L, "000000"))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessageContaining("Invalid");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("incorrect");
     }
 
     @Test
@@ -243,8 +242,8 @@ class AuthServiceImplTest {
         when(valueOps.get("verify:1")).thenReturn(null);
 
         assertThatThrownBy(() -> authService.confirmVerification(1L, "123456"))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessageContaining("expired");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("expiré");
     }
 
     @Test

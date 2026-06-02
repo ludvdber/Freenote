@@ -96,7 +96,8 @@ class AuthFlowTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isAccepted());
 
-        // Submit 5 wrong codes
+        // Submit 5 wrong codes — a bad code is a 400 (bad request), not a 401 (the user is
+        // authenticated). 401 would trip the SPA's axios interceptor into logging them out.
         for (int i = 0; i < 5; i++) {
             mockMvc.perform(post("/api/auth/confirm-verification")
                             .header("Authorization", "Bearer " + jwt)
@@ -104,7 +105,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
                             .content("""
                                     {"code": "000000"}
                                     """))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isBadRequest());
         }
 
         // 6th attempt should trigger rate limit (429)

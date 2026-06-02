@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box, Menu, MenuItem, Tooltip, useMediaQuery } from '@mui/material';
 import { DarkMode, LightMode } from '@mui/icons-material';
 import DiscordIcon from '@/components/icons/DiscordIcon';
+import FreenoteMark from '@/components/icons/FreenoteMark';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthPromptStore } from '@/stores/useAuthPromptStore';
@@ -30,9 +31,12 @@ export default function Navbar() {
   return (
     <AppBar position="sticky" component="nav" aria-label="Main navigation" sx={s.appBar}>
       <Toolbar sx={s.toolbar}>
-        <Typography variant="h6" component={Link} to="/" sx={s.logo}>
-          Free<Box component="span" sx={s.logoGradient}>note</Box>
-        </Typography>
+        <Box component={Link} to="/" sx={s.logo} aria-label="Freenote — accueil">
+          <FreenoteMark size={28} />
+          <Typography variant="h6" component="span" sx={{ fontWeight: 800, lineHeight: 1 }}>
+            Free<Box component="span" sx={s.logoGradient}>note</Box>
+          </Typography>
+        </Box>
 
         {isMobile ? (
           <MobileMenu />

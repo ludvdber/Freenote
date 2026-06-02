@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="frontend/public/banner.png" alt="Freenote — Éclaire ta promo" width="680" />
+
 # Freenote
 
 ### Le hub de documents des étudiants de l'ISFCE — *éclaire ta promo.*

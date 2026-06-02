@@ -380,8 +380,10 @@
     "emailLabel": "ISFCE email address",
     "sendCode": "Send code",
     "codeSent": "A 6-digit code has been sent. Check your inbox (and spam).",
+    "codeNotice": "The email can take 1 to 3 minutes to arrive. Don't close this page and keep this code handy.",
     "codeLabel": "6-digit code",
     "confirm": "Verify",
+    "resendCode": "Resend a code",
     "changeEmail": "Change address"
   },
   "footer": {

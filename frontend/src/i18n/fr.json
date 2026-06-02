@@ -380,8 +380,10 @@
     "emailLabel": "Adresse e-mail ISFCE",
     "sendCode": "Envoyer le code",
     "codeSent": "Un code à 6 chiffres a été envoyé. Vérifie ta boîte mail (et les spams).",
+    "codeNotice": "Le mail peut prendre 1 à 3 minutes à arriver. Ne ferme pas cette page et garde ce code à portée de main.",
     "codeLabel": "Code à 6 chiffres",
     "confirm": "Vérifier",
+    "resendCode": "Renvoyer un code",
     "changeEmail": "Changer d'adresse"
   },
   "footer": {

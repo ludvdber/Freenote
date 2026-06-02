@@ -372,46 +372,9 @@ export default function Profile() {
               })}
             </Box>
           </GlassCard>
-
-          <GlassCard sx={s.sectionCard}>
-            <Typography variant="subtitle1" sx={s.sectionTitle}>
-              <Settings fontSize="small" /> {t('profile.preferencesSection')}
-            </Typography>
-            <Box sx={s.formStack}>
-              <Box sx={s.switchRow}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Switch
-                    checked={profilePublic}
-                    onChange={(e) => setProfilePublic(e.target.checked)}
-                  />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {t('profile.public')}
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
-                  {t('profile.publicHelp')}
-                </Typography>
-              </Box>
-              <Box sx={s.switchRow}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Switch
-                    checked={showInCarousel}
-                    onChange={(e) => setShowInCarousel(e.target.checked)}
-                    disabled={!user.verified}
-                  />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {t('profile.carousel')}
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
-                  {user.verified ? t('profile.carouselHelp') : t('profile.carouselLocked')}
-                </Typography>
-              </Box>
-            </Box>
-          </GlassCard>
         </Grid>
 
-        {/* RIGHT — read-only summary */}
+        {/* RIGHT — read-only summary + preferences (kept balanced with the left column) */}
         <Grid size={{ xs: 12, md: 5 }}>
           <GlassCard sx={s.sectionCard}>
             <Typography variant="subtitle1" sx={s.sectionTitle}>
@@ -470,6 +433,43 @@ export default function Profile() {
                 fullWidth
                 placeholder="username"
               />
+            </Box>
+          </GlassCard>
+
+          <GlassCard sx={s.sectionCard}>
+            <Typography variant="subtitle1" sx={s.sectionTitle}>
+              <Settings fontSize="small" /> {t('profile.preferencesSection')}
+            </Typography>
+            <Box sx={s.formStack}>
+              <Box sx={s.switchRow}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Switch
+                    checked={profilePublic}
+                    onChange={(e) => setProfilePublic(e.target.checked)}
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {t('profile.public')}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
+                  {t('profile.publicHelp')}
+                </Typography>
+              </Box>
+              <Box sx={s.switchRow}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Switch
+                    checked={showInCarousel}
+                    onChange={(e) => setShowInCarousel(e.target.checked)}
+                    disabled={!user.verified}
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {t('profile.carousel')}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
+                  {user.verified ? t('profile.carouselHelp') : t('profile.carouselLocked')}
+                </Typography>
+              </Box>
             </Box>
           </GlassCard>
 
