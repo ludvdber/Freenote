@@ -26,7 +26,10 @@ public interface DocumentMapper {
         if (document.isAnonymous() || document.getUser() == null) {
             return "Anonyme";
         }
-        return document.getUser().getUsername();
+        // Honour the uploader's "display real name" preference everywhere their name appears
+        // (document cards, viewer, browse) — not just the community carousel.
+        var user = document.getUser();
+        return UserMapper.resolveDisplayName(user.getProfile(), user.getUsername());
     }
 
     /** Null for anonymous docs (or no author) so the frontend can't link to the uploader's profile. */

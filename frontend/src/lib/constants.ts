@@ -1,6 +1,6 @@
 export const CATEGORIES = ['SYNTHESE', 'EXAMEN', 'NOTES', 'EXERCICES', 'COURS', 'TFE', 'DIVERS'] as const;
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+export const MAX_FILE_SIZE = 7 * 1024 * 1024; // 7 MB
 
 export const DISCORD_OAUTH_URL = '/oauth2/authorization/discord';
 

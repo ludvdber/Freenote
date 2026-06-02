@@ -25,6 +25,9 @@ export interface User {
   sectionId: number | null;
   sectionName: string | null;
   usernameChosen: boolean;
+  /** Raw Discord avatar URL, present only on the own-profile response — lets the avatar picker
+   *  preview the "Photo Discord" option even when another source is currently active. */
+  discordAvatarUrl: string | null;
 }
 
 export interface DocumentResponse {

@@ -12,7 +12,7 @@ import java.util.Arrays;
 @Service
 public class PdfValidationServiceImpl implements PdfValidationService {
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 7 * 1024 * 1024;
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final byte[] PDF_MAGIC = {0x25, 0x50, 0x44, 0x46, 0x2D};
 
@@ -22,7 +22,7 @@ public class PdfValidationServiceImpl implements PdfValidationService {
             throw new IllegalArgumentException("Only PDF files are accepted");
         }
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new PayloadTooLargeException("File size exceeds the 10 MB limit");
+            throw new PayloadTooLargeException("File size exceeds the 7 MB limit");
         }
 
         byte[] pdfBytes;

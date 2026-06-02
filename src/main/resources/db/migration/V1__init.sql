@@ -109,7 +109,9 @@ CREATE TABLE documents (
     id              BIGSERIAL       PRIMARY KEY,
     course_id       BIGINT          NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     category        VARCHAR(50)     NOT NULL,
-    title           VARCHAR(255)    NOT NULL,
+    -- 512, not 255: the raw title is capped at 200 chars but HTML-entity escaping at persistence
+    -- (' " < > &) can expand it well past 255 (e.g. a French title full of apostrophes → &#x27;).
+    title           VARCHAR(512)    NOT NULL,
     file_key        VARCHAR(512)    NOT NULL,
     user_id         BIGINT          REFERENCES users(id) ON DELETE SET NULL,
     anonymous       BOOLEAN         NOT NULL DEFAULT FALSE,

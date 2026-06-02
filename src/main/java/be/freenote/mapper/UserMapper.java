@@ -44,7 +44,8 @@ public abstract class UserMapper {
                 p != null && p.isDisplayRealName(),
                 p != null && p.getSection() != null ? p.getSection().getId() : null,
                 p != null && p.getSection() != null ? p.getSection().getName() : null,
-                user.isUsernameChosen()
+                user.isUsernameChosen(),
+                p != null ? p.getDiscordAvatarUrl() : null
         );
     }
 
@@ -74,7 +75,8 @@ public abstract class UserMapper {
                 false,
                 p != null && p.getSection() != null ? p.getSection().getId() : null,
                 p != null && p.getSection() != null ? p.getSection().getName() : null,
-                false
+                false,
+                null
         );
     }
 

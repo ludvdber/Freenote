@@ -102,6 +102,9 @@ public class AuthServiceImpl implements AuthService {
                 .user(saved)
                 .avatarSource(AvatarSource.DISCORD)
                 .discordAvatarUrl(discordAvatarUrl(oAuth2User, oauthId))
+                // Pre-fill the Discord social field from the OAuth identity (login is Discord-only).
+                // The user can still edit/clear it later, so it's set only at creation.
+                .discord(discordUsername(oAuth2User))
                 .build();
         saved.setProfile(profile);
 
@@ -130,6 +133,14 @@ public class AuthServiceImpl implements AuthService {
         Object avatar = oAuth2User.getAttribute("avatar");
         if (avatar == null) return null;
         return "https://cdn.discordapp.com/avatars/" + oauthId + "/" + avatar + ".png";
+    }
+
+    /** The Discord handle (prefers the display name {@code global_name}, falls back to {@code username}). */
+    private static String discordUsername(OAuth2User oAuth2User) {
+        Object globalName = oAuth2User.getAttribute("global_name");
+        if (globalName instanceof String s && !s.isBlank()) return s;
+        Object username = oAuth2User.getAttribute("username");
+        return username instanceof String s && !s.isBlank() ? s : null;
     }
 
     /** Re-captures the latest Discord avatar on each login so a profile-picture change on Discord

@@ -158,7 +158,7 @@ class UserServiceImplTest {
 
         when(documentRepository.countByUserId(1L)).thenReturn(0L);
         UserResponse resp = new UserResponse(1L, "test", "USER", false, 50, "new bio", null, null, null, null,
-                0L, true, false, false, false, null, "AUTO", "test", null, null, false, null, null, false);
+                0L, true, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null);
         when(userMapper.toResponse(user, 0L)).thenReturn(resp);
 
         UpdateProfileRequest req = new UpdateProfileRequest();
@@ -180,7 +180,7 @@ class UserServiceImplTest {
 
         when(documentRepository.countByUserId(1L)).thenReturn(0L);
         UserResponse resp = new UserResponse(1L, "test", "USER", false, 0, null, null, null, null, null,
-                0L, false, false, false, false, null, "AUTO", "test", null, null, false, null, null, false);
+                0L, false, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null);
         when(userMapper.toResponse(user, 0L)).thenReturn(resp);
 
         UpdateProfileRequest req = new UpdateProfileRequest();
@@ -278,6 +278,6 @@ class UserServiceImplTest {
     private static UserResponse stubResponse() {
         return new UserResponse(1L, "test", "USER", false, 0,
                 null, null, null, null, null, 0L, false, false, false, false,
-                null, "AUTO", "test", null, null, false, null, null, false);
+                null, "AUTO", "test", null, null, false, null, null, false, null);
     }
 }

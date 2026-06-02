@@ -27,7 +27,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@Profile("!dev")
+@Profile({"!dev & !test"})
 @RequiredArgsConstructor
 public class ReferenceDataSeeder implements CommandLineRunner {
 

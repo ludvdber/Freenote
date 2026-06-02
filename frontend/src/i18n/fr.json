@@ -253,7 +253,8 @@
   "upload": {
     "title": "Partager un document",
     "dragDrop": "Glisse-dépose un PDF ici ou clique pour choisir",
-    "maxSize": "Taille maximale : 10 Mo",
+    "maxSize": "Taille maximale : 7 Mo",
+    "yearHelp": "Année entre 2000 et 2099",
     "compressSuggestion": "Ton PDF fait plus de 5 Mo — pense à le compresser (ex : ilovepdf.com/compress_pdf) avant l'upload pour économiser de la bande passante.",
     "submit": "Partager",
     "success": "Doc partagé — merci pour ta promo !",

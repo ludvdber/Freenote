@@ -169,7 +169,9 @@ export default function Profile() {
       case 'LETTER': return null;
       case 'DICEBEAR': return DICEBEAR_URL(user.username);
       case 'AUTO': return null;
-      case 'DISCORD': return user.avatarSource === 'DISCORD' ? user.avatarUrl : null;
+      // Use the raw Discord URL so the preview shows the real photo regardless of the active source
+      // (previously it only rendered when DISCORD was already selected → a letter otherwise).
+      case 'DISCORD': return user.discordAvatarUrl;
     }
   };
 

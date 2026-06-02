@@ -253,7 +253,8 @@
   "upload": {
     "title": "Share a document",
     "dragDrop": "Drag & drop a PDF here or click to pick one",
-    "maxSize": "Max size: 10 MB",
+    "maxSize": "Max size: 7 MB",
+    "yearHelp": "Year between 2000 and 2099",
     "compressSuggestion": "Your PDF is larger than 5 MB — consider compressing it (e.g. ilovepdf.com/compress_pdf) before uploading to save bandwidth.",
     "submit": "Share",
     "success": "Doc shared — thanks for your class!",

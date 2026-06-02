@@ -37,7 +37,7 @@ class UserControllerTest {
     @Test
     void getUserById_shouldReturnFilteredProfile() throws Exception {
         var response = new UserResponse(1L, "alice", null, false, 100, null, null, null, null, null,
-                5L, false, false, false, true, null, "AUTO", "alice", null, null, false, null, null, false);
+                5L, false, false, false, true, null, "AUTO", "alice", null, null, false, null, null, false, null);
         when(userService.getPublicProfile(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/users/1"))

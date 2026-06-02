@@ -134,7 +134,8 @@ export default function Upload() {
 
   const openPicker = () => fileInputRef.current?.click();
 
-  const canSubmit = title && courseId && category && file;
+  const yearValid = year === '' || /^20\d{2}$/.test(year);
+  const canSubmit = title && courseId && category && file && yearValid;
 
   return (
     <PageWrapper maxWidth="sm">
@@ -146,18 +147,6 @@ export default function Upload() {
       {showSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {t('upload.successMessage')}
-        </Alert>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={s.errorAlert}>
-          {error}
-        </Alert>
-      )}
-
-      {warning && (
-        <Alert severity="warning" sx={s.errorAlert}>
-          {warning}
         </Alert>
       )}
 
@@ -217,7 +206,14 @@ export default function Upload() {
           </Select>
         </FormControl>
 
-        <TextField label={t('document.year')} value={year} onChange={(e) => setYear(e.target.value)} />
+        <TextField
+          label={t('document.year')}
+          value={year}
+          onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 4 } }}
+          error={year !== '' && !/^20\d{2}$/.test(year)}
+          helperText={year !== '' && !/^20\d{2}$/.test(year) ? t('upload.yearHelp') : undefined}
+        />
 
         <FormControl>
           <InputLabel>{t('document.professor')}</InputLabel>
@@ -281,6 +277,11 @@ export default function Upload() {
           </Box>
           <FormHelperText sx={{ mt: -0.5, ml: 2 }}>{t('upload.aiGeneratedHelp')}</FormHelperText>
         </Box>
+
+        {/* File feedback sits right next to the drop zone (not at the top of the page) so a
+            "too large" / "PDF only" message is visible where the user is actually acting. */}
+        {error && <Alert severity="error" sx={s.errorAlert}>{error}</Alert>}
+        {warning && <Alert severity="warning" sx={s.errorAlert}>{warning}</Alert>}
 
         <Box
           role="button"
