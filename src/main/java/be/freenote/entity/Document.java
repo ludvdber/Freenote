@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"tags", "ratings"})
+@ToString(exclude = {"ratings"})
 @EqualsAndHashCode(of = "id")
 public class Document {
 
@@ -83,10 +83,6 @@ public class Document {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Tag> tags = new ArrayList<>();
 
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

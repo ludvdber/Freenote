@@ -101,7 +101,6 @@ export default function AdminDocuments() {
       language: doc.language,
       year: doc.year ?? '',
       verified: doc.verified,
-      tags: [...doc.tags],
     });
   };
 
@@ -313,16 +312,6 @@ function EditRow({ form, courses, onChange, onSave, onCancel, isPending, t }: Ed
           sx={{ width: 100 }}
         />
       </Box>
-      <TextField
-        label={t('document.tags')}
-        size="small"
-        fullWidth
-        value={form.tags?.join(', ') ?? ''}
-        onChange={(e) =>
-          onChange({ ...form, tags: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })
-        }
-        helperText={t('upload.tagsHelper')}
-      />
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button size="small" onClick={onCancel} startIcon={<Close />}>{t('common.cancel')}</Button>
         <Button size="small" variant="contained" onClick={onSave} startIcon={<Save />} disabled={isPending}>

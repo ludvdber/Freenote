@@ -24,6 +24,7 @@ import type {
   ReportRequest,
   ReportResponse,
   DonationResponse,
+  ActivityLog,
 } from '@/types';
 
 // --- Stats ---
@@ -48,9 +49,6 @@ export const searchDocuments = (params: {
 export const getPopularDocuments = (sectionId?: number) =>
   api.get<DocumentResponse[]>('/documents/popular', { params: sectionId ? { sectionId } : undefined }).then((r) => r.data);
 
-export const getTagSuggestions = () =>
-  api.get<string[]>('/documents/tags').then((r) => r.data);
-
 export const uploadDocument = (data: CreateDocumentRequest, file: File) => {
   const formData = new FormData();
   formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
@@ -65,6 +63,9 @@ export const getDocumentsByUser = (userId: number, page = 0, size = 6) =>
 
 export const deleteDocument = (id: number) =>
   api.delete(`/documents/${id}`);
+
+export const renameDocument = (id: number, title: string) =>
+  api.patch<DocumentResponse>(`/documents/${id}`, null, { params: { title } }).then((r) => r.data);
 
 export const downloadDocument = (id: number) =>
   api.get<Blob>(`/documents/${id}/file`, { responseType: 'blob' }).then((r) => r.data);
@@ -234,6 +235,9 @@ export const adminDeleteUser = (id: number) =>
   api.delete(`/admin/users/${id}`);
 
 // --- Admin: Professors ---
+export const adminListProfessors = () =>
+  api.get<Professor[]>('/admin/professors').then((r) => r.data);
+
 export const getPendingProfessors = () =>
   api.get<Professor[]>('/admin/professors/pending').then((r) => r.data);
 
@@ -242,6 +246,9 @@ export const adminCreateProfessor = (name: string) =>
 
 export const approveProfessor = (id: number) =>
   api.put<Professor>(`/admin/professors/${id}/approve`).then((r) => r.data);
+
+export const adminDeleteProfessor = (id: number) =>
+  api.delete(`/admin/professors/${id}`);
 
 // --- Admin: Reports ---
 export const getPendingReports = (page = 0, size = 20) =>
@@ -259,6 +266,15 @@ export const getAdminDonations = (page = 0, size = 30) =>
 
 export const adminGrantAdFree = (userId: number, days: number) =>
   api.post<DonationResponse>(`/admin/users/${userId}/grant-ad-free`, null, { params: { days } }).then((r) => r.data);
+
+// --- Admin: Activity logs ---
+export const getActivityLogs = (page = 0, size = 50, type?: string) =>
+  api
+    .get<PageResponse<ActivityLog>>('/admin/activity-logs', { params: { page, size, ...(type ? { type } : {}) } })
+    .then((r) => r.data);
+
+export const purgeActivityLogs = (days: number) =>
+  api.delete<{ deleted: number }>('/admin/activity-logs', { params: { days } }).then((r) => r.data);
 
 // --- Notifications ---
 export const getNotificationsUnreadCount = () =>

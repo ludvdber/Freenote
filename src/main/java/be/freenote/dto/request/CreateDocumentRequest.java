@@ -6,13 +6,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class CreateDocumentRequest {
 
     @NotBlank(message = "Title is required")
-    @Size(max = 200, message = "Title must not exceed 200 characters")
+    @Size(max = 50, message = "Le titre ne doit pas dépasser 50 caractères")
     private String title;
 
     @NotNull(message = "Course ID is required")
@@ -33,6 +31,4 @@ public class CreateDocumentRequest {
     private boolean aiGenerated;
 
     private boolean anonymous;
-
-    private List<String> tags;
 }

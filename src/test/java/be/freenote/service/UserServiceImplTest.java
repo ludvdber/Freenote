@@ -32,6 +32,7 @@ class UserServiceImplTest {
     @Mock private DocumentRepository documentRepository;
     @Mock private ReportRepository reportRepository;
     @Mock private UserMapper userMapper;
+    @Mock private ActivityLogService activityLogService;
 
     @InjectMocks private UserServiceImpl userService;
 

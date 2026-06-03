@@ -28,7 +28,7 @@
   "stats": {
     "title": "En chiffres",
     "docs": "Documents",
-    "downloads": "Téléchargements",
+    "downloads": "Vues",
     "contributors": "Contributeurs",
     "courses": "Cours",
     "weekUploads": "docs ajoutés cette semaine"
@@ -74,7 +74,8 @@
   },
   "ad": {
     "disclaimer": "Pub — soutiens Freenote pour la cacher.",
-    "loginHint": "Connecte-toi pour que ton don désactive les pubs."
+    "loginHint": "Connecte-toi pour que ton don désactive les pubs.",
+    "afterDonation": "Tu viens de faire un don ? Recharge la page, les pubs disparaîtront (pas besoin de te reconnecter)."
   },
   "links": {
     "title": "Liens utiles",
@@ -101,9 +102,8 @@
     "year": "Année",
     "professor": "Professeur",
     "rating": "Note",
-    "downloads": "Téléchargements",
+    "downloads": "Vues",
     "publishedAt": "Publié le",
-    "tags": "Tags",
     "summary": "Résumé IA",
     "upload": "Partager un document",
     "delete": "Supprimer",
@@ -114,6 +114,9 @@
     "addFavorite": "Ajouter aux favoris",
     "removeFavorite": "Retirer des favoris",
     "reportPlaceholder": "Raison...",
+    "rename": "Renommer",
+    "renamePlaceholder": "Nouveau titre (50 caractères max)",
+    "deleteConfirm": "Supprimer définitivement ce document ? Cette action est irréversible.",
     "courseDocuments": "Documents du cours",
     "aiShort": "IA",
     "supporter": "Supporter",
@@ -129,7 +132,8 @@
       "reports": "Signalements",
       "delegates": "Délégués",
       "users": "Utilisateurs",
-      "donations": "Dons"
+      "donations": "Dons",
+      "activity": "Logs"
     },
     "docs": {
       "pending": "Documents en attente",
@@ -177,11 +181,13 @@
       "docCount_other": "{{count}} documents"
     },
     "profs": {
-      "pending": "Professeurs en attente",
-      "noPending": "Aucun professeur en attente d'approbation.",
-      "approve": "Approuver",
+      "all": "Tous les professeurs",
+      "empty": "Aucun professeur enregistré.",
       "createLabel": "Nom du professeur",
-      "create": "Ajouter"
+      "create": "Ajouter",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer le professeur",
+      "deleteConfirm": "Supprimer « {{name}} » ? Les documents qui le référencent garderont juste un professeur vide."
     },
     "reports": {
       "pending": "Signalements en attente",
@@ -223,6 +229,7 @@
       "unverify": "Retirer la vérification",
       "role": "Rôle",
       "xp": "{{xp}} XP",
+      "discord": "Discord",
       "delete": "Supprimer ce compte",
       "deleteTitle": "Supprimer le compte",
       "deleteConfirm": "Supprimer définitivement le compte de « {{username}} » ? Ses documents resteront en ligne mais seront affichés comme « Anonyme ». Action irréversible.",
@@ -248,6 +255,25 @@
       "active": "Actif",
       "adFreeUntil": "Sans-pub jusqu'au",
       "userSummary": "{{kofi}} don(s) Ko-fi · {{manual}} grant(s) manuel(s) · {{amount}} €"
+    },
+    "activity": {
+      "title": "Journal d'activité",
+      "subtitle": "Connexions, inscriptions, uploads, suppressions et bannissements. Purge automatique après 90 jours.",
+      "filterType": "Type",
+      "allTypes": "Tous",
+      "purgeOlderThan": "Supprimer au-delà de",
+      "daysOption": "{{days}} jours",
+      "purge": "Purger",
+      "purged": "{{count}} log(s) supprimé(s) (plus vieux que {{days}} jours).",
+      "empty": "Aucun log pour le moment.",
+      "types": {
+        "LOGIN": "Connexion",
+        "SIGNUP": "Inscription",
+        "UPLOAD": "Upload",
+        "DOC_VERIFY": "Vérification",
+        "DOC_DELETE": "Suppression",
+        "USER_BAN": "Bannissement"
+      }
     }
   },
   "upload": {
@@ -260,7 +286,6 @@
     "success": "Doc partagé — merci pour ta promo !",
     "successMessage": "Ton document est en ligne ! Il sera vérifié par un modérateur sous 24-48h. Tu recevras tes XP et badges après validation.",
     "pdfOnly": "PDF uniquement pour l'instant — convertis ton fichier et réessaie.",
-    "tagsHelper": "Sépare les tags par des virgules (ex: java, algo, s3)",
     "titleCounter": "{{count}}/{{max}}",
     "anonymousHelp": "Masque ton pseudo sur la page du document — les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même XP, badges et contributions sur ton profil.",
     "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document."

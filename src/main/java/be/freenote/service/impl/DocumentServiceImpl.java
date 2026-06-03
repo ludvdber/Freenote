@@ -5,19 +5,20 @@ import be.freenote.dto.request.UpdateDocumentRequest;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
 import be.freenote.entity.*;
+import be.freenote.enums.ActivityType;
 import be.freenote.enums.Category;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.mapper.DocumentMapper;
 import be.freenote.repository.*;
 import be.freenote.repository.Repositories;
 import be.freenote.event.XpEvent;
+import be.freenote.service.ActivityLogService;
 import be.freenote.service.DocumentService;
 import be.freenote.service.MeilisearchService;
 import be.freenote.service.MinioService;
 import be.freenote.service.PdfValidationService;
 import be.freenote.service.StatsService;
 import be.freenote.util.FileUtil;
-import be.freenote.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final StatsService statsService;
     private final ApplicationEventPublisher eventPublisher;
     private final StringRedisTemplate redisTemplate;
+    private final ActivityLogService activityLogService;
 
     @Override
     @Transactional
@@ -80,7 +82,7 @@ public class DocumentServiceImpl implements DocumentService {
         minioService.upload(fileKey, new ByteArrayInputStream(pdfBytes), pdfBytes.length, PDF_CONTENT_TYPE);
 
         Document document = Document.builder()
-                .title(HtmlSanitizer.escape(request.getTitle()))
+                .title(request.getTitle().trim())
                 .course(course)
                 .category(category)
                 .fileKey(fileKey)
@@ -95,20 +97,13 @@ public class DocumentServiceImpl implements DocumentService {
 
         Document saved = documentRepository.save(document);
 
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            request.getTags().forEach(label -> {
-                Tag tag = Tag.builder().document(saved).label(HtmlSanitizer.escape(label.toLowerCase())).build();
-                saved.getTags().add(tag);
-            });
-            documentRepository.save(saved);
-        }
-
         meilisearchService.indexDocument(saved); // async — does not block the transaction
         statsService.invalidateCache();
         // XP is awarded when admin verifies the document, not at upload — prevents spam farming
 
         log.info("Document uploaded: id={}, title='{}', user={}, size={}KB",
                 saved.getId(), saved.getTitle(), userId, pdfBytes.length / 1024);
+        activityLogService.log(ActivityType.UPLOAD, userId, user.getUsername(), saved.getTitle());
 
         return documentMapper.toResponse(saved);
     }
@@ -167,6 +162,24 @@ public class DocumentServiceImpl implements DocumentService {
         documentRepository.delete(document);
         statsService.invalidateCache();
         log.info("Document deleted: id={}, by user={}", documentId, userId);
+        activityLogService.log(ActivityType.DOC_DELETE, userId, user.getUsername(), document.getTitle());
+    }
+
+    @Override
+    @Transactional
+    public DocumentResponse rename(Long documentId, Long userId, String newTitle) {
+        Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
+        if (document.getUser() == null || !document.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("You can only rename your own documents");
+        }
+        String trimmed = newTitle == null ? "" : newTitle.trim();
+        if (trimmed.isEmpty() || trimmed.length() > 50) {
+            throw new IllegalArgumentException("Le titre doit faire entre 1 et 50 caractères.");
+        }
+        document.setTitle(trimmed);
+        Document saved = documentRepository.save(document);
+        meilisearchService.indexDocument(saved);
+        return documentMapper.toResponse(saved);
     }
 
     @Override
@@ -198,6 +211,7 @@ public class DocumentServiceImpl implements DocumentService {
             eventPublisher.publishEvent(new XpEvent.DocumentVerified(document.getUser().getId(), documentId));
         }
         statsService.invalidateCache();
+        activityLogService.log(ActivityType.DOC_VERIFY, null, "Admin", document.getTitle());
 
         return documentMapper.toResponse(saved);
     }
@@ -208,7 +222,7 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
 
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            document.setTitle(HtmlSanitizer.escape(request.getTitle()));
+            document.setTitle(request.getTitle().trim());
         }
         if (request.getCourseId() != null) {
             Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
@@ -230,17 +244,6 @@ public class DocumentServiceImpl implements DocumentService {
             Professor professor = Repositories.findByIdOrThrow(professorRepository, request.getProfessorId(), "Professor");
             document.setProfessor(professor);
         }
-        if (request.getTags() != null) {
-            document.getTags().clear();
-            request.getTags().forEach(label -> {
-                Tag tag = Tag.builder()
-                        .document(document)
-                        .label(HtmlSanitizer.escape(label.toLowerCase()))
-                        .build();
-                document.getTags().add(tag);
-            });
-        }
-
         Document saved = documentRepository.save(document);
         meilisearchService.indexDocument(saved);
         return documentMapper.toResponse(saved);
@@ -254,6 +257,7 @@ public class DocumentServiceImpl implements DocumentService {
         meilisearchService.deleteDocument(document.getId());
         documentRepository.delete(document);
         statsService.invalidateCache();
+        activityLogService.log(ActivityType.DOC_DELETE, null, "Admin", document.getTitle());
     }
 
     // --- Download with Redis buffer ---

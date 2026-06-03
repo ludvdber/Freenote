@@ -4,12 +4,15 @@
 -- Reflète l'état réel attendu par les entités JPA (ddl-auto=validate).
 -- Consolidation 2026-06-01 des anciennes V1..V7 (elles-mêmes issues de la fusion
 -- V1..V16 du 2026-05-27) en un seul fichier, avant le premier déploiement (pas de
--- prod existante à préserver). Toute modif ULTÉRIEURE = nouveau fichier V2, V3, …
+-- prod existante à préserver). L'ex-`V2__activity_logs.sql` a été re-fusionné ici le
+-- 2026-06-03 (toujours avant tout déploiement) → schéma à nouveau dans UN seul fichier.
+-- Toute modif ULTÉRIEURE = nouveau fichier V2, V3, … (jamais d'édition de ce V1 une fois
+-- déployé, sous peine d'invalider le checksum Flyway).
 --
 -- Tables ordonnées selon leurs dépendances de clés étrangères :
 --   users → sections → user_profiles → user_oauth_links → professors → courses
 --   → documents → tags → ratings → favorites → reports → donations
---   → delegate_history → notifications → bans
+--   → delegate_history → notifications → bans → activity_logs
 
 -- ----------------------------------------------------------------
 -- USERS — identité technique
@@ -256,3 +259,22 @@ CREATE TABLE bans (
 
 CREATE INDEX idx_bans_email_hash ON bans(email_hash);
 CREATE INDEX idx_bans_oauth      ON bans(oauth_provider, oauth_id);
+
+-- ----------------------------------------------------------------
+-- ACTIVITY_LOGS — journal d'audit admin (connexions, uploads, suppressions, vérifs, bans)
+-- ----------------------------------------------------------------
+-- Borné par un auto-prune quotidien (app.activity-log.retention-days, défaut 90 j) + un bouton
+-- admin « purger les logs de plus de N jours » → ne remplit jamais le disque. actor_id nullable
+-- (ON DELETE SET NULL) + actor_name snapshot pour survivre à la suppression/au ban de l'acteur.
+CREATE TABLE activity_logs (
+    id          BIGSERIAL    PRIMARY KEY,
+    type        VARCHAR(40)  NOT NULL,
+    actor_id    BIGINT,
+    actor_name  VARCHAR(255),
+    message     VARCHAR(255),
+    created_at  TIMESTAMP    NOT NULL DEFAULT now(),
+    CONSTRAINT fk_activity_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_activity_created ON activity_logs (created_at DESC);
+CREATE INDEX idx_activity_type    ON activity_logs (type);

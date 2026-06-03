@@ -5,7 +5,6 @@ import {
   Button,
   TextField,
   IconButton,
-  Chip,
   Tooltip,
   Dialog,
   DialogTitle,
@@ -13,7 +12,7 @@ import {
   DialogActions,
   Alert,
 } from '@mui/material';
-import { Add, Edit, Delete, CheckCircle } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,7 +20,6 @@ import {
   adminCreateSection,
   adminRenameSection,
   adminDeleteSection,
-  approveSection,
 } from '@/api/endpoints';
 import GlassCard from '@/components/ui/GlassCard';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
@@ -78,11 +76,6 @@ export default function AdminSections() {
     },
   });
 
-  const approveMut = useMutation({
-    mutationFn: approveSection,
-    onSuccess: invalidate,
-  });
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -129,14 +122,6 @@ export default function AdminSections() {
               {t('admin.sections.docCount', { count: s.documentCount })}
             </Typography>
           </Box>
-          {!s.approved && (
-            <Tooltip title={t('admin.sections.approve')}>
-              <IconButton size="small" color="success" onClick={() => approveMut.mutate(s.id)}>
-                <CheckCircle fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {!s.approved && <Chip size="small" color="warning" label={t('admin.sections.pending')} />}
           <Tooltip title={t('admin.sections.rename')}>
             <IconButton
               size="small"

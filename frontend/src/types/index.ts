@@ -46,7 +46,6 @@ export interface DocumentResponse {
   professorName: string | null;
   averageRating: number;
   downloadCount: number;
-  tags: string[];
   createdAt: string;
 }
 
@@ -166,7 +165,6 @@ export interface UpdateDocumentRequest {
   year?: string;
   professorId?: number;
   verified?: boolean;
-  tags?: string[];
 }
 
 export interface CreateDocumentRequest {
@@ -178,7 +176,15 @@ export interface CreateDocumentRequest {
   language: string;
   aiGenerated: boolean;
   anonymous: boolean;
-  tags?: string[];
+}
+
+export interface ActivityLog {
+  id: number;
+  type: string;
+  actorId: number | null;
+  actorName: string | null;
+  message: string | null;
+  createdAt: string;
 }
 
 export interface UpdateProfileRequest {

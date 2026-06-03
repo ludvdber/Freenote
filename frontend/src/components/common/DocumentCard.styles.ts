@@ -67,15 +67,6 @@ export const downloadsRow: Sx = {
 
 export const downloadsIcon: Sx = { fontSize: 14, color: 'text.secondary' };
 
-export const tagsRow: Sx = {
-  display: 'flex',
-  gap: 0.5,
-  mt: 1,
-  flexWrap: 'wrap',
-};
-
-export const tagChip: Sx = { fontSize: 10, height: 20 };
-
 export const createdAt: Sx = {
   mt: 1,
   display: 'block',

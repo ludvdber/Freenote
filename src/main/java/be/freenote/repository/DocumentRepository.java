@@ -81,7 +81,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     @Query("SELECT DISTINCT d FROM Document d " +
            "LEFT JOIN FETCH d.course c " +
            "LEFT JOIN FETCH c.section " +
-           "LEFT JOIN FETCH d.professor " +
-           "LEFT JOIN FETCH d.tags")
+           "LEFT JOIN FETCH d.professor")
     List<Document> findAllWithAssociations();
 }

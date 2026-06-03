@@ -72,8 +72,7 @@ class DocumentLifecycleTest extends AbstractIntegrationTest {
                     "category": "SYNTHESE",
                     "language": "FR",
                     "aiGenerated": false,
-                    "anonymous": false,
-                    "tags": ["algo", "java"]
+                    "anonymous": false
                 }
                 """.formatted(course.getId());
 

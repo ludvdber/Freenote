@@ -6,7 +6,6 @@ import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.security.AdminRoleVerificationFilter;
 import be.freenote.security.JwtAuthFilter;
 import be.freenote.service.DocumentService;
-import be.freenote.service.TagService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -31,14 +30,13 @@ class DocumentControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @MockitoBean private DocumentService documentService;
-    @MockitoBean private TagService tagService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
     @MockitoBean private AdminRoleVerificationFilter adminRoleVerificationFilter;
 
     private static final DocumentResponse DOC = new DocumentResponse(
             1L, "Test Doc", 1L, "Java", "Info", "SYNTHESE", "Alice", 7L,
             true, false, "FR", "2025", null, 4.5, 10,
-            List.of("java"), LocalDateTime.now()
+            LocalDateTime.now()
     );
 
     @Test

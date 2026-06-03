@@ -9,6 +9,7 @@ import be.freenote.entity.Section;
 import be.freenote.entity.User;
 import be.freenote.entity.UserOauthLink;
 import be.freenote.entity.UserProfile;
+import be.freenote.enums.ActivityType;
 import be.freenote.enums.AvatarSource;
 import be.freenote.exception.DuplicateResourceException;
 import be.freenote.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ import be.freenote.repository.ReportRepository;
 import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
+import be.freenote.service.ActivityLogService;
 import be.freenote.service.UserService;
 import be.freenote.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final UserOauthLinkRepository oauthLinkRepository;
     private final BanRepository banRepository;
     private final UserMapper userMapper;
+    private final ActivityLogService activityLogService;
 
     @Override
     public UserResponse getProfile(Long userId) {
@@ -211,6 +214,7 @@ public class UserServiceImpl implements UserService {
         }
 
         anonymizeAndDelete(user);
+        activityLogService.log(ActivityType.USER_BAN, adminId, "Admin", "Bannissement: " + user.getUsername());
         log.warn("Admin {} banned and wiped user: id={}, username={}", adminId, targetUserId, user.getUsername());
     }
 

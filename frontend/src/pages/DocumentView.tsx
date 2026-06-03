@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert } from '@mui/material';
-import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy } from '@mui/icons-material';
+import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +12,8 @@ import {
   getAverageRating,
   recordDocVisit,
   getFavoriteStatus,
+  deleteDocument,
+  renameDocument,
 } from '@/api/endpoints';
 import { Helmet } from 'react-helmet-async';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -26,13 +28,16 @@ import * as s from './DocumentView.styles';
 
 export default function DocumentView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { token, isVerified } = useAuthStore();
+  const { token, isVerified, user } = useAuthStore();
   const queryClient = useQueryClient();
   const [reportReason, setReportReason] = useState('');
   const [showReport, setShowReport] = useState(false);
   const [isFav, setIsFav] = useState(false);
   const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
+  const [showRename, setShowRename] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -52,6 +57,10 @@ export default function DocumentView() {
     queryKey: ['favorite-status', id],
     queryFn: () => getFavoriteStatus(Number(id)),
     enabled: !!id && !!token,
+    // Always reflect the server's truth when opening the doc — otherwise favoriting elsewhere
+    // (a card, another view) leaves a stale "add to favorites" here until a manual refresh.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Sync the heart icon with the server's favorite status when it loads/changes. Adjusting
@@ -76,7 +85,14 @@ export default function DocumentView() {
 
   const rateMutation = useMutation({
     mutationFn: (score: number) => rateDocument(Number(id), { score }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rating', id] }),
+    onSuccess: () => {
+      // Refresh the new average everywhere the doc's rating shows: the viewer itself, the
+      // explorer list cards and the home "popular" rail — otherwise they stay stale until a reload.
+      queryClient.invalidateQueries({ queryKey: ['rating', id] });
+      queryClient.invalidateQueries({ queryKey: ['document', id] });
+      queryClient.invalidateQueries({ queryKey: ['search'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+    },
   });
 
   const favMutation = useMutation({
@@ -85,6 +101,27 @@ export default function DocumentView() {
       setIsFav(data.isFavorite);
       queryClient.setQueryData(['favorite-status', id], data);
       queryClient.invalidateQueries({ queryKey: ['my-favorites'] });
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: () => renameDocument(Number(id), renameValue.trim()),
+    onSuccess: () => {
+      setShowRename(false);
+      queryClient.invalidateQueries({ queryKey: ['document', id] });
+      queryClient.invalidateQueries({ queryKey: ['search'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+      if (user?.id) queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteDocument(Number(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['search'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+      if (user?.id) queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
+      navigate('/browse');
     },
   });
 
@@ -118,6 +155,8 @@ export default function DocumentView() {
       </PageWrapper>
     );
   }
+
+  const isOwner = doc.authorId != null && user?.id === doc.authorId;
 
   return (
     <PageWrapper maxWidth="lg">
@@ -153,7 +192,8 @@ export default function DocumentView() {
           {doc.title}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={s.subtitle}>
-          {doc.courseName} — {doc.sectionName} — {doc.authorName}
+          {doc.courseName} — {doc.sectionName}
+          {!doc.authorId && ` — ${doc.authorName}`}
         </Typography>
       </Box>
 
@@ -218,14 +258,6 @@ export default function DocumentView() {
 
       {doc.authorId && <UploaderCard authorId={doc.authorId} />}
 
-      {doc.tags.length > 0 && (
-        <Box sx={s.tagsRow}>
-          {doc.tags.map((tag) => (
-            <Chip key={tag} label={tag} size="small" variant="outlined" />
-          ))}
-        </Box>
-      )}
-
       <Box sx={s.ratingRow}>
         <Box sx={s.ratingInner}>
           <Typography variant="body2" color="text.secondary">
@@ -274,6 +306,31 @@ export default function DocumentView() {
             {t('document.report')}
           </Button>
         )}
+        {isOwner && (
+          <>
+            <Button
+              variant="outlined"
+              startIcon={<Edit />}
+              onClick={() => {
+                setRenameValue(doc.title);
+                setShowRename((v) => !v);
+              }}
+            >
+              {t('document.rename')}
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteOutlined />}
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
+              }}
+            >
+              {t('document.delete')}
+            </Button>
+          </>
+        )}
       </Box>
 
       <Snackbar open={shareStatus !== null} autoHideDuration={2000} onClose={() => setShareStatus(null)}>
@@ -298,6 +355,27 @@ export default function DocumentView() {
             disabled={!reportReason}
           >
             {t('common.confirm')}
+          </Button>
+        </Box>
+      )}
+
+      {showRename && isOwner && (
+        <Box sx={s.reportRow}>
+          <TextField
+            size="small"
+            fullWidth
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value.slice(0, 50))}
+            placeholder={t('document.renamePlaceholder')}
+            helperText={`${renameValue.length}/50`}
+            slotProps={{ htmlInput: { maxLength: 50 } }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => renameMutation.mutate()}
+            disabled={!renameValue.trim() || renameMutation.isPending}
+          >
+            {t('common.save')}
           </Button>
         </Box>
       )}

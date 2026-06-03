@@ -1,7 +1,6 @@
 package be.freenote.dto.response;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record DocumentResponse(
         Long id,
@@ -19,6 +18,5 @@ public record DocumentResponse(
         String professorName,
         double averageRating,
         int downloadCount,
-        List<String> tags,
         LocalDateTime createdAt
 ) {}

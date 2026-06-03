@@ -2,7 +2,6 @@ package be.freenote.service.impl;
 
 import be.freenote.config.MeilisearchConfig;
 import be.freenote.entity.Document;
-import be.freenote.entity.Tag;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.service.MeilisearchService;
 import tools.jackson.databind.JsonNode;
@@ -80,7 +79,6 @@ public class MeilisearchServiceImpl implements MeilisearchService {
             // Configure searchable attributes (priority order)
             ArrayNode searchableAttrs = objectMapper.createArrayNode();
             searchableAttrs.add("title");
-            searchableAttrs.add("tags");
             searchableAttrs.add("courseName");
             searchableAttrs.add("sectionName");
             searchableAttrs.add("professorName");
@@ -189,11 +187,6 @@ public class MeilisearchServiceImpl implements MeilisearchService {
             }
             if (document.getCreatedAt() != null) {
                 doc.put("createdAt", document.getCreatedAt().toString());
-            }
-
-            ArrayNode tagsArray = doc.putArray("tags");
-            if (document.getTags() != null) {
-                document.getTags().stream().map(Tag::getLabel).forEach(tagsArray::add);
             }
 
             ArrayNode docs = objectMapper.createArrayNode();

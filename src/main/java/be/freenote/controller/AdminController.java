@@ -4,6 +4,7 @@ import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.CreateCourseRequest;
 import be.freenote.dto.request.CreateProfessorRequest;
 import be.freenote.dto.request.UpdateDocumentRequest;
+import be.freenote.dto.response.ActivityLogResponse;
 import be.freenote.dto.response.CourseResponse;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.DonationResponse;
@@ -21,7 +22,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -36,12 +39,29 @@ public class AdminController {
     private final UserService userService;
     private final DonationService donationService;
     private final SmtpKeepAliveService smtpKeepAliveService;
+    private final ActivityLogService activityLogService;
 
     // --- System / SMTP keep-alive (the "compteur" of days since the last sent email) ---
 
     @GetMapping("/smtp-status")
     public ResponseEntity<SmtpStatusResponse> getSmtpStatus() {
         return ResponseEntity.ok(smtpKeepAliveService.getStatus());
+    }
+
+    // --- Activity logs (admin audit trail) ---
+
+    @GetMapping("/activity-logs")
+    public ResponseEntity<PageResponse<ActivityLogResponse>> listActivityLogs(
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(activityLogService.list(type, PageRequest.of(page, size)));
+    }
+
+    @DeleteMapping("/activity-logs")
+    public ResponseEntity<Map<String, Integer>> purgeActivityLogs(@RequestParam(defaultValue = "30") int days) {
+        int deleted = activityLogService.purgeBefore(LocalDateTime.now().minusDays(days));
+        return ResponseEntity.ok(Map.of("deleted", deleted));
     }
 
     // --- Documents ---
@@ -104,6 +124,11 @@ public class AdminController {
 
     // --- Professors ---
 
+    @GetMapping("/professors")
+    public ResponseEntity<List<ProfessorResponse>> listProfessors() {
+        return ResponseEntity.ok(professorService.getAllForAdmin());
+    }
+
     @GetMapping("/professors/pending")
     public ResponseEntity<List<ProfessorResponse>> getPendingProfessors() {
         return ResponseEntity.ok(professorService.getPending());
@@ -117,6 +142,12 @@ public class AdminController {
     @PutMapping("/professors/{id}/approve")
     public ResponseEntity<ProfessorResponse> approveProfessor(@PathVariable Long id) {
         return ResponseEntity.ok(professorService.approve(id));
+    }
+
+    @DeleteMapping("/professors/{id}")
+    public ResponseEntity<Void> deleteProfessor(@PathVariable Long id) {
+        professorService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     // --- Sections ---

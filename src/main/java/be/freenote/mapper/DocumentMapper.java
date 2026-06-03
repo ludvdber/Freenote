@@ -2,10 +2,7 @@ package be.freenote.mapper;
 
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.entity.Document;
-import be.freenote.entity.Tag;
 import org.mapstruct.*;
-
-import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface DocumentMapper {
@@ -17,7 +14,6 @@ public interface DocumentMapper {
     @Mapping(target = "authorName", expression = "java(mapAuthorName(document))")
     @Mapping(target = "authorId", expression = "java(mapAuthorId(document))")
     @Mapping(target = "professorName", source = "professor.name")
-    @Mapping(target = "tags", source = "tags")
     @Mapping(target = "averageRating", expression = "java(document.getAverageRating().doubleValue())")
     @Mapping(target = "downloadCount", source = "downloadCount")
     DocumentResponse toResponse(Document document);
@@ -26,8 +22,7 @@ public interface DocumentMapper {
         if (document.isAnonymous() || document.getUser() == null) {
             return "Anonyme";
         }
-        // Honour the uploader's "display real name" preference everywhere their name appears
-        // (document cards, viewer, browse) — not just the community carousel.
+        // Honour the uploader's "display real name" preference everywhere their name appears.
         var user = document.getUser();
         return UserMapper.resolveDisplayName(user.getProfile(), user.getUsername());
     }
@@ -38,12 +33,5 @@ public interface DocumentMapper {
             return null;
         }
         return document.getUser().getId();
-    }
-
-    default List<String> mapTags(List<Tag> tags) {
-        if (tags == null) {
-            return List.of();
-        }
-        return tags.stream().map(Tag::getLabel).toList();
     }
 }

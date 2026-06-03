@@ -28,6 +28,13 @@ public class ProfessorServiceImpl implements ProfessorService {
     }
 
     @Override
+    public List<ProfessorResponse> getAllForAdmin() {
+        return professorRepository.findAllByOrderByNameAsc().stream()
+                .map(professorMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public ProfessorResponse create(String name) {
         Professor professor = Professor.builder()
@@ -59,5 +66,12 @@ public class ProfessorServiceImpl implements ProfessorService {
         return professorRepository.findByApprovedFalse().stream()
                 .map(professorMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        Professor professor = Repositories.findByIdOrThrow(professorRepository, id, "Professor");
+        professorRepository.delete(professor);
     }
 }

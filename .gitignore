@@ -40,11 +40,19 @@ bin/
 Thumbs.db
 desktop.ini
 
-# --- Environment ---
+# --- Environment & secrets (commit only the *.example templates) ---
 .env
+*.env
+!*.env.example
 *.env.local
 local-real.env
 local-real.cmd
+# Populated prod env files (templates deploy/*.env.example stay tracked)
+deploy/freenote.env
+deploy/data.env
+# age backup keys + encrypted dumps — NEVER commit the private key
+backup.key
+*.age
 
 # --- Application ---
 logs/

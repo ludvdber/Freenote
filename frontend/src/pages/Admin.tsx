@@ -13,6 +13,7 @@ const AdminReports = lazy(() => import('@/components/admin/AdminReports'));
 const AdminDelegates = lazy(() => import('@/components/admin/AdminDelegates'));
 const AdminUsers = lazy(() => import('@/components/admin/AdminUsers'));
 const AdminDonations = lazy(() => import('@/components/admin/AdminDonations'));
+const AdminActivityLogs = lazy(() => import('@/components/admin/AdminActivityLogs'));
 
 const PANELS = [
   AdminDocuments,
@@ -23,6 +24,7 @@ const PANELS = [
   AdminDelegates,
   AdminUsers,
   AdminDonations,
+  AdminActivityLogs,
 ];
 
 function TabFallback() {
@@ -52,6 +54,7 @@ export default function Admin() {
         <Tab label={t('admin.tabs.delegates')} />
         <Tab label={t('admin.tabs.users')} />
         <Tab label={t('admin.tabs.donations')} />
+        <Tab label={t('admin.tabs.activity')} />
       </Tabs>
 
       <Suspense fallback={<TabFallback />}>

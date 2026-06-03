@@ -10,4 +10,5 @@ import java.util.List;
 public interface ProfessorRepository extends JpaRepository<Professor, Long> {
     List<Professor> findByApprovedFalse();
     List<Professor> findByApprovedTrue();
+    List<Professor> findAllByOrderByNameAsc();
 }

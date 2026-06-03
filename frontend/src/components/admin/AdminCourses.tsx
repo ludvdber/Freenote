@@ -5,7 +5,6 @@ import {
   Button,
   TextField,
   IconButton,
-  Chip,
   Tooltip,
   FormControl,
   InputLabel,
@@ -17,7 +16,7 @@ import {
   DialogActions,
   Alert,
 } from '@mui/material';
-import { Add, Edit, Delete, CheckCircle } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,7 +24,6 @@ import {
   adminCreateCourse,
   adminRenameCourse,
   adminDeleteCourse,
-  approveCourse,
   getSections,
 } from '@/api/endpoints';
 import { STALE_15M } from '@/lib/constants';
@@ -51,7 +49,6 @@ export default function AdminCourses() {
   const [createName, setCreateName] = useState('');
   const [createSectionId, setCreateSectionId] = useState<number | ''>('');
   const [filterSectionId, setFilterSectionId] = useState<number | 'all'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved'>('all');
   const [editTarget, setEditTarget] = useState<Course | null>(null);
   const [editName, setEditName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
@@ -64,13 +61,8 @@ export default function AdminCourses() {
 
   const filtered = useMemo(() => {
     if (!courses) return [];
-    return courses.filter((c) => {
-      if (filterSectionId !== 'all' && c.sectionId !== filterSectionId) return false;
-      if (filterStatus === 'pending' && c.approved) return false;
-      if (filterStatus === 'approved' && !c.approved) return false;
-      return true;
-    });
-  }, [courses, filterSectionId, filterStatus]);
+    return courses.filter((c) => filterSectionId === 'all' || c.sectionId === filterSectionId);
+  }, [courses, filterSectionId]);
 
   const createMut = useMutation({
     mutationFn: () => adminCreateCourse({ name: createName.trim(), sectionId: createSectionId as number }),
@@ -98,11 +90,6 @@ export default function AdminCourses() {
       setDeleteTarget(null);
       invalidate();
     },
-  });
-
-  const approveMut = useMutation({
-    mutationFn: approveCourse,
-    onSuccess: invalidate,
   });
 
   return (
@@ -157,18 +144,6 @@ export default function AdminCourses() {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>{t('admin.courses.filterStatus')}</InputLabel>
-          <Select
-            value={filterStatus}
-            label={t('admin.courses.filterStatus')}
-            onChange={(e) => setFilterStatus(e.target.value as 'all' | 'pending' | 'approved')}
-          >
-            <MenuItem value="all">{t('admin.courses.all')}</MenuItem>
-            <MenuItem value="pending">{t('admin.courses.pending')}</MenuItem>
-            <MenuItem value="approved">{t('admin.courses.approved')}</MenuItem>
-          </Select>
-        </FormControl>
       </Box>
 
       {isLoading && <Typography color="text.secondary">{t('common.loading')}</Typography>}
@@ -181,14 +156,6 @@ export default function AdminCourses() {
               {c.sectionName} · {t('admin.courses.docCount', { count: c.documentCount })}
             </Typography>
           </Box>
-          {!c.approved && <Chip size="small" color="warning" label={t('admin.courses.pending')} />}
-          {!c.approved && (
-            <Tooltip title={t('admin.courses.approve')}>
-              <IconButton size="small" color="success" onClick={() => approveMut.mutate(c.id)}>
-                <CheckCircle fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
           <Tooltip title={t('admin.courses.rename')}>
             <IconButton size="small" onClick={() => { setEditTarget(c); setEditName(c.name); }}>
               <Edit fontSize="small" />

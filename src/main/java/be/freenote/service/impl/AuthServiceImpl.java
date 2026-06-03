@@ -4,6 +4,7 @@ import be.freenote.entity.User;
 import be.freenote.entity.UserOauthLink;
 import be.freenote.entity.UserProfile;
 import be.freenote.enums.AvatarSource;
+import be.freenote.enums.ActivityType;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.RateLimitExceededException;
 import be.freenote.exception.ServiceUnavailableException;
@@ -12,6 +13,7 @@ import be.freenote.repository.Repositories;
 import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.security.JwtTokenProvider;
+import be.freenote.service.ActivityLogService;
 import be.freenote.service.AuthService;
 import be.freenote.service.SmtpKeepAliveService;
 import be.freenote.util.HashUtil;
@@ -49,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
     private final SmtpKeepAliveService smtpKeepAliveService;
+    private final ActivityLogService activityLogService;
 
     @Value("${app.email.hash-salt}")
     private String emailHashSalt;
@@ -83,8 +86,23 @@ public class AuthServiceImpl implements AuthService {
         // user we refresh the captured Discord avatar so a profile-picture change propagates.
         oauthLinkRepository.findByProviderAndOauthId(provider, oauthId)
                 .ifPresentOrElse(
-                        link -> refreshDiscordAvatar(link.getUser(), oAuth2User, oauthId),
-                        () -> createUserFromOAuth(oAuth2User, provider, oauthId));
+                        link -> {
+                            User user = link.getUser();
+                            refreshDiscordAvatar(user, oAuth2User, oauthId);
+                            activityLogService.log(ActivityType.LOGIN, user.getId(), user.getUsername(), "Connexion");
+                        },
+                        () -> {
+                            User created = createUserFromOAuth(oAuth2User, provider, oauthId);
+                            // actorId null: the new account isn't committed yet, so the REQUIRES_NEW
+                            // log tx can't satisfy the FK — only a name snapshot is kept. The internal
+                            // username is the throwaway "membre-xxxx" placeholder at this point (the
+                            // user picks a real pseudo during onboarding), so snapshot the Discord
+                            // handle instead — it's the only human-readable identity available here.
+                            String discordHandle = discordUsername(oAuth2User);
+                            activityLogService.log(ActivityType.SIGNUP, null,
+                                    discordHandle != null ? discordHandle : created.getUsername(),
+                                    "Création de compte via Discord");
+                        });
     }
 
     private User createUserFromOAuth(OAuth2User oAuth2User, String provider, String oauthId) {

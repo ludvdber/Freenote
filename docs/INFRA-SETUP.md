@@ -170,21 +170,25 @@ docker run --rm hello-world   # doit réussir → nesting OK
 
 ## 7. Les 4 services data (Docker compose dans le LXC)
 
-Le `docker-compose.yml` du repo marche, **mais durcis-le pour la prod** :
-
-- **N'expose les ports que sur `127.0.0.1`** (l'app tourne sur l'hôte LXC, pas dans un
-  conteneur, et les joint en loopback) : `"127.0.0.1:5432:5432"`, etc. Ne jamais publier
-  5432/6379/9000/7700 sur l'IP publique.
-- **Change tous les secrets par défaut** : `POSTGRES_PASSWORD`, `MINIO_ROOT_USER/PASSWORD`,
-  `MEILI_MASTER_KEY`. Mets `MEILI_ENV: production`.
-- Garde les volumes nommés (persistance).
+Un compose **déjà durci pour la prod** est fourni : **`deploy/docker-compose.prod.yml`**
+(le `docker-compose.yml` à la racine est la version *dev*, à ne pas utiliser en prod). Ses
+différences : ports bornés à `127.0.0.1` uniquement, secrets via un `.env` sibling (jamais en
+dur), `MEILI_ENV=production`, `restart: unless-stopped`, volumes nommés persistants.
 
 ```bash
 mkdir -p /opt/freenote && cd /opt/freenote
-# copie docker-compose.yml ici, applique les durcissements ci-dessus
+cp <repo>/deploy/docker-compose.prod.yml docker-compose.yml
+cp <repo>/deploy/data.env.example       .env     # remplir chaque secret, puis :
+chmod 600 .env
 docker compose up -d
-docker compose ps     # tous "healthy"
+docker compose ps     # les 4 doivent être (healthy)
 ```
+
+⚠️ **Cohérence des secrets** : les valeurs de `.env` (Docker) et `/etc/freenote/freenote.env`
+(app) doivent correspondre : `POSTGRES_USER/PASSWORD`↔`DB_USERNAME/DB_PASSWORD`,
+`MINIO_ROOT_USER/PASSWORD`↔`MINIO_ACCESS_KEY/SECRET_KEY`, `MEILI_MASTER_KEY`↔`MEILISEARCH_API_KEY`.
+Ne jamais publier 5432/6379/9000/7700 sur l'IP publique (le binding `127.0.0.1` du compose
+prod s'en charge).
 
 ---
 
@@ -316,6 +320,22 @@ livrée** : toute évolution de schéma = nouveau fichier `V2`, `V3`…
 12. [ ] Se promouvoir admin (SQL)
 13. [ ] Backups : clés age générées, timer actif, restore drill
 14. [ ] DMARC passé à `p=reject` une fois la délivrabilité confirmée
+
+---
+
+## 15. Après la mise en ligne (hors périmètre Proxmox)
+
+Ces points ne concernent pas l'infra Proxmox/nginx/Cloudflare mais conditionnent l'ouverture
+au public — à traiter par le dev / l'admin du site, pas par l'IA infra :
+
+- **Premier admin** : section 11 (SQL `UPDATE users SET role='ADMIN'` puis **se reconnecter via
+  Discord** une fois — le rôle est porté par le cookie JWT, émis à la connexion).
+- **AdSense** : le site doit être live AVANT de demander l'examen. Procédure complète (ads.txt,
+  snippet `<head>`, élargissement CSP, CMP RGPD obligatoire en Belgique) dans
+  [`ADSENSE.md`](ADSENSE.md).
+- **Revue légale** : faire relire CGU / `/privacy` / `/terms` (la pub AdSense + cookies doivent y
+  figurer) et bumper la date « dernière mise à jour » avant l'ouverture grand public.
+- **DMARC** : passer de `p=quarantine` à `p=reject` une fois la délivrabilité Brevo confirmée.
 
 ---
 

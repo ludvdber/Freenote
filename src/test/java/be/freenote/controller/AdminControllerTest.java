@@ -33,6 +33,7 @@ class AdminControllerTest {
     @MockitoBean private UserService userService;
     @MockitoBean private DonationService donationService;
     @MockitoBean private SmtpKeepAliveService smtpKeepAliveService;
+    @MockitoBean private ActivityLogService activityLogService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
     @MockitoBean private AdminRoleVerificationFilter adminRoleVerificationFilter;
 

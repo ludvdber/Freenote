@@ -3,12 +3,10 @@ package be.freenote.dto.request;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class UpdateDocumentRequest {
 
-    @Size(max = 255, message = "Title must not exceed 255 characters")
+    @Size(max = 50, message = "Le titre ne doit pas dépasser 50 caractères")
     private String title;
 
     private Long courseId;
@@ -23,6 +21,4 @@ public class UpdateDocumentRequest {
     private Long professorId;
 
     private Boolean verified;
-
-    private List<String> tags;
 }

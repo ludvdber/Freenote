@@ -1,5 +1,5 @@
 import { Box, Typography, Chip, Skeleton } from '@mui/material';
-import { Download, Verified, EmojiEvents, FavoriteBorder } from '@mui/icons-material';
+import { Visibility, Verified, EmojiEvents, FavoriteBorder } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -77,7 +77,7 @@ export default function PopularDocs() {
                   />
                   {doc.verified && <Verified sx={s.verifiedIcon} />}
                   <Box sx={s.dlCol}>
-                    <Download sx={s.dlIcon} />
+                    <Visibility sx={s.dlIcon} />
                     <Typography variant="caption" className="mono" color="text.secondary">
                       {formatNumber(doc.downloadCount)}
                     </Typography>

@@ -11,7 +11,6 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
-  Autocomplete,
   Tooltip,
   IconButton,
   FormHelperText,
@@ -21,7 +20,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { uploadDocument, getSections, getCourses, getProfessors, getTagSuggestions } from '@/api/endpoints';
+import { uploadDocument, getSections, getCourses, getProfessors } from '@/api/endpoints';
 import { CATEGORIES, MAX_FILE_SIZE, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -41,14 +40,13 @@ export default function Upload() {
   const [language, setLanguage] = useState('FR');
   const [anonymous, setAnonymous] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const TITLE_MAX = 200;
+  const TITLE_MAX = 50;
 
   const { data: sections } = useQuery({ queryKey: ['sections'], queryFn: getSections, staleTime: STALE_15M });
   const { data: courses } = useQuery({
@@ -58,7 +56,6 @@ export default function Upload() {
     staleTime: STALE_15M,
   });
   const { data: professors } = useQuery({ queryKey: ['professors'], queryFn: getProfessors, staleTime: STALE_15M });
-  const { data: tagSuggestions } = useQuery({ queryKey: ['tag-suggestions'], queryFn: getTagSuggestions, staleTime: STALE_15M });
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -72,13 +69,11 @@ export default function Upload() {
           language,
           aiGenerated,
           anonymous,
-          tags: tags.length > 0 ? tags : undefined,
         },
         file!
       ),
     onSuccess: (doc) => {
       queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
-      queryClient.invalidateQueries({ queryKey: ['tag-suggestions'] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
@@ -238,16 +233,6 @@ export default function Upload() {
             <MenuItem value="EN">English</MenuItem>
           </Select>
         </FormControl>
-        <Autocomplete<string, true, false, true>
-          multiple
-          freeSolo
-          options={tagSuggestions ?? []}
-          value={tags}
-          onChange={(_, v) => setTags(v.map((tag) => (typeof tag === 'string' ? tag.trim().toLowerCase() : tag)))}
-          renderInput={(params) => (
-            <TextField {...params} label={t('document.tags')} helperText={t('upload.tagsHelper')} />
-          )}
-        />
 
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

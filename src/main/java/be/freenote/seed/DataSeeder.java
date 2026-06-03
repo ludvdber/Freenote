@@ -36,7 +36,6 @@ public class DataSeeder implements CommandLineRunner {
     private final DonationRepository donationRepository;
     private final DelegateHistoryRepository delegateHistoryRepository;
     private final ReportRepository reportRepository;
-    private final TagRepository tagRepository;
     private final MinioService minioService;
 
     private final Random rng = new Random(42); // deterministic for reproducible seeds
@@ -311,66 +310,66 @@ public class DataSeeder implements CommandLineRunner {
                 users.get("Amira_S"), users.get("Lucas_P"), users.get("Emma_L"), users.get("Youssef_K"));
 
         record DocDef(String title, String courseName, Category cat, String lang, String year,
-                      boolean aiGen, boolean anon, String[] tags) {}
+                      boolean aiGen, boolean anon) {}
 
         List<DocDef> defs = List.of(
                 // Informatique — Programmation Java
-                new DocDef("Synthese Programmation Java - Chapitre 3 : Heritage", "Programmation Java", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"java", "heritage", "poo"}),
-                new DocDef("Examen Programmation Java - Janvier 2025", "Programmation Java", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"java", "examen janvier"}),
-                new DocDef("Exercices Java - Collections et Streams", "Programmation Java", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"java", "collections", "streams"}),
-                new DocDef("Notes de cours Java - Threads et concurrence", "Programmation Java", Category.NOTES, "FR", "2025-2026", true, false, new String[]{"java", "threads", "concurrence"}),
+                new DocDef("Synthese Programmation Java - Chapitre 3 : Heritage", "Programmation Java", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Examen Programmation Java - Janvier 2025", "Programmation Java", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Exercices Java - Collections et Streams", "Programmation Java", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Notes de cours Java - Threads et concurrence", "Programmation Java", Category.NOTES, "FR", "2025-2026", true, false),
                 // Informatique — Base de donnees
-                new DocDef("Exercices SQL - Jointures et sous-requetes", "Base de donnees", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"sql", "jointures", "exercices"}),
-                new DocDef("Synthese Base de donnees - Normalisation", "Base de donnees", Category.SYNTHESE, "FR", "2024-2025", false, false, new String[]{"sql", "normalisation", "synthese"}),
-                new DocDef("Examen BDD - Juin 2025", "Base de donnees", Category.EXAMEN, "FR", "2024-2025", false, true, new String[]{"sql", "examen juin"}),
+                new DocDef("Exercices SQL - Jointures et sous-requetes", "Base de donnees", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Synthese Base de donnees - Normalisation", "Base de donnees", Category.SYNTHESE, "FR", "2024-2025", false, false),
+                new DocDef("Examen BDD - Juin 2025", "Base de donnees", Category.EXAMEN, "FR", "2024-2025", false, true),
                 // Informatique — Reseaux
-                new DocDef("Notes de cours Reseaux - TCP/IP", "Reseaux", Category.NOTES, "FR", "2025-2026", false, false, new String[]{"tcp/ip", "reseaux", "osi"}),
-                new DocDef("Synthese Reseaux - Modele OSI", "Reseaux", Category.SYNTHESE, "FR", "2025-2026", true, false, new String[]{"reseaux", "osi", "synthese"}),
-                new DocDef("Lab Reseaux - Configuration routeur Cisco", "Reseaux", Category.EXERCICES, "EN", "2025-2026", false, false, new String[]{"cisco", "routing", "lab"}),
+                new DocDef("Notes de cours Reseaux - TCP/IP", "Reseaux", Category.NOTES, "FR", "2025-2026", false, false),
+                new DocDef("Synthese Reseaux - Modele OSI", "Reseaux", Category.SYNTHESE, "FR", "2025-2026", true, false),
+                new DocDef("Lab Reseaux - Configuration routeur Cisco", "Reseaux", Category.EXERCICES, "EN", "2025-2026", false, false),
                 // Informatique — Systemes
-                new DocDef("Synthese Linux - Commandes essentielles", "Systemes d'exploitation", Category.SYNTHESE, "FR", "2024-2025", false, false, new String[]{"linux", "bash", "commandes"}),
-                new DocDef("Examen Systemes - Aout 2025", "Systemes d'exploitation", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"linux", "examen aout"}),
+                new DocDef("Synthese Linux - Commandes essentielles", "Systemes d'exploitation", Category.SYNTHESE, "FR", "2024-2025", false, false),
+                new DocDef("Examen Systemes - Aout 2025", "Systemes d'exploitation", Category.EXAMEN, "FR", "2024-2025", false, false),
                 // Comptabilite
-                new DocDef("Examen Comptabilite Generale - Juin 2025", "Comptabilite generale", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"comptabilite", "examen juin"}),
-                new DocDef("Synthese Comptabilite - Plan comptable PCMN", "Comptabilite generale", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"comptabilite", "pcmn", "synthese"}),
-                new DocDef("Exercices Ecritures comptables", "Comptabilite generale", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"comptabilite", "ecritures"}),
-                new DocDef("Notes Droit fiscal - IPP 2025", "Droit fiscal", Category.NOTES, "FR", "2025-2026", false, false, new String[]{"droit fiscal", "ipp"}),
-                new DocDef("Synthese Droit fiscal - TVA", "Droit fiscal", Category.SYNTHESE, "FR", "2024-2025", true, false, new String[]{"tva", "droit fiscal", "synthese"}),
-                new DocDef("Exercices Mathematiques financieres - Interets composes", "Mathematiques financieres", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"math", "interets composes"}),
+                new DocDef("Examen Comptabilite Generale - Juin 2025", "Comptabilite generale", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Synthese Comptabilite - Plan comptable PCMN", "Comptabilite generale", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Exercices Ecritures comptables", "Comptabilite generale", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Notes Droit fiscal - IPP 2025", "Droit fiscal", Category.NOTES, "FR", "2025-2026", false, false),
+                new DocDef("Synthese Droit fiscal - TVA", "Droit fiscal", Category.SYNTHESE, "FR", "2024-2025", true, false),
+                new DocDef("Exercices Mathematiques financieres - Interets composes", "Mathematiques financieres", Category.EXERCICES, "FR", "2025-2026", false, false),
                 // Marketing
-                new DocDef("Synthese Marketing digital - SEO et SEM", "Marketing digital", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"seo", "sem", "marketing digital"}),
-                new DocDef("Etude de cas - Lancement produit B2C", "Etude de marche", Category.DIVERS, "FR", "2025-2026", false, false, new String[]{"etude de cas", "b2c"}),
-                new DocDef("Examen Marketing digital - Janvier 2025", "Marketing digital", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"marketing digital", "examen janvier"}),
-                new DocDef("Notes Communication commerciale - Storytelling", "Communication commerciale", Category.NOTES, "FR", "2025-2026", true, false, new String[]{"communication", "storytelling"}),
+                new DocDef("Synthese Marketing digital - SEO et SEM", "Marketing digital", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Etude de cas - Lancement produit B2C", "Etude de marche", Category.DIVERS, "FR", "2025-2026", false, false),
+                new DocDef("Examen Marketing digital - Janvier 2025", "Marketing digital", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Notes Communication commerciale - Storytelling", "Communication commerciale", Category.NOTES, "FR", "2025-2026", true, false),
                 // Assistant de direction
-                new DocDef("Synthese Bureautique - Fonctions Excel avancees", "Bureautique avancee", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"excel", "bureautique", "fonctions"}),
-                new DocDef("Exercices Correspondance professionnelle", "Correspondance professionnelle", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"correspondance", "redaction"}),
-                new DocDef("Notes Organisation administrative - Archivage", "Organisation administrative", Category.NOTES, "FR", "2024-2025", false, true, new String[]{"organisation", "archivage"}),
+                new DocDef("Synthese Bureautique - Fonctions Excel avancees", "Bureautique avancee", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Exercices Correspondance professionnelle", "Correspondance professionnelle", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Notes Organisation administrative - Archivage", "Organisation administrative", Category.NOTES, "FR", "2024-2025", false, true),
                 // Fiscalite
-                new DocDef("Examen IPP - Juin 2025", "Impot des personnes physiques", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"ipp", "examen juin", "fiscalite"}),
-                new DocDef("Synthese TVA et douanes - Regime forfaitaire", "TVA et douanes", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"tva", "douanes", "forfaitaire"}),
-                new DocDef("Notes Impot des societes - Base imposable", "Impot des societes", Category.NOTES, "FR", "2025-2026", true, false, new String[]{"isoc", "base imposable"}),
+                new DocDef("Examen IPP - Juin 2025", "Impot des personnes physiques", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Synthese TVA et douanes - Regime forfaitaire", "TVA et douanes", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Notes Impot des societes - Base imposable", "Impot des societes", Category.NOTES, "FR", "2025-2026", true, false),
                 // Langues
-                new DocDef("Synthese Anglais des affaires - Business emails", "Anglais des affaires", Category.SYNTHESE, "EN", "2025-2026", false, false, new String[]{"anglais", "business", "emails"}),
-                new DocDef("Examen Neerlandais - Aout 2025", "Neerlandais professionnel", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"neerlandais", "examen aout"}),
-                new DocDef("Exercices Francais - Textes argumentatifs", "Francais : techniques redactionnelles", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"francais", "argumentation", "redaction"}),
+                new DocDef("Synthese Anglais des affaires - Business emails", "Anglais des affaires", Category.SYNTHESE, "EN", "2025-2026", false, false),
+                new DocDef("Examen Neerlandais - Aout 2025", "Neerlandais professionnel", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Exercices Francais - Textes argumentatifs", "Francais : techniques redactionnelles", Category.EXERCICES, "FR", "2025-2026", false, false),
                 // Techniques de programmation
-                new DocDef("Synthese Algorithmique - Tri et recherche", "Algorithmique", Category.SYNTHESE, "FR", "2025-2026", false, false, new String[]{"algorithme", "tri", "recherche"}),
-                new DocDef("Examen Algorithmique - Janvier 2025", "Algorithmique", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"algorithme", "examen janvier"}),
-                new DocDef("Projet Dev web - Site e-commerce (rapport)", "Developpement web", Category.DIVERS, "FR", "2025-2026", false, false, new String[]{"html", "css", "javascript", "projet"}),
-                new DocDef("Synthese Dev web - React et composants", "Developpement web", Category.SYNTHESE, "FR", "2025-2026", true, false, new String[]{"react", "composants", "frontend"}),
-                new DocDef("Notes POO - Patterns de conception", "Programmation orientee objet", Category.NOTES, "FR", "2025-2026", false, false, new String[]{"poo", "design patterns"}),
-                new DocDef("Exercices POO - Interfaces et abstraction", "Programmation orientee objet", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"poo", "interfaces", "abstraction"}),
-                new DocDef("Synthese Gestion de projets - Methode Agile", "Gestion de projets IT", Category.SYNTHESE, "FR", "2025-2026", true, false, new String[]{"agile", "scrum", "gestion projet"}),
-                new DocDef("Examen Gestion de projets - Juin 2025", "Gestion de projets IT", Category.EXAMEN, "FR", "2024-2025", false, true, new String[]{"gestion projet", "examen juin"}),
+                new DocDef("Synthese Algorithmique - Tri et recherche", "Algorithmique", Category.SYNTHESE, "FR", "2025-2026", false, false),
+                new DocDef("Examen Algorithmique - Janvier 2025", "Algorithmique", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Projet Dev web - Site e-commerce (rapport)", "Developpement web", Category.DIVERS, "FR", "2025-2026", false, false),
+                new DocDef("Synthese Dev web - React et composants", "Developpement web", Category.SYNTHESE, "FR", "2025-2026", true, false),
+                new DocDef("Notes POO - Patterns de conception", "Programmation orientee objet", Category.NOTES, "FR", "2025-2026", false, false),
+                new DocDef("Exercices POO - Interfaces et abstraction", "Programmation orientee objet", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Synthese Gestion de projets - Methode Agile", "Gestion de projets IT", Category.SYNTHESE, "FR", "2025-2026", true, false),
+                new DocDef("Examen Gestion de projets - Juin 2025", "Gestion de projets IT", Category.EXAMEN, "FR", "2024-2025", false, true),
                 // Extras
-                new DocDef("Formulaire type - Demande de stage", "Organisation administrative", Category.DIVERS, "FR", "2025-2026", false, false, new String[]{"stage", "formulaire", "administratif"}),
-                new DocDef("Synthese complete Reseaux - Tout le cours", "Reseaux", Category.SYNTHESE, "FR", "2024-2025", false, false, new String[]{"reseaux", "synthese complete"}),
-                new DocDef("Examen Dev web - Aout 2025", "Developpement web", Category.EXAMEN, "FR", "2024-2025", false, false, new String[]{"html", "css", "javascript", "examen aout"}),
-                new DocDef("Cheat sheet SQL - Toutes les commandes", "Base de donnees", Category.DIVERS, "EN", "2025-2026", true, false, new String[]{"sql", "cheat sheet", "reference"}),
-                new DocDef("Exercices Excel - Tableaux croises dynamiques", "Bureautique avancee", Category.EXERCICES, "FR", "2025-2026", false, false, new String[]{"excel", "tcd", "exercices"}),
-                new DocDef("Notes Marketing - Analyse SWOT", "Etude de marche", Category.NOTES, "FR", "2025-2026", false, false, new String[]{"swot", "analyse", "marketing"}),
-                new DocDef("Summary Accounting Principles", "Comptabilite generale", Category.SYNTHESE, "EN", "2025-2026", true, true, new String[]{"accounting", "principles", "english"})
+                new DocDef("Formulaire type - Demande de stage", "Organisation administrative", Category.DIVERS, "FR", "2025-2026", false, false),
+                new DocDef("Synthese complete Reseaux - Tout le cours", "Reseaux", Category.SYNTHESE, "FR", "2024-2025", false, false),
+                new DocDef("Examen Dev web - Aout 2025", "Developpement web", Category.EXAMEN, "FR", "2024-2025", false, false),
+                new DocDef("Cheat sheet SQL - Toutes les commandes", "Base de donnees", Category.DIVERS, "EN", "2025-2026", true, false),
+                new DocDef("Exercices Excel - Tableaux croises dynamiques", "Bureautique avancee", Category.EXERCICES, "FR", "2025-2026", false, false),
+                new DocDef("Notes Marketing - Analyse SWOT", "Etude de marche", Category.NOTES, "FR", "2025-2026", false, false),
+                new DocDef("Summary Accounting Principles", "Comptabilite generale", Category.SYNTHESE, "EN", "2025-2026", true, true)
         );
 
         // Build course lookup
@@ -421,18 +420,6 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         documents = documentRepository.saveAll(documents);
-
-        // Add tags
-        for (int i = 0; i < documents.size(); i++) {
-            Document doc = documents.get(i);
-            String[] tagLabels = defs.get(i).tags();
-            for (String label : tagLabels) {
-                tagRepository.save(Tag.builder()
-                        .document(doc)
-                        .label(label.toLowerCase().trim())
-                        .build());
-            }
-        }
 
         return documents;
     }

@@ -15,6 +15,7 @@ public interface DocumentService {
     DocumentResponse adminUpdate(Long documentId, UpdateDocumentRequest request);
     PageResponse<DocumentResponse> search(String query, Long sectionId, Long courseId, String category, String sort, Pageable pageable);
     void delete(Long documentId, Long userId);
+    DocumentResponse rename(Long documentId, Long userId, String newTitle);
     void adminDelete(Long documentId);
     List<DocumentResponse> getPopular(Long sectionId);
     List<DocumentResponse> getUnverified();

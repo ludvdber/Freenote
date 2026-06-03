@@ -24,13 +24,6 @@ export const subtitle: Sx = { mb: 2 };
 
 export const metaCard: Sx = { p: 3, mb: 3 };
 
-export const tagsRow: Sx = {
-  display: 'flex',
-  gap: 0.5,
-  mb: 3,
-  flexWrap: 'wrap',
-};
-
 export const summaryCard: Sx = { p: 3, mb: 3 };
 
 export const summaryLabel: Sx = { mb: 1 };

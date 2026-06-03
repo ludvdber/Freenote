@@ -133,10 +133,15 @@ export default function AdminUsers() {
                 @{u.username}
               </Typography>
             )}
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
               {t('admin.users.xp', { xp: u.xp })}
               {u.sectionName ? ` · ${u.sectionName}` : ''}
             </Typography>
+            {u.discord && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {t('admin.users.discord')} : {u.discord}
+              </Typography>
+            )}
           </Box>
 
           {u.verified ? (

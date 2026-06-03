@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CardContent, Typography, Box, Chip, Rating, Tooltip, IconButton, Snackbar, Alert } from '@mui/material';
-import { Download, Verified, SmartToy, PictureAsPdf, Share } from '@mui/icons-material';
+import { Visibility, Verified, SmartToy, PictureAsPdf, Share } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { DocumentResponse } from '@/types';
 import GlassCard from '@/components/ui/GlassCard';
@@ -77,20 +77,12 @@ export default function DocumentCard({ document: doc, haloStrength = 0 }: Props)
         <Box sx={s.footerRow}>
           <Rating value={doc.averageRating ?? 0} precision={0.5} readOnly size="small" sx={s.ratingStyle} />
           <Box sx={s.downloadsRow}>
-            <Download sx={s.downloadsIcon} />
+            <Visibility sx={s.downloadsIcon} />
             <Typography variant="caption" className="mono" color="text.secondary">
               {doc.downloadCount}
             </Typography>
           </Box>
         </Box>
-
-        {doc.tags.length > 0 && (
-          <Box sx={s.tagsRow}>
-            {doc.tags.slice(0, 3).map((tag) => (
-              <Chip key={tag} label={tag} size="small" variant="outlined" sx={s.tagChip} />
-            ))}
-          </Box>
-        )}
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="caption" color="text.secondary" sx={s.createdAt}>

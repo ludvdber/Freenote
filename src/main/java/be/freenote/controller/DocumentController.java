@@ -6,7 +6,6 @@ import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
 import be.freenote.security.ratelimit.RateLimit;
 import be.freenote.service.DocumentService;
-import be.freenote.service.TagService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -29,7 +28,6 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final TagService tagService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RateLimit(max = 5, window = 86400)
@@ -92,10 +90,11 @@ public class DocumentController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/tags")
-    public ResponseEntity<List<String>> getTags() {
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-                .body(tagService.getAllLabels());
+    @PatchMapping("/{id}")
+    public ResponseEntity<DocumentResponse> rename(@PathVariable Long id,
+                                                   @RequestParam String title,
+                                                   Authentication authentication) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(documentService.rename(id, userId, title));
     }
 }

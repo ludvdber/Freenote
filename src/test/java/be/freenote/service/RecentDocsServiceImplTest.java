@@ -112,6 +112,6 @@ class RecentDocsServiceImplTest {
         return new DocumentResponse(
                 id, "title", 1L, "course", "section", "NOTES",
                 "author", null, true, false, "FR", null, null,
-                0.0, 0, List.of(), null);
+                0.0, 0, null);
     }
 }

@@ -58,6 +58,11 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
             </>
           )}
         </Typography>
+        {token && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', opacity: 0.5, fontSize: 10 }}>
+            {t('ad.afterDonation')}
+          </Typography>
+        )}
       </Box>
     </Fade>
   );

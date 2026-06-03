@@ -43,6 +43,7 @@ class DocumentServiceImplTest {
     @Mock private PdfValidationService pdfValidationService;
     @Mock private MeilisearchService meilisearchService;
     @Mock private StatsService statsService;
+    @Mock private ActivityLogService activityLogService;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
@@ -70,7 +71,7 @@ class DocumentServiceImplTest {
     private DocumentResponse dummyResponse() {
         return new DocumentResponse(100L, "Test Doc", 1L, "Java", "IT", "SYNTHESE",
                 "author", null, false, false, "FR", null, null, 0.0, 0,
-                List.of(), LocalDateTime.now());
+                LocalDateTime.now());
     }
 
     private CreateDocumentRequest validRequest() {
@@ -149,36 +150,13 @@ class DocumentServiceImplTest {
     }
 
     @Test
-    void shouldNormalizeTagsToLowercase() {
+    void shouldStoreTitleTrimmedNotHtmlEscaped() {
+        // Titles are stored raw (only trimmed) — React escapes at render time, so escaping here
+        // would only double-encode (an apostrophe would surface as &#x27; in the UI).
         MultipartFile file = mock(MultipartFile.class);
         when(file.getOriginalFilename()).thenReturn("test.pdf");
         CreateDocumentRequest req = validRequest();
-        req.setTags(List.of("Java", " SPRING ", "sql"));
-
-        when(pdfValidationService.validate(file)).thenReturn(VALID_PDF_BYTES);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser()));
-        when(courseRepository.findById(10L)).thenReturn(Optional.of(testCourse()));
-        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> {
-            Document d = inv.getArgument(0);
-            d.setId(100L);
-            return d;
-        });
-        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
-
-        documentService.create(req, file, 1L);
-
-        ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
-        verify(documentMapper).toResponse(captor.capture());
-        List<String> labels = captor.getValue().getTags().stream().map(Tag::getLabel).toList();
-        assertThat(labels).containsExactlyInAnyOrder("java", "spring", "sql");
-    }
-
-    @Test
-    void shouldSanitizeTitleOnCreate() {
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getOriginalFilename()).thenReturn("test.pdf");
-        CreateDocumentRequest req = validRequest();
-        req.setTitle("<script>alert(1)</script>");
+        req.setTitle("  L'algo & data  ");
 
         when(pdfValidationService.validate(file)).thenReturn(VALID_PDF_BYTES);
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser()));
@@ -195,34 +173,8 @@ class DocumentServiceImplTest {
         ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
         verify(documentRepository, atLeastOnce()).save(captor.capture());
         String savedTitle = captor.getAllValues().getFirst().getTitle();
-        assertThat(savedTitle).doesNotContain("<script>");
-        assertThat(savedTitle).contains("&lt;script&gt;");
-    }
-
-    @Test
-    void shouldSanitizeTagLabelsOnCreate() {
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getOriginalFilename()).thenReturn("test.pdf");
-        CreateDocumentRequest req = validRequest();
-        req.setTags(List.of("<b>bold</b>"));
-
-        when(pdfValidationService.validate(file)).thenReturn(VALID_PDF_BYTES);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser()));
-        when(courseRepository.findById(10L)).thenReturn(Optional.of(testCourse()));
-        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> {
-            Document d = inv.getArgument(0);
-            d.setId(100L);
-            return d;
-        });
-        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
-
-        documentService.create(req, file, 1L);
-
-        ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
-        verify(documentMapper).toResponse(captor.capture());
-        String label = captor.getValue().getTags().getFirst().getLabel();
-        assertThat(label).doesNotContain("<b>");
-        assertThat(label).contains("&lt;b&gt;");
+        assertThat(savedTitle).isEqualTo("L'algo & data");
+        assertThat(savedTitle).doesNotContain("&amp;").doesNotContain("&#x27;");
     }
 
     // ---- delete ----
@@ -410,7 +362,7 @@ class DocumentServiceImplTest {
     // ---- adminUpdate ----
 
     @Test
-    void shouldAdminUpdateTitleAndTags() {
+    void shouldAdminUpdateTitle() {
         Document doc = testDocument(testUser());
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -418,15 +370,10 @@ class DocumentServiceImplTest {
 
         UpdateDocumentRequest req = new UpdateDocumentRequest();
         req.setTitle("New Title");
-        req.setTags(List.of("TAG1", " tag2 "));
 
         documentService.adminUpdate(100L, req);
 
-        // Title sanitized
         assertThat(doc.getTitle()).isEqualTo("New Title");
-        // Tags normalized
-        List<String> labels = doc.getTags().stream().map(Tag::getLabel).toList();
-        assertThat(labels).containsExactlyInAnyOrder("tag1", "tag2");
         verify(meilisearchService).indexDocument(doc);
     }
 

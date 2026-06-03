@@ -1,0 +1,94 @@
+# Production data services for Freenote — runs INSIDE the single Proxmox LXC.
+# The fat jar runs on the LXC host (systemd unit, port 8080) and reaches these 4 services
+# over loopback. This file is the HARDENED variant of the repo-root docker-compose.yml:
+#
+#   - every port is bound to 127.0.0.1 ONLY → never reachable from outside the LXC
+#     (the app is on the same host; nothing else needs Postgres/Redis/MinIO/Meili)
+#   - all secrets come from a sibling `.env` (NOT hardcoded) — docker compose auto-loads it
+#   - MEILI_ENV=production, restart: unless-stopped
+#
+# Install (on the LXC, in /opt/freenote):
+#   cp <repo>/deploy/docker-compose.prod.yml docker-compose.yml
+#   cp <repo>/deploy/data.env.example       .env      # then fill every value + chmod 600 .env
+#   docker compose up -d
+#   docker compose ps                                   # all four must be (healthy)
+#
+# ⚠️ The secrets here MUST match the app env file (/etc/freenote/freenote.env):
+#     POSTGRES_USER/PASSWORD   == DB_USERNAME / DB_PASSWORD
+#     MINIO_ROOT_USER/PASSWORD == MINIO_ACCESS_KEY / MINIO_SECRET_KEY
+#     MEILI_MASTER_KEY         == MEILISEARCH_API_KEY
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: freenote-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: freenote
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d freenote"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: freenote-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: freenote-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"   # admin console — loopback only; reach it via SSH tunnel if needed
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: freenote-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: production
+    ports:
+      - "127.0.0.1:7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7700/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  meilisearch_data:
