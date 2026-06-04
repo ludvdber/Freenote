@@ -81,7 +81,8 @@ public class NotificationServiceImpl implements NotificationService {
         emitter.onError(e -> removeEmitter(userId, emitter));
 
         try {
-            // Heartbeat so proxies / nginx don't close an idle connection.
+            // Immediate event so the client knows the stream is open; the @Scheduled heartbeat()
+            // below then keeps it alive against idle-connection cutoffs (Cloudflare ~100 s).
             emitter.send(SseEmitter.event().name("ping").data("ok"));
         } catch (IOException ignored) { /* client already gone, cleanup will happen */ }
 
@@ -103,6 +104,24 @@ public class NotificationServiceImpl implements NotificationService {
     private void removeEmitter(Long userId, SseEmitter emitter) {
         CopyOnWriteArrayList<SseEmitter> list = emitters.get(userId);
         if (list != null) list.remove(emitter);
+    }
+
+    /** Cloudflare (orange) drops an idle proxied connection after ~100 s, while an SSE stream is
+     *  meant to live {@code SSE_TIMEOUT_MS} (30 min). Emit a comment ping every 25 s so the
+     *  connection never looks idle — a ":" comment line keeps the socket warm without firing the
+     *  client's event handlers. Without this, notifications silently stop flowing ~100 s after the
+     *  last real event in prod (invisible in dev, where there is no Cloudflare in front). */
+    @Scheduled(fixedRate = 25_000)
+    public void heartbeat() {
+        emitters.forEach((userId, list) -> {
+            for (SseEmitter emitter : list) {
+                try {
+                    emitter.send(SseEmitter.event().comment("ping"));
+                } catch (IOException | IllegalStateException ex) {
+                    removeEmitter(userId, emitter);
+                }
+            }
+        });
     }
 
     /** Garbage-collect notifications older than 90 days — keeps the table bounded. */
