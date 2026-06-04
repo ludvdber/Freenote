@@ -1,9 +1,12 @@
 [Unit]
 Description=Freenote backend (Spring Boot + embedded SPA)
 Documentation=https://github.com/ludvdber/Freenote
-# Wait for network + the data LXCs (postgres, redis, minio, meilisearch) before starting.
-After=network-online.target
-Wants=network-online.target
+# The 4 data services (postgres, redis, minio, meilisearch) run in Docker on THIS same LXC.
+# Start after the network AND the Docker daemon. Note: docker.service being "active" does NOT
+# mean Postgres already accepts connections — ExecStartPre below polls pg_isready first, so the
+# JVM never boots against a cold DB (Flyway/Hibernate would fail fast otherwise).
+After=network-online.target docker.service
+Wants=network-online.target docker.service
 
 [Service]
 Type=simple
@@ -14,9 +17,18 @@ WorkingDirectory=/opt/freenote
 # Example variables: DB_URL, JWT_SECRET, MINIO_ACCESS_KEY, MEILISEARCH_API_KEY, etc.
 # See deploy/freenote.env.example for the full list.
 EnvironmentFile=/etc/freenote/freenote.env
-ExecStart=/usr/bin/java \
+
+# Wait (max ~120s) for the Postgres container to accept connections before launching the app.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do pg_isready -h 127.0.0.1 -p 5432 && exit 0; sleep 2; done; echo "postgres still not ready after 120s"; exit 1'
+
+# Java 25: Debian 13 (Trixie) ships NO openjdk-25 package → the JRE comes from the Adoptium
+# repo (apt package temurin-25-jre). Point ExecStart at it explicitly. If you prefer the
+# update-alternatives symlink, /usr/bin/java also works once temurin is the default.
+# MaxRAMPercentage=50 (NOT 75): the JVM shares this 8 GB LXC with 4 Docker data containers —
+# 75% would starve Postgres/MinIO/Meili under load.
+ExecStart=/usr/lib/jvm/temurin-25-jre-amd64/bin/java \
     -XX:+UseZGC \
-    -XX:MaxRAMPercentage=75 \
+    -XX:MaxRAMPercentage=50 \
     -Dspring.profiles.active=prod \
     -jar /opt/freenote/freenote.jar
 Restart=on-failure

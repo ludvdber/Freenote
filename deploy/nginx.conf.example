@@ -1,68 +1,90 @@
-# Nginx reverse proxy sitting in front of the Freenote LXC.
-# Place in /etc/nginx/sites-available/freenote.be on the Proxmox host (or a dedicated
-# reverse-proxy LXC), symlink into sites-enabled, `nginx -t && systemctl reload nginx`.
+# Freenote vhost — drops into your EXISTING shared nginx LXC (the same nginx that already serves
+# your other sites). It is NOT a dedicated nginx and does NOT replace anything: add it as a new
+# site. (Real IPs/VMIDs of this deployment live in deploy/values.local.md, outside git.)
 #
-# TLS: obtain via `certbot --nginx -d freenote.be -d www.freenote.be`.
+#   cp deploy/nginx.conf.example  /etc/nginx/sites-available/freenote.be   (on the nginx LXC)
+#   ln -s /etc/nginx/sites-available/freenote.be /etc/nginx/sites-enabled/
+#   nginx -t && systemctl reload nginx
 #
-# ── Topology: Cloudflare → nginx → Freenote LXC ──────────────────────────────
-# Cloudflare terminates TLS at the edge and connects to this nginx from *its own* IPs,
-# so without the real_ip block below, every request looks like it comes from ~20 Cloudflare
-# IPs — breaking the backend's per-IP rate limiting and poisoning access logs.
-#   real_ip_header CF-Connecting-IP  → nginx rewrites $remote_addr to the true client IP,
-#   which then flows to the backend via X-Forwarded-For (server.forward-headers-strategy=NATIVE).
-# Keep the set_real_ip_from list current: https://www.cloudflare.com/ips/ (v4 + v6).
-# In Cloudflare set SSL/TLS mode to "Full (strict)" so the edge→origin hop is also HTTPS.
+# ── Topology: Cloudflare → nginx (shared LXC) → Freenote app LXC (<APP_LXC_IP>:8080) ──
+# Cloudflare terminates TLS at the edge and connects to this nginx from *its own* IPs, so the
+# real_ip block (inside the server{} below) rewrites $remote_addr to the true visitor IP via
+# CF-Connecting-IP. Without it every request looks like ~20 Cloudflare IPs → the backend's
+# per-IP rate limiting breaks and access logs are wrong. The block is scoped to THIS server{}
+# so the other vhosts on the shared nginx LXC are untouched.
+# On the backend side, TRUSTED_PROXIES must be THIS nginx's IP — the app only ever sees nginx
+# as its immediate proxy, never Cloudflare.
 #
-# real_ip_header CF-Connecting-IP;
-# set_real_ip_from 173.245.48.0/20;
-# set_real_ip_from 103.21.244.0/22;
-# set_real_ip_from 103.22.200.0/22;
-# set_real_ip_from 103.31.4.0/22;
-# set_real_ip_from 141.101.64.0/18;
-# set_real_ip_from 108.162.192.0/18;
-# set_real_ip_from 190.93.240.0/20;
-# set_real_ip_from 188.114.96.0/20;
-# set_real_ip_from 197.234.240.0/22;
-# set_real_ip_from 198.41.128.0/17;
-# set_real_ip_from 162.158.0.0/15;
-# set_real_ip_from 104.16.0.0/13;
-# set_real_ip_from 104.24.0.0/14;
-# set_real_ip_from 172.64.0.0/13;
-# set_real_ip_from 131.0.72.0/22;
-# set_real_ip_from 2400:cb00::/32;
-# set_real_ip_from 2606:4700::/32;
-# set_real_ip_from 2803:f800::/32;
-# set_real_ip_from 2405:b500::/32;
-# set_real_ip_from 2405:8100::/32;
-# set_real_ip_from 2a06:98c0::/29;
-# set_real_ip_from 2c0f:f248::/32;
-# Tip: instead of hand-maintaining this list, `cloudflare-cert` / a cron can regenerate it.
-# Then on the backend side, TRUSTED_PROXIES must include THIS nginx's LXC IP (not Cloudflare's),
-# because the backend only ever sees nginx as its immediate proxy.
-# ─────────────────────────────────────────────────────────────────────────────
+# ── TLS / certificate (the A record is Cloudflare-proxied 🟠) ──────────────────────────────
+# certbot's HTTP-01 challenge does NOT work while the record is proxied (Cloudflare intercepts
+# :80). Pick ONE:
+#   (A) RECOMMENDED — Cloudflare Origin Certificate (15-year, no renewal): Cloudflare dashboard
+#       → SSL/TLS → Origin Server → Create Certificate. Save cert+key on the nginx LXC and point the
+#       ssl_certificate(_key) below at them. Works with SSL mode "Full (strict)".
+#   (B) Let's Encrypt: temporarily set the freenote.be A record to "DNS only" ⚪, run
+#       `certbot --nginx -d freenote.be -d www.freenote.be`, then flip it back to Proxied 🟠.
+#       (Or use certbot's DNS-01 Cloudflare plugin to keep it proxied throughout.)
+# ──────────────────────────────────────────────────────────────────────────────────────────
 
 upstream freenote_backend {
-    # Adjust the IP to match the Freenote LXC on your Proxmox bridge.
-    server 10.0.0.10:8080;
+    server 10.0.0.10:8080;   # ← IP of the Freenote app LXC (see deploy/values.local.md)
     keepalive 32;
 }
 
+# HTTP → HTTPS (Cloudflare "Always Use HTTPS" usually handles this at the edge; kept for safety).
 server {
     listen 80;
     server_name freenote.be www.freenote.be;
-    # Redirect all HTTP traffic to HTTPS (certbot inserts its ACME block above in practice).
-    return 301 https://$host$request_uri;
+    return 301 https://freenote.be$request_uri;
+}
+
+# Canonical host redirect: www → apex (301).
+server {
+    listen 443 ssl http2;
+    server_name www.freenote.be;
+
+    ssl_certificate     /etc/ssl/cloudflare/freenote.be.pem;     # or /etc/letsencrypt/live/freenote.be/fullchain.pem
+    ssl_certificate_key /etc/ssl/cloudflare/freenote.be.key;     # or /etc/letsencrypt/live/freenote.be/privkey.pem
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    return 301 https://freenote.be$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name freenote.be www.freenote.be;
+    server_name freenote.be;
 
-    # TLS — certbot populates these paths.
-    ssl_certificate     /etc/letsencrypt/live/freenote.be/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/freenote.be/privkey.pem;
+    # TLS — Cloudflare Origin Cert (recommended) or Let's Encrypt; see header.
+    ssl_certificate     /etc/ssl/cloudflare/freenote.be.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/freenote.be.key;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
+
+    # --- real_ip: restore the true client IP from Cloudflare (scoped to this vhost) ---
+    # Keep this CIDR list synced with https://www.cloudflare.com/ips/ (v4 + v6).
+    real_ip_header CF-Connecting-IP;
+    set_real_ip_from 173.245.48.0/20;
+    set_real_ip_from 103.21.244.0/22;
+    set_real_ip_from 103.22.200.0/22;
+    set_real_ip_from 103.31.4.0/22;
+    set_real_ip_from 141.101.64.0/18;
+    set_real_ip_from 108.162.192.0/18;
+    set_real_ip_from 190.93.240.0/20;
+    set_real_ip_from 188.114.96.0/20;
+    set_real_ip_from 197.234.240.0/22;
+    set_real_ip_from 198.41.128.0/17;
+    set_real_ip_from 162.158.0.0/15;
+    set_real_ip_from 104.16.0.0/13;
+    set_real_ip_from 104.24.0.0/14;
+    set_real_ip_from 172.64.0.0/13;
+    set_real_ip_from 131.0.72.0/22;
+    set_real_ip_from 2400:cb00::/32;
+    set_real_ip_from 2606:4700::/32;
+    set_real_ip_from 2803:f800::/32;
+    set_real_ip_from 2405:b500::/32;
+    set_real_ip_from 2405:8100::/32;
+    set_real_ip_from 2a06:98c0::/29;
+    set_real_ip_from 2c0f:f248::/32;
 
     # Upload cap matches Spring's spring.servlet.multipart.max-request-size = 11MB.
     client_max_body_size 12M;
@@ -102,7 +124,7 @@ server {
         proxy_http_version 1.1;
 
         # The Spring backend reads X-Forwarded-* via server.forward-headers-strategy=NATIVE.
-        # TRUSTED_PROXIES must include this nginx's IP for the headers to be honored.
+        # TRUSTED_PROXIES (backend env) must equal this nginx's IP.
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Freenote pg_dump weekly
+
+[Timer]
+# Sunday 03:30. Persistent=true → catches up if the LXC was off at the scheduled time.
+OnCalendar=Sun 03:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

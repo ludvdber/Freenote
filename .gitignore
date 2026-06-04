@@ -53,6 +53,8 @@ deploy/data.env
 # age backup keys + encrypted dumps — NEVER commit the private key
 backup.key
 *.age
+# Concrete deployment values (real IPs, VMIDs) — keep out of a public repo
+*.local.md
 
 # --- Application ---
 logs/
@@ -63,6 +65,13 @@ nohup.out
 *.tmp
 tmp/
 .tmp/
+# Database dumps (pg_dump output) — never commit production data
+*.sql.gz
+*.dump
+
+# --- Internal ops / explanation docs (kept local, NOT on the public repo) ---
+docs/*.md
+deploy/README.md
 
 # --- Java / Maven legacy (in case someone wires up Maven later) ---
 target/

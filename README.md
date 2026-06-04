@@ -65,7 +65,6 @@ Notarium/
 ├── src/main/resources/db/migration/  # Flyway — V1__init.sql
 ├── frontend/                    # SPA React (voir frontend/)
 ├── scripts/                     # Scripts de lancement Windows (.bat)
-├── docs/                        # Setup infra & test local réel
 └── deploy/                      # systemd, nginx, env, backup
 ```
 

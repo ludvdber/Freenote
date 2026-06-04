@@ -1,0 +1,9 @@
+[Unit]
+Description=Freenote weekly Postgres logical backup (pg_dump → rootfs, captured by PBS)
+# Needs the Docker daemon up so `docker exec freenote-postgres pg_dump` works.
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/freenote-pgdump.sh
