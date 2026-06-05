@@ -5,6 +5,7 @@ import be.freenote.security.JwtAuthFilter;
 import be.freenote.security.CustomOAuth2UserService;
 import be.freenote.security.OAuth2LoginFailureHandler;
 import be.freenote.security.OAuth2LoginSuccessHandler;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -98,6 +99,14 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // The notification SSE stream goes async. When the SseEmitter later completes,
+                // Tomcat fires an ASYNC dispatch that replays the security chain; AuthorizationFilter
+                // filters every dispatch type, but the SecurityContext isn't restored on the async
+                // (virtual) thread, so it would deny the re-dispatch with a noisy "Access Denied /
+                // response already committed" stacktrace. The initial REQUEST is still authorized —
+                // permit the internal ASYNC/ERROR re-dispatches so the stream closes cleanly.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
+
                 // SPA static assets (Vite bundle embedded in the fat jar under /static)
                 // — everything served by SpaForwardingConfig must be publicly reachable,
                 // otherwise the login page itself would require a login.

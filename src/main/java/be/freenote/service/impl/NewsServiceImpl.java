@@ -39,7 +39,12 @@ public class NewsServiceImpl implements NewsService {
         Object cached = redisTemplate.opsForValue().get(CACHE_KEY);
         if (cached != null) {
             try {
-                return objectMapper.convertValue(cached, new TypeReference<List<NewsItem>>() {});
+                List<NewsItem> items = objectMapper.convertValue(cached, new TypeReference<List<NewsItem>>() {});
+                // Ignore a cache written by an older NewsItem schema (no post id) — otherwise every
+                // detail link would point at /news/null until the 30-min TTL expired. Refetch fresh.
+                if (!items.isEmpty() && items.stream().allMatch(n -> n.id() != null && !n.id().isBlank())) {
+                    return items;
+                }
             } catch (Exception e) {
                 log.warn("Failed to deserialize cached news, fetching fresh");
             }
@@ -104,6 +109,13 @@ public class NewsServiceImpl implements NewsService {
                     }
                 }
 
+                // Guarantee a non-null id so the on-site /news/{id} link is never broken (and the
+                // cache-validity guard in getNews() can't loop-refetch). The Atom <id> is normally
+                // present; this only kicks in if it's missing.
+                if (id == null || id.isBlank()) {
+                    id = fallbackId(url);
+                }
+
                 items.add(new NewsItem(id, title, date, labels, url, content));
             }
 
@@ -131,5 +143,24 @@ public class NewsServiceImpl implements NewsService {
         }
         int idx = atomId.lastIndexOf(".post-");
         return idx >= 0 ? atomId.substring(idx + ".post-".length()) : atomId;
+    }
+
+    /** Stable slug derived from the post URL (last path segment, minus the .html suffix), used only
+     *  when the Atom entry has no usable {@code <id>}. */
+    private String fallbackId(String url) {
+        if (url == null || url.isBlank()) {
+            return String.valueOf(System.nanoTime());
+        }
+        String path = url;
+        int q = path.indexOf('?');
+        if (q >= 0) {
+            path = path.substring(0, q);
+        }
+        int slash = path.lastIndexOf('/');
+        String seg = slash >= 0 ? path.substring(slash + 1) : path;
+        if (seg.endsWith(".html")) {
+            seg = seg.substring(0, seg.length() - ".html".length());
+        }
+        return seg.isBlank() ? String.valueOf(Math.abs(url.hashCode())) : seg;
     }
 }

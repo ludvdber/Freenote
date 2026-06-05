@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -86,6 +87,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ServiceUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleServiceUnavailable(ServiceUnavailableException ex) {
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    /**
+     * SSE client disconnected mid-stream (tab closed, network drop, Cloudflare cut). Spring raises
+     * this when the heartbeat / fan-out tries to write to a socket the browser already closed. The
+     * response stream is gone, so there is nothing to send back — swallow it quietly (void = no body)
+     * instead of letting {@link #handleGeneric} log a 500 and then fail to serialize an ErrorResponse
+     * into the {@code text/event-stream} response (HttpMessageNotWritableException).
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(AsyncRequestNotUsableException ex) {
+        log.debug("Async request no longer usable (client disconnected): {}", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

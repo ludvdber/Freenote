@@ -20,6 +20,9 @@ interface ServerNotification {
  */
 export function useNotificationsStream() {
   const token = useAuthStore((s) => s.token);
+  // The stream endpoint requires ROLE_VERIFIED. Opening it for an authenticated-but-unverified
+  // account yields a 403 that EventSource retries every ~3s (reconnect storm) — gate on verified.
+  const isVerified = useAuthStore((s) => s.isVerified);
   const push = useNotificationStore((s) => s.push);
   const queryClient = useQueryClient();
 
@@ -27,12 +30,12 @@ export function useNotificationsStream() {
   useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: getNotificationsUnreadCount,
-    enabled: !!token,
+    enabled: !!token && isVerified,
     refetchInterval: 60_000, // 60s safety poll; SSE is the primary channel
   });
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !isVerified) return;
 
     const source = new EventSource('/api/notifications/stream', { withCredentials: true });
 
@@ -57,5 +60,5 @@ export function useNotificationsStream() {
     };
 
     return () => source.close();
-  }, [token, push, queryClient]);
+  }, [token, isVerified, push, queryClient]);
 }

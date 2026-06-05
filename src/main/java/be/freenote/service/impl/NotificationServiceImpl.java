@@ -95,7 +95,8 @@ public class NotificationServiceImpl implements NotificationService {
         for (SseEmitter e : userEmitters) {
             try {
                 e.send(SseEmitter.event().name("notification").data(dto));
-            } catch (IOException ex) {
+            } catch (Exception ex) {
+                // Any send failure (broken pipe, already-completed emitter, …) means a dead client.
                 removeEmitter(userId, e);
             }
         }
@@ -117,7 +118,8 @@ public class NotificationServiceImpl implements NotificationService {
             for (SseEmitter emitter : list) {
                 try {
                     emitter.send(SseEmitter.event().comment("ping"));
-                } catch (IOException | IllegalStateException ex) {
+                } catch (Exception ex) {
+                    // Dead client (broken pipe / completed emitter) — drop it, keep pinging the rest.
                     removeEmitter(userId, emitter);
                 }
             }
