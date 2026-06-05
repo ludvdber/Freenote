@@ -111,7 +111,7 @@ public class SecurityConfig {
                 // — everything served by SpaForwardingConfig must be publicly reachable,
                 // otherwise the login page itself would require a login.
                 .requestMatchers(HttpMethod.GET,
-                        "/", "/index.html", "/favicon.ico", "/robots.txt",
+                        "/", "/index.html", "/favicon.ico", "/robots.txt", "/ads.txt",
                         "/assets/**", "/static/**", "/*.svg", "/*.png", "/*.jpg", "/*.webp", "/*.ico"
                 ).permitAll()
 

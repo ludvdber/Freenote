@@ -1,3 +1,2 @@
-# Freenote — ads.txt (norme IAB) : autorise Google AdSense à diffuser nos publicités.
-# https://freenote.be/ads.txt doit renvoyer exactement ce fichier (Vite copie public/* à la racine).
+# Freenote ads.txt (IAB standard): authorizes Google AdSense to serve ads on this site.
 google.com, pub-3398993252100042, DIRECT, f08c47fec0942fa0
