@@ -64,7 +64,8 @@
     "empty": "Rien de neuf pour l'instant — reviens bientôt.",
     "back": "Retour aux actualités",
     "source": "Lire sur le blog de l'ISFCE",
-    "notFound": "Actualité introuvable."
+    "notFound": "Actualité introuvable.",
+    "readTime": "{{count}} min de lecture"
   },
   "community": {
     "title": "Communauté",

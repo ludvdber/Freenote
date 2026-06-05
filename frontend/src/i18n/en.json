@@ -64,7 +64,8 @@
     "empty": "Nothing new right now — check back soon.",
     "back": "Back to news",
     "source": "Read on the ISFCE blog",
-    "notFound": "News item not found."
+    "notFound": "News item not found.",
+    "readTime": "{{count}} min read"
   },
   "community": {
     "title": "Community",

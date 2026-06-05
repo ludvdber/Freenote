@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink } from 'react-router-dom';
 import { getNews } from '@/api/endpoints';
-import { formatRelativeDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
@@ -22,7 +22,7 @@ export default function News() {
         <List>
           {news?.map((item, i) => (
             <ListItemButton key={item.id ?? i} component={RouterLink} to={`/news/${item.id}`}>
-              <ListItemText primary={item.title} secondary={item.date ? formatRelativeDate(item.date, i18n.language) : ''} />
+              <ListItemText primary={item.title} secondary={item.date ? formatDate(item.date, i18n.language) : ''} />
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                 {item.labels.map((label) => <Chip key={label} label={label} size="small" variant="outlined" />)}
               </Box>

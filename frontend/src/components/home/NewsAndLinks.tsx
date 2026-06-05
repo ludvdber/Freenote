@@ -1,10 +1,11 @@
 import { Box, Typography, List, ListItemButton, ListItemText, Chip } from '@mui/material';
-import { OpenInNew } from '@mui/icons-material';
+import { ChevronRight } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 import { getNews } from '@/api/endpoints';
-import { formatRelativeDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { STALE_15M } from '@/lib/constants';
 import GlassCard from '@/components/ui/GlassCard';
 import { MAIN_LINKS, SECONDARY_LINKS } from './NewsAndLinks.data';
@@ -34,11 +35,9 @@ export default function NewsAndLinks() {
                 <List dense sx={s.newsList}>
                   {news!.slice(0, 6).map((item, i) => (
                     <ListItemButton
-                      key={i}
-                      component="a"
-                      href={item.url ?? '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      key={item.id ?? i}
+                      component={RouterLink}
+                      to={`/news/${item.id}`}
                       sx={s.newsItem}
                     >
                       <ListItemText
@@ -47,14 +46,14 @@ export default function NewsAndLinks() {
                             {item.title}
                           </Typography>
                         }
-                        secondary={item.date ? formatRelativeDate(item.date, i18n.language) : ''}
+                        secondary={item.date ? formatDate(item.date, i18n.language) : ''}
                       />
                       <Box sx={s.newsLabelsRow}>
                         {item.labels.slice(0, 2).map((label) => (
                           <Chip key={label} label={label} size="small" variant="outlined" sx={s.newsLabelChip} />
                         ))}
                         <Box sx={s.externalHint} aria-hidden="true">
-                          <OpenInNew sx={{ fontSize: 12 }} />
+                          <ChevronRight sx={{ fontSize: 16 }} />
                         </Box>
                       </Box>
                     </ListItemButton>

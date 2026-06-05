@@ -1,78 +1,126 @@
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { Typography, Box, Chip, Button } from '@mui/material';
+import { Typography, Box, Chip, Button, Divider } from '@mui/material';
 import { ArrowBack, OpenInNew } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify';
 import { getNews } from '@/api/endpoints';
-import { formatRelativeDate } from '@/lib/utils';
 import { STALE_15M } from '@/lib/constants';
+import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
+import AdSlot from '@/components/ui/AdSlot';
+import * as s from './NewsDetail.styles';
+
+const stripHtml = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 export default function NewsDetail() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
+  const { user } = useAuthStore();
   const { data: news } = useQuery({ queryKey: ['news'], queryFn: getNews, staleTime: STALE_15M });
   const item = news?.find((n) => n.id === id);
+
+  // The feed content is third-party blog HTML → sanitized with DOMPurify before rendering.
+  const cleanHtml = item?.content ? DOMPurify.sanitize(item.content) : '';
+  const plain = item?.content ? stripHtml(item.content) : '';
+  const readMinutes = plain ? Math.max(1, Math.round(plain.split(' ').filter(Boolean).length / 200)) : 0;
+  const excerpt = plain.slice(0, 160);
+
+  const fullDate = item?.date
+    ? new Date(item.date).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
+
+  const showAd = !user?.supporter;
 
   return (
     <PageWrapper>
       <Helmet>
         <title>{item ? `${item.title} — Freenote` : `${t('nav.news')} — Freenote`}</title>
+        {excerpt && <meta name="description" content={excerpt} />}
       </Helmet>
 
-      <Button component={RouterLink} to="/news" startIcon={<ArrowBack />} sx={{ mb: 2 }}>
-        {t('news.back')}
-      </Button>
+      <Box sx={s.article}>
+        <Button component={RouterLink} to="/news" startIcon={<ArrowBack />} sx={s.backBtn}>
+          {t('news.back')}
+        </Button>
 
-      {!item ? (
-        <Typography color="text.secondary">{t('news.notFound')}</Typography>
-      ) : (
-        <GlassCard>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            {item.title}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
-            {item.date && (
-              <Typography variant="body2" color="text.secondary">
-                {formatRelativeDate(item.date, i18n.language)}
+        {!item ? (
+          <GlassCard sx={s.articleCard}>
+            <Typography color="text.secondary">{t('news.notFound')}</Typography>
+          </GlassCard>
+        ) : (
+          <>
+            <Box component="header" sx={s.header}>
+              <Box sx={s.eyebrow}>
+                {item.labels.map((label) => (
+                  <Chip key={label} label={label} size="small" variant="outlined" sx={s.chip} />
+                ))}
+                {fullDate && (
+                  <>
+                    {item.labels.length > 0 && <Box sx={s.dot} />}
+                    <Typography component="span" sx={s.meta}>
+                      {fullDate}
+                    </Typography>
+                  </>
+                )}
+                {readMinutes > 0 && (
+                  <>
+                    <Box sx={s.dot} />
+                    <Typography component="span" sx={s.meta}>
+                      {t('news.readTime', { count: readMinutes })}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+              <Typography variant="h1" sx={s.title}>
+                {item.title}
               </Typography>
-            )}
-            {item.labels.map((label) => (
-              <Chip key={label} label={label} size="small" variant="outlined" />
-            ))}
-          </Box>
+              <Box sx={s.accentBar} />
+            </Box>
 
-          {item.content && (
-            // The feed content is third-party HTML → sanitized with DOMPurify before rendering.
-            <Box
-              sx={{
-                lineHeight: 1.7,
-                '& img': { maxWidth: '100%', height: 'auto', borderRadius: 1, my: 1 },
-                '& a': { color: 'primary.main' },
-                '& iframe': { maxWidth: '100%' },
-              }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content) }}
-            />
-          )}
+            <Box sx={s.grid(showAd)}>
+              <GlassCard sx={s.articleCard}>
+                {cleanHtml ? (
+                  // Third-party HTML, sanitized with DOMPurify above before rendering.
+                  <Box sx={s.prose} dangerouslySetInnerHTML={{ __html: cleanHtml }} />
+                ) : (
+                  <Typography color="text.secondary">{t('news.empty')}</Typography>
+                )}
 
-          {item.url && (
-            <Button
-              component="a"
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              endIcon={<OpenInNew />}
-              size="small"
-              sx={{ mt: 3 }}
-            >
-              {t('news.source')}
-            </Button>
-          )}
-        </GlassCard>
-      )}
+                {item.url && (
+                  <>
+                    <Divider sx={s.divider} />
+                    <Button
+                      component="a"
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNew />}
+                      variant="outlined"
+                      size="small"
+                      sx={s.sourceBtn}
+                    >
+                      {t('news.source')}
+                    </Button>
+                  </>
+                )}
+              </GlassCard>
+
+              {showAd && (
+                <Box component="aside" sx={s.sidebar}>
+                  <AdSlot width={300} height={250} />
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
+      </Box>
     </PageWrapper>
   );
 }
