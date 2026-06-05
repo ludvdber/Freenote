@@ -13,13 +13,19 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.Duration;
+
 /**
- * Base class for integration tests. Starts PostgreSQL and Redis via Testcontainers
- * using the singleton pattern so that containers are shared across all test classes
- * even when Spring creates separate ApplicationContexts (different @MockitoBean sets).
+ * Base class for integration tests. Starts PostgreSQL, Redis, MinIO and Meilisearch via
+ * Testcontainers using the singleton pattern so that containers are shared across all test classes
+ * even when Spring creates separate ApplicationContexts (different @MockitoBean sets). MinIO and
+ * Meilisearch are containerised too — the full Spring context connects to both at startup
+ * ({@code MinioServiceImpl.initBucket}, {@code MeilisearchServiceImpl.initIndex}), so without them
+ * the context fails to load on a clean CI runner (no local {@code docker compose} to lean on).
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -31,10 +37,14 @@ public abstract class AbstractIntegrationTest {
 
     static final PostgreSQLContainer postgres = createPostgres();
     static final GenericContainer<?> redis = createRedis();
+    static final GenericContainer<?> minio = createMinio();
+    static final GenericContainer<?> meilisearch = createMeilisearch();
 
     static {
         postgres.start();
         redis.start();
+        minio.start();
+        meilisearch.start();
     }
 
     @SuppressWarnings("resource")
@@ -53,6 +63,27 @@ public abstract class AbstractIntegrationTest {
         ).withExposedPorts(6379);
     }
 
+    @SuppressWarnings("resource")
+    private static GenericContainer<?> createMinio() {
+        return new GenericContainer<>(DockerImageName.parse("minio/minio:latest"))
+                .withCommand("server", "/data")
+                .withEnv("MINIO_ROOT_USER", "minioadmin")
+                .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
+                .withExposedPorts(9000)
+                .waitingFor(Wait.forHttp("/minio/health/live").forPort(9000)
+                        .withStartupTimeout(Duration.ofSeconds(60)));
+    }
+
+    @SuppressWarnings("resource")
+    private static GenericContainer<?> createMeilisearch() {
+        return new GenericContainer<>(DockerImageName.parse("getmeili/meilisearch:latest"))
+                .withEnv("MEILI_MASTER_KEY", "test-master-key")
+                .withEnv("MEILI_NO_ANALYTICS", "true")
+                .withExposedPorts(7700)
+                .waitingFor(Wait.forHttp("/health").forPort(7700)
+                        .withStartupTimeout(Duration.ofSeconds(60)));
+    }
+
     @DynamicPropertySource
     static void containerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
@@ -60,6 +91,10 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+        registry.add("app.minio.endpoint",
+                () -> "http://" + minio.getHost() + ":" + minio.getMappedPort(9000));
+        registry.add("app.meilisearch.host",
+                () -> "http://" + meilisearch.getHost() + ":" + meilisearch.getMappedPort(7700));
     }
 
     @Autowired protected MockMvc mockMvc;
