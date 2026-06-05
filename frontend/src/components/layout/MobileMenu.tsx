@@ -28,7 +28,12 @@ export default function MobileMenu() {
       <IconButton onClick={() => setOpen(true)} color="inherit">
         <MenuIcon />
       </IconButton>
-      <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={() => setOpen(false)}
+        slotProps={{ paper: { sx: s.drawerPaper } }}
+      >
         <Box sx={s.drawerBox}>
           <Box sx={s.closeRow}>
             <IconButton onClick={() => setOpen(false)}>

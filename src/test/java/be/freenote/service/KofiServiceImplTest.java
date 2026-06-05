@@ -89,6 +89,17 @@ class KofiServiceImplTest {
         verify(donationRepository).save(any(Donation.class));
     }
 
+    @Test
+    void shouldProcessTipType() {
+        // Ko-fi renamed the one-off donation type "Donation" → "Tip"; a tip must still grant ad-free.
+        KofiWebhookPayload p = payload("Tip", "valid-token");
+        when(userRepository.findByUsername("Donor")).thenReturn(Optional.empty());
+
+        kofiService.processWebhook(p);
+
+        verify(donationRepository).save(any(Donation.class));
+    }
+
     // ---- User matching ----
 
     @Test

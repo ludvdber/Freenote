@@ -61,7 +61,10 @@
   "news": {
     "title": "Quoi de neuf à l'ISFCE",
     "readMore": "Lire la suite",
-    "empty": "Rien de neuf pour l'instant — reviens bientôt."
+    "empty": "Rien de neuf pour l'instant — reviens bientôt.",
+    "back": "Retour aux actualités",
+    "source": "Lire sur le blog de l'ISFCE",
+    "notFound": "Actualité introuvable."
   },
   "community": {
     "title": "Communauté",
@@ -314,6 +317,10 @@
     "aboutSection": "À propos",
     "linksSection": "Réseaux",
     "preferencesSection": "Préférences",
+    "syncDiscordRole": "Synchroniser mon rôle Discord",
+    "syncDiscordRoleHelp": "Tu viens de rejoindre le serveur Discord ? Clique pour recevoir le rôle « vérifié ».",
+    "syncDiscordRoleDone": "Demande envoyée ! Si tu es sur le serveur Discord, le rôle « vérifié » t'a été attribué.",
+    "syncDiscordRoleError": "Échec de la synchronisation. Réessaie plus tard.",
     "statsSection": "Statistiques",
     "delegationSection": "Mandats de délégué",
     "dangerZone": "Zone de danger",

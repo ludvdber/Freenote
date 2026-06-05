@@ -76,8 +76,10 @@ public class NewsServiceImpl implements NewsService {
             for (int i = 0; i < Math.min(entries.getLength(), 10); i++) {
                 Element entry = (Element) entries.item(i);
 
+                String id = extractPostId(getTextContent(entry, "id"));
                 String title = getTextContent(entry, "title");
                 String date = getTextContent(entry, "published");
+                String content = getTextContent(entry, "content");
 
                 // Extract link
                 String url = null;
@@ -102,7 +104,7 @@ public class NewsServiceImpl implements NewsService {
                     }
                 }
 
-                items.add(new NewsItem(title, date, labels, url));
+                items.add(new NewsItem(id, title, date, labels, url, content));
             }
 
             return items;
@@ -119,5 +121,15 @@ public class NewsServiceImpl implements NewsService {
             return nodes.item(0).getTextContent();
         }
         return null;
+    }
+
+    /** Atom entry id "tag:blogger.com,1999:blog-XXXX.post-YYYY" → the stable "YYYY" part (used as
+     *  the slug for the on-site /news/{id} detail page). */
+    private String extractPostId(String atomId) {
+        if (atomId == null) {
+            return null;
+        }
+        int idx = atomId.lastIndexOf(".post-");
+        return idx >= 0 ? atomId.substring(idx + ".post-".length()) : atomId;
     }
 }

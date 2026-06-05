@@ -42,8 +42,12 @@ public class KofiServiceImpl implements KofiService {
             return;
         }
 
-        if (!"Donation".equals(payload.getType()) && !"Subscription".equals(payload.getType())) {
-            log.info("Ko-fi webhook ignored: type={}", payload.getType());
+        // Ko-fi renamed the one-off donation type "Donation" → "Tip" (current dashboard / webhook
+        // docs). Accept both so a single tip still grants ad-free, plus recurring "Subscription".
+        // Commission / Shop Order aren't supporter donations for Freenote, so they stay ignored.
+        String type = payload.getType();
+        if (!"Tip".equals(type) && !"Donation".equals(type) && !"Subscription".equals(type)) {
+            log.info("Ko-fi webhook ignored: type={}", type);
             return;
         }
 

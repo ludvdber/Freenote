@@ -22,6 +22,9 @@ public interface UserService {
     void addXp(Long userId, int amount);
     void deleteAccount(Long userId);
     void acceptTerms(Long userId);
+    /** Re-pushes the Discord "verified" role for the current (verified) user — e.g. after they join
+     *  the server, since the role is normally granted at email-verification time. */
+    void syncDiscordRole(Long userId);
     /** Admin: list users with basic profile info, searchable by username and filterable by section. */
     List<UserResponse> adminSearchUsers(String query, Long sectionId, int limit);
     /** Admin: mark a user as verified (bypasses the @isfce.be email flow). */

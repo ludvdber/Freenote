@@ -22,6 +22,7 @@ import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.ActivityLogService;
+import be.freenote.service.DiscordRoleService;
 import be.freenote.service.UserService;
 import be.freenote.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final BanRepository banRepository;
     private final UserMapper userMapper;
     private final ActivityLogService activityLogService;
+    private final DiscordRoleService discordRoleService;
 
     @Override
     public UserResponse getProfile(Long userId) {
@@ -228,6 +230,19 @@ public class UserServiceImpl implements UserService {
         reportRepository.saveAll(reports);
         documentRepository.anonymizeByUserId(user.getId());
         userRepository.delete(user);
+    }
+
+    @Override
+    public void syncDiscordRole(Long userId) {
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        // Only verified accounts get the "verified" role; nothing to do otherwise.
+        if (!user.isVerified()) {
+            return;
+        }
+        oauthLinkRepository.findByUserId(userId).stream()
+                .filter(link -> "DISCORD".equals(link.getProvider()))
+                .findFirst()
+                .ifPresent(link -> discordRoleService.assignVerifiedRole(link.getOauthId()));
     }
 
     @Override

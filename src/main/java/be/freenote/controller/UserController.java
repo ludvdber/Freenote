@@ -99,6 +99,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/me/sync-discord-role")
+    public ResponseEntity<Void> syncDiscordRole(Authentication authentication) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        userService.syncDiscordRole(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteAccount(Authentication authentication,
                                                HttpServletRequest request,

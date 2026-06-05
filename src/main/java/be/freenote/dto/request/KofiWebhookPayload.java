@@ -18,7 +18,7 @@ public class KofiWebhookPayload {
     private String timestamp;
 
     @JsonProperty("type")
-    private String type; // "Donation", "Subscription", "Shop Order"
+    private String type; // "Tip" (ex-"Donation"), "Subscription", "Commission", "Shop Order"
 
     @JsonProperty("is_public")
     private boolean isPublic;

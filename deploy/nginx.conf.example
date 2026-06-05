@@ -132,10 +132,10 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # Static Vite assets are cached aggressively — they're hashed.
+    # Static Vite assets are hashed; the backend already sends `Cache-Control: immutable`
+    # (SpaForwardingConfig), so nginx just proxies — no add_header here (avoids a duplicate header).
     location /assets/ {
         proxy_pass http://freenote_backend;
         proxy_set_header Host $host;
-        add_header Cache-Control "public, max-age=31536000, immutable";
     }
 }

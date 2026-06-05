@@ -2,14 +2,16 @@ import { Typography, List, ListItemButton, ListItemText, Chip, Box } from '@mui/
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
+import { Link as RouterLink } from 'react-router-dom';
 import { getNews } from '@/api/endpoints';
+import { formatRelativeDate } from '@/lib/utils';
 import { STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
 
 export default function News() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: news } = useQuery({ queryKey: ['news'], queryFn: getNews, staleTime: STALE_15M });
 
   return (
@@ -19,8 +21,8 @@ export default function News() {
       <GlassCard>
         <List>
           {news?.map((item, i) => (
-            <ListItemButton key={i} component="a" href={item.url ?? '#'} target="_blank" rel="noopener noreferrer">
-              <ListItemText primary={item.title} secondary={item.date} />
+            <ListItemButton key={item.id ?? i} component={RouterLink} to={`/news/${item.id}`}>
+              <ListItemText primary={item.title} secondary={item.date ? formatRelativeDate(item.date, i18n.language) : ''} />
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                 {item.labels.map((label) => <Chip key={label} label={label} size="small" variant="outlined" />)}
               </Box>

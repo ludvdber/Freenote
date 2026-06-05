@@ -15,6 +15,7 @@ import be.freenote.repository.UserRepository;
 import be.freenote.security.JwtTokenProvider;
 import be.freenote.service.ActivityLogService;
 import be.freenote.service.AuthService;
+import be.freenote.service.DiscordRoleService;
 import be.freenote.service.SmtpKeepAliveService;
 import be.freenote.util.HashUtil;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final JavaMailSender mailSender;
     private final SmtpKeepAliveService smtpKeepAliveService;
     private final ActivityLogService activityLogService;
+    private final DiscordRoleService discordRoleService;
 
     @Value("${app.email.hash-salt}")
     private String emailHashSalt;
@@ -240,6 +242,13 @@ public class AuthServiceImpl implements AuthService {
         user.setEmailHash(emailHash);
         user.setVerified(true);
         userRepository.save(user);
+
+        // Grant the ISFCE Discord "verified" role (async; no-op if the bot is unconfigured, and
+        // a 404/Discord outage never breaks verification — see DiscordRoleServiceImpl).
+        oauthLinkRepository.findByUserId(userId).stream()
+                .filter(link -> "DISCORD".equals(link.getProvider()))
+                .findFirst()
+                .ifPresent(link -> discordRoleService.assignVerifiedRole(link.getOauthId()));
 
         redisTemplate.delete(redisKey);
         redisTemplate.delete(attemptsKey);

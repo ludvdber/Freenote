@@ -18,6 +18,7 @@ const Upload = lazy(() => import('@/pages/Upload'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
 const News = lazy(() => import('@/pages/News'));
+const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
 const Tools = lazy(() => import('@/pages/Tools'));
 const Admin = lazy(() => import('@/pages/Admin'));
 const Legal = lazy(() => import('@/pages/Legal'));
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/users/:id" element={<ProtectedRoute><UserPublic /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/news" element={<News />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
           <Route path="/legal" element={<Legal />} />
           <Route path="/privacy" element={<Privacy />} />

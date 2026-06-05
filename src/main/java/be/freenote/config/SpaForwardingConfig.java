@@ -2,11 +2,13 @@ package be.freenote.config;
 
 import org.springframework.core.io.Resource;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Set;
 
 /**
@@ -31,8 +33,17 @@ public class SpaForwardingConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Vite emits content-hashed files under /assets/** → cache forever (immutable). Cloudflare
+        // and browsers then serve them from cache; the origin sends each asset essentially once.
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations("classpath:/static/assets/")
+                .setCacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
+
+        // Everything else (index.html, favicon, og-image, SPA deep-link fallback): revalidate, so a
+        // deploy propagates the fresh shell immediately (its hashed asset URLs have changed).
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
+                .setCacheControl(CacheControl.noCache())
                 .resourceChain(true)
                 .addResolver(new SpaPathResourceResolver());
     }

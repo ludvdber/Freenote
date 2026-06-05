@@ -130,6 +130,9 @@ export const getFeaturedProfiles = () =>
 export const acceptTerms = () =>
   api.post('/users/me/accept-terms');
 
+export const syncDiscordRole = () =>
+  api.post('/users/me/sync-discord-role');
+
 export const getRecentDocs = (limit = 6) =>
   api.get<DocumentResponse[]>('/users/me/recent-docs', { params: { limit } }).then((r) => r.data);
 

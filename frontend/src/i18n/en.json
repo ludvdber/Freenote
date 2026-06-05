@@ -61,7 +61,10 @@
   "news": {
     "title": "What's new at ISFCE",
     "readMore": "Read more",
-    "empty": "Nothing new right now — check back soon."
+    "empty": "Nothing new right now — check back soon.",
+    "back": "Back to news",
+    "source": "Read on the ISFCE blog",
+    "notFound": "News item not found."
   },
   "community": {
     "title": "Community",
@@ -314,6 +317,10 @@
     "aboutSection": "About",
     "linksSection": "Socials",
     "preferencesSection": "Preferences",
+    "syncDiscordRole": "Sync my Discord role",
+    "syncDiscordRoleHelp": "Just joined the Discord server? Click to get the \"verified\" role.",
+    "syncDiscordRoleDone": "Request sent! If you're on the Discord server, the \"verified\" role has been granted.",
+    "syncDiscordRoleError": "Sync failed. Please try again later.",
     "statsSection": "Stats",
     "delegationSection": "Delegate mandates",
     "dangerZone": "Danger zone",

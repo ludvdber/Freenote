@@ -24,6 +24,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.mail.internet.MimeMessage;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -41,6 +42,7 @@ class AuthServiceImplTest {
     @Mock private JavaMailSender mailSender;
     @Mock private SmtpKeepAliveService smtpKeepAliveService;
     @Mock private ActivityLogService activityLogService;
+    @Mock private DiscordRoleService discordRoleService;
     @Mock private ValueOperations<String, String> valueOps;
     @Mock private MimeMessage mimeMessage;
 
@@ -223,6 +225,26 @@ class AuthServiceImplTest {
         assertThat(user.getEmailHash()).isEqualTo(emailHash);
         verify(redisTemplate).delete("verify:1");
         verify(redisTemplate).delete("verify-attempts:1");
+    }
+
+    @Test
+    void shouldGrantDiscordVerifiedRoleOnConfirmation() {
+        String emailHash = HashUtil.hashEmail("test@isfce.be", "test-salt");
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.increment("verify-attempts:1")).thenReturn(1L);
+        when(valueOps.get("verify:1")).thenReturn("123456:" + emailHash);
+
+        User user = User.builder().id(1L).username("test").verified(false).role("USER").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenReturn(user);
+        when(jwtTokenProvider.generateToken(user)).thenReturn("verified-jwt");
+        UserOauthLink link = UserOauthLink.builder()
+                .user(user).provider("DISCORD").oauthId("discord-987").build();
+        when(oauthLinkRepository.findByUserId(1L)).thenReturn(List.of(link));
+
+        authService.confirmVerification(1L, "123456");
+
+        verify(discordRoleService).assignVerifiedRole("discord-987");
     }
 
     @Test

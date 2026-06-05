@@ -75,12 +75,21 @@ public class SecurityConfig {
                 .contentSecurityPolicy(csp -> csp
                     .policyDirectives(
                         "default-src 'self'; " +
-                        "script-src 'self'; " +
+                        // AdSense + Google CMP (Funding Choices) loaders. Manual <ins> ad units
+                        // work without 'unsafe-inline'; if an ad format is blocked, the browser
+                        // console logs the exact missing domain/directive to add here.
+                        "script-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
+                            "https://adservice.google.com https://*.googleadservices.com https://*.google.com " +
+                            "https://www.googletagservices.com https://fundingchoicesmessages.google.com; " +
                         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                         "font-src 'self' https://fonts.gstatic.com; " +
-                        "img-src 'self' data: blob: https://api.dicebear.com https://cdn.discordapp.com; " +
-                        "connect-src 'self'; " +
-                        "frame-src 'self'; " +
+                        "img-src 'self' data: blob: https://api.dicebear.com https://cdn.discordapp.com " +
+                            "https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.gstatic.com " +
+                            "https://*.googleusercontent.com https://*.bp.blogspot.com https://*.blogspot.com; " +
+                        "connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
+                            "https://*.google.com https://*.doubleclick.net; " +
+                        "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com " +
+                            "https://*.googlesyndication.com https://*.doubleclick.net https://fundingchoicesmessages.google.com; " +
                         "frame-ancestors 'self'; " +
                         "base-uri 'self'; " +
                         "form-action 'self'"

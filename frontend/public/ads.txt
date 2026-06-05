@@ -1,6 +1,3 @@
 # Freenote — ads.txt (norme IAB) : autorise Google AdSense à diffuser nos publicités.
-# Remplace pub-XXXXXXXXXXXXXXXX par TON identifiant éditeur AdSense (la partie après "ca-"),
-# visible dans AdSense → Compte → Informations sur le compte → ID éditeur (ca-pub-...).
-# Une fois en ligne, https://freenote.be/ads.txt doit renvoyer exactement ce fichier
-# (Vite copie public/* à la racine du site servi par le jar).
-google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+# https://freenote.be/ads.txt doit renvoyer exactement ce fichier (Vite copie public/* à la racine).
+google.com, pub-3398993252100042, DIRECT, f08c47fec0942fa0

@@ -41,6 +41,7 @@ import {
   deleteAccount,
   getDelegateHistory,
   getFavorites,
+  syncDiscordRole,
 } from '@/api/endpoints';
 import { formatDate, extractApiError } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
@@ -124,6 +125,8 @@ export default function Profile() {
     displayRealName !== user.displayRealName ||
     (sectionId === '' ? null : sectionId) !== (user.sectionId ?? null)
   );
+
+  const syncDiscordMutation = useMutation({ mutationFn: syncDiscordRole });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -470,6 +473,27 @@ export default function Profile() {
                   {user.verified ? t('profile.carouselHelp') : t('profile.carouselLocked')}
                 </Typography>
               </Box>
+              <Box sx={s.switchRow}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<LinkIcon />}
+                  onClick={() => syncDiscordMutation.mutate()}
+                  disabled={syncDiscordMutation.isPending}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  {t('profile.syncDiscordRole')}
+                </Button>
+                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
+                  {t('profile.syncDiscordRoleHelp')}
+                </Typography>
+              </Box>
+              {syncDiscordMutation.isSuccess && (
+                <Alert severity="success">{t('profile.syncDiscordRoleDone')}</Alert>
+              )}
+              {syncDiscordMutation.isError && (
+                <Alert severity="error">{t('profile.syncDiscordRoleError')}</Alert>
+              )}
             </Box>
           </GlassCard>
 

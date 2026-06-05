@@ -15,6 +15,10 @@
     { "name": "app.email.keepalive.threshold-days", "type": "java.lang.Integer", "description": "Days of SMTP inactivity before a keep-alive email is sent", "defaultValue": 80 },
     { "name": "app.email.keepalive.cron", "type": "java.lang.String", "description": "Cron expression for the daily SMTP keep-alive check", "defaultValue": "0 0 9 * * *" },
     { "name": "app.kofi.verification-token", "type": "java.lang.String", "description": "Ko-fi webhook verification token" },
+    { "name": "app.discord.bot-token", "type": "java.lang.String", "description": "Discord bot token (verified-role bot). Blank disables the feature." },
+    { "name": "app.discord.guild-id", "type": "java.lang.String", "description": "Discord guild (server) ID where the verified role is assigned" },
+    { "name": "app.discord.verified-role-id", "type": "java.lang.String", "description": "Discord role ID granted to verified members" },
+    { "name": "app.discord.announce-channel-id", "type": "java.lang.String", "description": "Discord channel ID for the hourly new-documents digest. Blank disables announcements." },
     { "name": "app.frontend.url", "type": "java.lang.String", "description": "Frontend base URL for OAuth redirects", "defaultValue": "http://localhost:3000" },
     { "name": "freenote.cors.allowed-origins", "type": "java.lang.String", "description": "Comma-separated CORS allowed origins", "defaultValue": "http://localhost:3000" }
   ]

@@ -103,6 +103,15 @@ app:
       threshold-days: ${MAIL_KEEPALIVE_THRESHOLD_DAYS:80}
   kofi:
     verification-token: ${KOFI_VERIFICATION_TOKEN:}
+  discord:
+    # Bot "rôle vérifié" — MÊME app Discord que l'OAuth login, credential séparé (Bot Token).
+    # Vide (token/guild/role) = désactivé : aucun appel Discord. Le bot doit être invité sur le
+    # serveur (scope bot + Manage Roles) et son rôle placé AU-DESSUS du rôle vérifié.
+    bot-token: ${DISCORD_BOT_TOKEN:}
+    guild-id: ${DISCORD_GUILD_ID:}
+    verified-role-id: ${DISCORD_VERIFIED_ROLE_ID:}
+    # Channel where the hourly "new verified documents" digest is posted. Blank = no announcements.
+    announce-channel-id: ${DISCORD_ANNOUNCE_CHANNEL_ID:}
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
 

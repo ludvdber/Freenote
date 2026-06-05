@@ -51,6 +51,10 @@ public class DocumentController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"document.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
+                // Private browser cache: re-opens/refreshes of the inline viewer don't re-fetch the
+                // whole PDF from MinIO for 10 min. `private` so Cloudflare never caches an authed PDF.
+                // Trade-off: repeat opens within the window no longer bump the "Vues" counter.
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)).cachePrivate())
                 .body(data);
     }
 

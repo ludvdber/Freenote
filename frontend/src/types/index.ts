@@ -126,10 +126,12 @@ export interface UpdateDelegateRequest {
 }
 
 export interface NewsItem {
+  id: string;
   title: string;
   date: string | null;
   labels: string[];
   url: string | null;
+  content: string | null;
 }
 
 export interface ProfileCardResponse {
