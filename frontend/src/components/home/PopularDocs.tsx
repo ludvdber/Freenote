@@ -31,7 +31,7 @@ export default function PopularDocs() {
           {/* Popular docs */}
           <Box sx={s.docsCol}>
             <Box sx={s.colHeader}>
-              <Typography variant="h5" sx={s.colTitle}>
+              <Typography variant="h5" component="h2" sx={s.colTitle}>
                 <span aria-hidden="true">📚</span> {t('popular.title')}
               </Typography>
               <Box component={Link} to="/browse" sx={s.viewAllLink}>
@@ -90,7 +90,7 @@ export default function PopularDocs() {
           {/* Leaderboard */}
           <Box sx={s.leaderboardCol}>
             <Box sx={s.colHeader}>
-              <Typography variant="h5" sx={s.colTitle}>
+              <Typography variant="h5" component="h2" sx={s.colTitle}>
                 <span aria-hidden="true">🏆</span> {t('leaderboard.title')}
               </Typography>
               {hasLeaderboard && (

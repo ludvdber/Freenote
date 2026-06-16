@@ -127,3 +127,11 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+logging:
+  level:
+    # Bots probe with malformed request lines (path-traversal scans, the SEO {search_term_string}
+    # template) and invalid third-party cookies. Tomcat rejects these before the app ever sees them;
+    # only surface WARN+ from these parsers so the noise stays out of the logs.
+    org.apache.coyote.http11.Http11Processor: warn
+    org.apache.tomcat.util.http.parser.Cookie: warn

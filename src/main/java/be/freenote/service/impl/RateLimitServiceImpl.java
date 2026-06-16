@@ -22,4 +22,10 @@ public class RateLimitServiceImpl implements RateLimitService {
         }
         return count != null && count <= max;
     }
+
+    @Override
+    public long retryAfterSeconds(String key) {
+        Long ttl = redisTemplate.getExpire("rate:" + key);
+        return ttl != null && ttl > 0 ? ttl : 0;
+    }
 }

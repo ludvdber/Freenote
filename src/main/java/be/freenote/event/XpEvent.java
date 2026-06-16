@@ -9,7 +9,7 @@ public sealed interface XpEvent {
     Long authorId();
 
     /** Document verified by admin → author earns XP. */
-    record DocumentVerified(Long authorId, Long documentId) implements XpEvent {}
+    record DocumentVerified(Long authorId, Long documentId, String title) implements XpEvent {}
 
     /** Document downloaded → author earns XP (unless self-download). */
     record DocumentDownloaded(Long authorId, Long documentId) implements XpEvent {}

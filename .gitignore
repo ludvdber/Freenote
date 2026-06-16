@@ -138,3 +138,4 @@ TEST-*.xml
 # --- Playwright ---
 frontend/screenshots/
 frontend/tests/e2e/test-results/
+viking_book.glb

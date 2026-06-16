@@ -208,7 +208,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         // Award XP to author on verification (not at upload) — prevents spam farming
         if (document.getUser() != null) {
-            eventPublisher.publishEvent(new XpEvent.DocumentVerified(document.getUser().getId(), documentId));
+            eventPublisher.publishEvent(new XpEvent.DocumentVerified(document.getUser().getId(), documentId, document.getTitle()));
         }
         statsService.invalidateCache();
         activityLogService.log(ActivityType.DOC_VERIFY, null, "Admin", document.getTitle());

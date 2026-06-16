@@ -55,7 +55,7 @@ function StatCard({ icon, value, label, color, visible, delay }: StatCardProps) 
     >
       <GlassCard sx={s.card}>
         <Typography sx={s.icon}>{icon}</Typography>
-        <Typography variant="h3" className="mono" sx={s.value(color)}>
+        <Typography variant="h3" component="div" className="mono" sx={s.value(color)}>
           {formatNumber(animated)}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={s.label}>

@@ -27,7 +27,7 @@ export default function RecentAndShortcuts() {
       <Box sx={s.section}>
         <Box sx={s.row}>
           <Box sx={s.col}>
-            <Typography variant="h5" sx={s.colTitle}>
+            <Typography variant="h5" component="h2" sx={s.colTitle}>
               <span aria-hidden="true">📖</span> {t('home.recent.title')}
             </Typography>
             <GlassCard sx={s.card}>
@@ -66,7 +66,7 @@ export default function RecentAndShortcuts() {
           </Box>
 
           <Box sx={s.col}>
-            <Typography variant="h5" sx={s.colTitle}>
+            <Typography variant="h5" component="h2" sx={s.colTitle}>
               <span aria-hidden="true">⚡</span> {t('home.shortcuts.title')}
             </Typography>
             <GlassCard sx={s.card}>

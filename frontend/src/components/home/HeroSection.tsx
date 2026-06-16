@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { Box, Typography, Button, Container } from '@mui/material';
 import { Explore, CloudUpload, KeyboardArrowDown } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
@@ -13,6 +13,20 @@ export default function HeroSection() {
   const { t } = useTranslation();
   const theme = useThemeStore((st) => st.theme);
   const scrolledRef = useRef(false);
+  const [showBackground, setShowBackground] = useState(false);
+
+  // Defer the heavy Three.js background (≈230 KB gz) until the browser is idle, so it never
+  // competes with hydration / LCP on first load. It fades in anyway, so the short delay is
+  // invisible; the base gradient stands in for the few ms before it mounts.
+  useEffect(() => {
+    const ric = window.requestIdleCallback;
+    if (ric) {
+      const id = ric(() => setShowBackground(true), { timeout: 2000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(() => setShowBackground(true), 300);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const handleScrollDown = useCallback(() => {
     const hero = document.getElementById('hero-section');
@@ -44,11 +58,13 @@ export default function HeroSection() {
   return (
     <motion.section initial="hidden" animate="show" variants={s.staggerVariants}>
       <Box id="hero-section" sx={s.heroContainer}>
-        <Suspense fallback={null}>
-          <HeroBackground theme={theme} />
-        </Suspense>
+        {showBackground && (
+          <Suspense fallback={null}>
+            <HeroBackground theme={theme} />
+          </Suspense>
+        )}
         <Container maxWidth="md" sx={s.inner}>
-          <motion.div variants={s.fadeUpVariants}>
+          <motion.div variants={s.titleVariants}>
             <Typography variant="h1" sx={s.title}>
               {t('hero.title')}
               <Box component="br" />
@@ -59,7 +75,7 @@ export default function HeroSection() {
           </motion.div>
 
           <motion.div variants={s.fadeUpVariants}>
-            <Typography variant="h6" color="text.secondary" sx={s.subtitle}>
+            <Typography variant="h6" component="p" color="text.secondary" sx={s.subtitle}>
               {t('hero.subtitle')}
             </Typography>
           </motion.div>

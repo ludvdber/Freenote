@@ -241,6 +241,11 @@ public class AuthServiceImpl implements AuthService {
 
         user.setEmailHash(emailHash);
         user.setVerified(true);
+        // Keep the displayed role in sync with the admin-verify path (adminVerifyUser): a self
+        // email-verification promotes USER → VERIFIED so the admin panel isn't out of sync.
+        if ("USER".equals(user.getRole())) {
+            user.setRole("VERIFIED");
+        }
         userRepository.save(user);
 
         // Grant the ISFCE Discord "verified" role (async; no-op if the bot is unconfigured, and

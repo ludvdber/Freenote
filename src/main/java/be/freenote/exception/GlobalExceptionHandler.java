@@ -2,10 +2,12 @@ package be.freenote.exception;
 
 import be.freenote.dto.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -76,7 +78,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleRateLimit(RateLimitExceededException ex) {
-        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS);
+        if (ex.getRetryAfterSeconds() > 0) {
+            builder.header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()));
+        }
+        return builder.body(new ErrorResponse(
+                HttpStatus.TOO_MANY_REQUESTS.value(), ex.getMessage(), LocalDateTime.now()));
+    }
+
+    /**
+     * A bot hit a valid path with the wrong HTTP method (e.g. {@code GET /api/documents}, which is
+     * POST-only). Return a clean 405 instead of letting {@link #handleGeneric} log a full-stack ERROR.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed");
     }
 
     @ExceptionHandler(FileStorageException.class)

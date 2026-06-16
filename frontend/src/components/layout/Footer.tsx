@@ -14,7 +14,7 @@ export default function Footer() {
       <Container maxWidth="lg">
         <Grid container spacing={4} sx={s.topGrid}>
           <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h6" sx={s.logo}>
+            <Typography variant="h6" component="p" sx={s.logo}>
               Freenote
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={s.tagline}>
@@ -26,7 +26,7 @@ export default function Footer() {
           </Grid>
 
           <Grid size={{ xs: 6, md: 4 }}>
-            <Typography variant="subtitle2" sx={s.colTitle}>
+            <Typography variant="subtitle2" component="h2" sx={s.colTitle}>
               {t('footer.links')}
             </Typography>
             <Box sx={s.linksCol}>
@@ -61,7 +61,7 @@ export default function Footer() {
           </Grid>
 
           <Grid size={{ xs: 6, md: 4 }}>
-            <Typography variant="subtitle2" sx={s.colTitle}>
+            <Typography variant="subtitle2" component="h2" sx={s.colTitle}>
               {t('community.title')}
             </Typography>
             <Box sx={s.linksCol}>

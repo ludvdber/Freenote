@@ -30,7 +30,7 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RateLimit(max = 5, window = 86400)
+    @RateLimit(max = 5, window = 3600)
     public ResponseEntity<DocumentResponse> create(Authentication authentication,
                                                     @Valid @RequestPart("data") CreateDocumentRequest request,
                                                     @RequestPart("file") MultipartFile file) {

@@ -39,13 +39,15 @@ function MainLayout() {
   return (
     <>
       <Navbar />
-      <OnboardingGate>
-        <TermsGate>
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
-        </TermsGate>
-      </OnboardingGate>
+      <Box component="main">
+        <OnboardingGate>
+          <TermsGate>
+            <Suspense fallback={<Loading />}>
+              <Outlet />
+            </Suspense>
+          </TermsGate>
+        </OnboardingGate>
+      </Box>
       <Footer />
     </>
   );
@@ -53,9 +55,11 @@ function MainLayout() {
 
 function ToolsLayout() {
   return (
-    <Suspense fallback={<Loading />}>
-      <Outlet />
-    </Suspense>
+    <Box component="main">
+      <Suspense fallback={<Loading />}>
+        <Outlet />
+      </Suspense>
+    </Box>
   );
 }
 

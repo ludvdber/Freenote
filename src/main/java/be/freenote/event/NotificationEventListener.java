@@ -30,7 +30,7 @@ public class NotificationEventListener {
         notificationService.push(
                 event.authorId(),
                 "document.verified",
-                Map.of("documentId", event.documentId())
+                Map.of("documentId", event.documentId(), "title", event.title())
         );
     }
 }

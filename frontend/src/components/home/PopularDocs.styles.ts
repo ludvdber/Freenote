@@ -70,7 +70,7 @@ export const rank: Sx = {
   flexShrink: 0,
 };
 
-export const docInfo: Sx = { flex: 1, minWidth: 0 };
+export const docInfo: Sx = { flex: 1, minWidth: 0, overflow: 'hidden' };
 
 export const docTitle: Sx = { fontWeight: 700, lineHeight: 1.3 };
 
@@ -80,6 +80,7 @@ export const categoryChip = (color: string): Sx => ({
   fontWeight: 600,
   fontSize: 10,
   height: 22,
+  flexShrink: 0,
   display: { xs: 'none', sm: 'flex' },
 });
 

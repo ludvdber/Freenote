@@ -44,7 +44,7 @@ export default function DelegatesDiscord() {
       <Box sx={s.section}>
         <Box sx={s.row}>
           <Box sx={s.delegatesCol}>
-            <Typography variant="h5" sx={s.colTitle}>
+            <Typography variant="h5" component="h2" sx={s.colTitle}>
               <span aria-hidden="true">🎖️</span> {t('delegates.title')}
             </Typography>
             <Box ref={delegatesCardRef} sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

@@ -12,6 +12,14 @@ export const fadeUpVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
 };
 
+// The hero <h1> is the LCP element. Keep it painted from the first frame (no opacity:0 start)
+// so Lighthouse measures LCP immediately instead of waiting for the fade — only the upward
+// slide is animated, which doesn't affect when the text is considered "painted".
+export const titleVariants = {
+  hidden: { y: 30 },
+  show: { y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
+};
+
 export const heroContainer: Sx = {
   position: 'relative',
   minHeight: '100vh',

@@ -292,7 +292,9 @@
     "pdfOnly": "PDF uniquement pour l'instant — convertis ton fichier et réessaie.",
     "titleCounter": "{{count}}/{{max}}",
     "anonymousHelp": "Masque ton pseudo sur la page du document — les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même XP, badges et contributions sur ton profil.",
-    "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document."
+    "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document.",
+    "rateLimited": "Limite d'envoi atteinte (5 documents par heure). Réessaie dans {{time}}.",
+    "rateLimitedNoTime": "Limite d'envoi atteinte (5 documents par heure). Réessaie un peu plus tard."
   },
   "profile": {
     "title": "Mon profil",
@@ -504,9 +506,9 @@
   "notifications": {
     "title": "Notifications",
     "empty": "Aucune notification pour le moment.",
-    "docVerified": "Ton document « {{title}} » a été vérifié !",
-    "badgeEarned": "Nouveau badge : {{badge}} !",
-    "xpEarned": "+{{xp}} XP gagnés"
+    "document": {
+      "verified": "Ton document « {{title}} » a été vérifié !"
+    }
   },
   "userPublic": {
     "notFound": "Utilisateur introuvable.",

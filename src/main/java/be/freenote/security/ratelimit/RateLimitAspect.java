@@ -26,8 +26,9 @@ public class RateLimitAspect {
     public Object enforce(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
         String key = resolveKey(joinPoint);
         if (!rateLimitService.isAllowed(key, rateLimit.max(), rateLimit.window())) {
-            log.warn("Rate limit exceeded: key={}", key);
-            throw new RateLimitExceededException("Rate limit exceeded. Try again later.");
+            long retryAfter = rateLimitService.retryAfterSeconds(key);
+            log.warn("Rate limit exceeded: key={} (retryAfter={}s)", key, retryAfter);
+            throw new RateLimitExceededException("Rate limit exceeded. Try again later.", retryAfter);
         }
         return joinPoint.proceed();
     }

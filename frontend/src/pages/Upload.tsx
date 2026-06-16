@@ -1,4 +1,4 @@
-import { useState, useRef, type ChangeEvent, type DragEvent } from 'react';
+import { useState, useRef, useMemo, type ChangeEvent, type DragEvent } from 'react';
 import {
   Typography,
   TextField,
@@ -16,6 +16,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { CloudUpload, CheckCircle, HelpOutlined } from '@mui/icons-material';
+import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,9 @@ import { CATEGORIES, MAX_FILE_SIZE, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import * as s from './Upload.styles';
+
+const byName = (a: { name: string }, b: { name: string }) =>
+  a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
 
 export default function Upload() {
   const { t } = useTranslation();
@@ -57,6 +61,11 @@ export default function Upload() {
   });
   const { data: professors } = useQuery({ queryKey: ['professors'], queryFn: getProfessors, staleTime: STALE_15M });
 
+  // Dropdowns are easier to scan alphabetically (fr locale so accented names sort naturally).
+  const sortedSections = useMemo(() => [...(sections ?? [])].sort(byName), [sections]);
+  const sortedCourses = useMemo(() => [...(courses ?? [])].sort(byName), [courses]);
+  const sortedProfessors = useMemo(() => [...(professors ?? [])].sort(byName), [professors]);
+
   const mutation = useMutation({
     mutationFn: () =>
       uploadDocument(
@@ -81,7 +90,20 @@ export default function Upload() {
       setShowSuccess(true);
       setTimeout(() => navigate(`/documents/${doc.id}`), 3000);
     },
-    onError: () => setError(t('common.error')),
+    onError: (err) => {
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        const retry = Number(err.response.headers['retry-after']);
+        const time =
+          Number.isFinite(retry) && retry > 0
+            ? retry >= 60
+              ? `${Math.ceil(retry / 60)} min`
+              : `${retry} s`
+            : '';
+        setError(time ? t('upload.rateLimited', { time }) : t('upload.rateLimitedNoTime'));
+      } else {
+        setError(t('common.error'));
+      }
+    },
   });
 
   const validateAndSet = (f: File) => {
@@ -165,7 +187,7 @@ export default function Upload() {
               setCourseId('');
             }}
           >
-            {sections?.map((sec) => (
+            {sortedSections.map((sec) => (
               <MenuItem key={sec.id} value={sec.id}>
                 {sec.name}
               </MenuItem>
@@ -181,7 +203,7 @@ export default function Upload() {
               label={t('document.course')}
               onChange={(e) => setCourseId(e.target.value as number)}
             >
-              {courses?.map((c) => (
+              {sortedCourses.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}
                 </MenuItem>
@@ -218,7 +240,7 @@ export default function Upload() {
             onChange={(e) => setProfessorId(e.target.value as number)}
           >
             <MenuItem value="">—</MenuItem>
-            {professors?.map((p) => (
+            {sortedProfessors.map((p) => (
               <MenuItem key={p.id} value={p.id}>
                 {p.name}
               </MenuItem>

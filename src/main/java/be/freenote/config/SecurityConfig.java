@@ -67,7 +67,7 @@ public class SecurityConfig {
                 ))
                 // Lock down sensitive browser features we don't use.
                 .permissionsPolicyHeader(policy -> policy.policy(
-                    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+                    "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
                 ))
                 // X-Frame-Options: SAMEORIGIN so we can embed our own PDFs in <iframe>
                 // (DocumentView). Combined with CSP frame-ancestors 'self' below, third-party

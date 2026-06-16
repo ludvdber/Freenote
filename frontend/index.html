@@ -25,10 +25,15 @@
     <title>Freenote — Éclaire ta promo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- AdSense origin: open the connection early (Lighthouse-recommended, ~80 ms LCP). -->
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
     <!-- Plain stylesheet link (no inline onload): the preload+JS-swap trick is blocked by the
          CSP `script-src 'self'`, which left the fonts preloaded-but-never-applied. `display=swap`
          already avoids the flash of invisible text. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" />
+    <!-- display=optional: the browser keeps the fallback font if Nunito isn't ready within ~100 ms
+         instead of swapping it in later — this kills the FOUT reflow that was the main CLS source
+         (the late font load pushed the footer, CLS 0.164). Nunito still loads + caches for next visits. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=optional" />
     <!-- Google AdSense loader (also serves the Google CMP / GDPR consent message). -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3398993252100042"
       crossorigin="anonymous"></script>

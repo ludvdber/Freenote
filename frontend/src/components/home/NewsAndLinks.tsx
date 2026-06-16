@@ -1,4 +1,4 @@
-import { Box, Typography, List, ListItemButton, ListItemText, Chip } from '@mui/material';
+import { Box, Typography, List, ListItem, ListItemButton, ListItemText, Chip } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ export default function NewsAndLinks() {
         <Box sx={s.flexRow}>
           {/* News column */}
           <Box sx={s.newsCol}>
-            <Typography variant="h5" sx={s.columnTitle}>
+            <Typography variant="h5" component="h2" sx={s.columnTitle}>
               <span aria-hidden="true">📰</span> {t('news.title')}
             </Typography>
             <GlassCard sx={s.newsCard}>
@@ -34,29 +34,30 @@ export default function NewsAndLinks() {
               {hasNews && (
                 <List dense sx={s.newsList}>
                   {news!.slice(0, 6).map((item, i) => (
-                    <ListItemButton
-                      key={item.id ?? i}
-                      component={RouterLink}
-                      to={`/news/${item.id}`}
-                      sx={s.newsItem}
-                    >
-                      <ListItemText
-                        primary={
-                          <Typography variant="body2" sx={s.newsTitle} noWrap>
-                            {item.title}
-                          </Typography>
-                        }
-                        secondary={item.date ? formatDate(item.date, i18n.language) : ''}
-                      />
-                      <Box sx={s.newsLabelsRow}>
-                        {item.labels.slice(0, 2).map((label) => (
-                          <Chip key={label} label={label} size="small" variant="outlined" sx={s.newsLabelChip} />
-                        ))}
-                        <Box sx={s.externalHint} aria-hidden="true">
-                          <ChevronRight sx={{ fontSize: 16 }} />
+                    <ListItem key={item.id ?? i} disablePadding>
+                      <ListItemButton
+                        component={RouterLink}
+                        to={`/news/${item.id}`}
+                        sx={s.newsItem}
+                      >
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" sx={s.newsTitle} noWrap>
+                              {item.title}
+                            </Typography>
+                          }
+                          secondary={item.date ? formatDate(item.date, i18n.language) : ''}
+                        />
+                        <Box sx={s.newsLabelsRow}>
+                          {item.labels.slice(0, 2).map((label) => (
+                            <Chip key={label} label={label} size="small" variant="outlined" sx={s.newsLabelChip} />
+                          ))}
+                          <Box sx={s.externalHint} aria-hidden="true">
+                            <ChevronRight sx={{ fontSize: 16 }} />
+                          </Box>
                         </Box>
-                      </Box>
-                    </ListItemButton>
+                      </ListItemButton>
+                    </ListItem>
                   ))}
                 </List>
               )}
@@ -65,7 +66,7 @@ export default function NewsAndLinks() {
 
           {/* Links column */}
           <Box sx={s.linksCol}>
-            <Typography variant="h5" sx={s.columnTitle}>
+            <Typography variant="h5" component="h2" sx={s.columnTitle}>
               <span aria-hidden="true">🔗</span> {t('links.title')}
             </Typography>
             <GlassCard sx={s.linksCard}>
