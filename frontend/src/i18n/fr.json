@@ -282,7 +282,15 @@
   },
   "upload": {
     "title": "Partager un document",
-    "dragDrop": "Glisse-dépose un PDF ici ou clique pour choisir",
+    "dragDrop": "Glisse-dépose un PDF ou des photos ici, ou clique pour choisir",
+    "dropHint": "PDF (7 Mo max) ou jusqu'à 8 photos JPG/PNG — assemblées en un seul PDF.",
+    "invalidFileType": "Format non supporté — PDF, JPG ou PNG uniquement.",
+    "imageTooLarge": "Chaque image doit faire moins de 8 Mo.",
+    "maxImages": "8 images maximum par document.",
+    "imagesCount": "{{count}}/{{max}} photos sélectionnées",
+    "imagePreview": "Aperçu",
+    "removeImage": "Retirer l'image",
+    "imagesInfo": "Tes photos seront assemblées en un seul PDF, leurs métadonnées (EXIF) sont supprimées.",
     "maxSize": "Taille maximale : 7 Mo",
     "yearHelp": "Année entre 2000 et 2099",
     "compressSuggestion": "Ton PDF fait plus de 5 Mo — pense à le compresser (ex : ilovepdf.com/compress_pdf) avant l'upload pour économiser de la bande passante.",
@@ -294,7 +302,9 @@
     "anonymousHelp": "Masque ton pseudo sur la page du document — les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même XP, badges et contributions sur ton profil.",
     "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document.",
     "rateLimited": "Limite d'envoi atteinte (5 documents par heure). Réessaie dans {{time}}.",
-    "rateLimitedNoTime": "Limite d'envoi atteinte (5 documents par heure). Réessaie un peu plus tard."
+    "rateLimitedNoTime": "Limite d'envoi atteinte (5 documents par heure). Réessaie un peu plus tard.",
+    "professorSuggested": "Conseillé",
+    "professorAll": "Tous les profs"
   },
   "profile": {
     "title": "Mon profil",
@@ -425,6 +435,7 @@
     "tagline": "Hub des documents de l'ISFCE",
     "independent": "Projet indépendant, non affilié à l'ISFCE.",
     "links": "Liens utiles",
+    "about": "À propos",
     "legal": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "Conditions",
@@ -441,8 +452,25 @@
   },
   "tools": {
     "title": "Outils",
+    "subtitle": "Une boîte à outils gratuite pour les étudiants : calculs de moyenne, réseau, conversions et plus. Pas de compte requis, tout fonctionne dans ton navigateur.",
+    "metaDescription": "Outils gratuits pour étudiants : calculateur de moyenne pondérée, calculateur IPv4, convertisseur de bases, encodeur Base64 et décodeur JWT. Sans compte, dans le navigateur.",
+    "openTool": "Ouvrir l'outil",
+    "allTools": "Tous les outils",
+    "aboutTitle": "À quoi ça sert",
+    "examplesTitle": "Exemples",
+    "faqTitle": "Questions fréquentes",
+    "indexAboutTitle": "Des outils pensés pour les études",
+    "indexAbout": [
+      "Freenote regroupe des petits outils utiles au quotidien quand on est étudiant : calculer une moyenne avec coefficients, vérifier un sous-réseau pour un cours de réseau, convertir un nombre entre bases ou inspecter un token. Chacun a sa propre page, avec une explication et des exemples.",
+      "Tous les calculs se font directement dans ton navigateur : rien n'est envoyé sur un serveur, c'est instantané et gratuit. Aucun compte n'est nécessaire pour les utiliser."
+    ],
     "ipv4": {
       "tab": "Calculateur IPv4",
+      "name": "Calculateur IPv4 / sous-réseaux (CIDR)",
+      "short": "Adresse réseau, broadcast, plage d'hôtes et masque à partir d'une IP et d'un CIDR.",
+      "lead": "Saisis une adresse IPv4 et un masque (en notation CIDR ou décimale) pour obtenir l'adresse réseau, le broadcast, la première et la dernière IP utilisables, le nombre d'hôtes et la visualisation binaire.",
+      "seoTitle": "Calculateur IPv4 et sous-réseaux (CIDR)",
+      "seoDescription": "Calculateur IPv4 gratuit : adresse réseau, broadcast, plage d'hôtes, masque wildcard et conversion CIDR ↔ décimale, avec visualisation binaire. Idéal pour les cours de réseau.",
       "ip": "Adresse IP",
       "mask": "Masque CIDR",
       "maskDecimal": "Masque décimal",
@@ -459,10 +487,29 @@
       "hostBits": "Bits hôte",
       "invalidIp": "Adresse IP invalide",
       "maskModeCidr": "CIDR",
-      "maskModeDec": "Déc."
+      "maskModeDec": "Déc.",
+      "about": [
+        "Un réseau IPv4 est défini par une adresse et un masque. Le masque sépare la partie « réseau » (les bits fixes) de la partie « hôte » (les bits qui changent d'une machine à l'autre). En notation CIDR, le masque s'écrit avec un slash suivi du nombre de bits réseau, par exemple /24.",
+        "Cet outil applique le masque à l'adresse pour déduire l'adresse réseau, l'adresse de broadcast, la première et la dernière adresse attribuables à des machines, le nombre total d'hôtes utilisables, la classe historique de l'adresse et le masque wildcard utilisé dans les ACL. La vue binaire colore les bits réseau et les bits hôte pour bien visualiser la frontière."
+      ],
+      "examples": [
+        "192.168.1.100 /24 → réseau 192.168.1.0, broadcast 192.168.1.255, 254 hôtes, masque 255.255.255.0.",
+        "10.0.0.1 /8 → réseau 10.0.0.0, broadcast 10.255.255.255, plus de 16 millions d'hôtes.",
+        "172.16.5.10 /30 → réseau 172.16.5.8, 2 hôtes utilisables seulement (liaison point-à-point)."
+      ],
+      "faq": [
+        { "q": "Quelle différence entre /24 et 255.255.255.0 ?", "a": "C'est la même chose écrite différemment : /24 signifie 24 bits réseau, ce qui correspond au masque décimal 255.255.255.0. L'outil convertit automatiquement entre les deux notations." },
+        { "q": "Pourquoi le nombre d'hôtes est inférieur de 2 à la taille du bloc ?", "a": "Dans un sous-réseau classique, la première adresse est l'adresse réseau et la dernière est le broadcast : elles ne sont pas attribuables à des machines, d'où le « -2 »." },
+        { "q": "Qu'est-ce que le masque wildcard ?", "a": "C'est l'inverse binaire du masque réseau (les 0 deviennent des 1). On l'utilise surtout dans les listes de contrôle d'accès (ACL) Cisco." }
+      ]
     },
     "base": {
       "tab": "Convertisseur de bases",
+      "name": "Convertisseur de bases (bin/oct/déc/hex)",
+      "short": "Convertis un nombre entre binaire, octal, décimal et hexadécimal, avec table ASCII.",
+      "lead": "Entre une valeur et choisis sa base : l'outil affiche instantanément sa conversion en binaire, octal, décimal et hexadécimal. Une table ASCII cliquable complète le tout.",
+      "seoTitle": "Convertisseur binaire, octal, décimal, hexadécimal",
+      "seoDescription": "Convertisseur de bases gratuit : binaire, octal, décimal et hexadécimal en un coup d'œil, avec table ASCII. Parfait pour l'informatique et l'électronique.",
       "input": "Valeur",
       "sourceBase": "Base source",
       "binary": "Binaire",
@@ -476,19 +523,55 @@
       "dec": "Déc.",
       "hexCol": "Hex",
       "binCol": "Bin",
-      "octCol": "Oct"
+      "octCol": "Oct",
+      "about": [
+        "Une base de numération définit le nombre de symboles utilisés pour écrire un nombre : 2 en binaire, 8 en octal, 10 en décimal et 16 en hexadécimal. Le même nombre s'écrit donc différemment selon la base, mais représente la même valeur.",
+        "Choisis la base de ta valeur de départ et l'outil affiche immédiatement les trois autres représentations. La table ASCII permet en plus de retrouver le code d'un caractère et son écriture dans chaque base, ce qui est pratique en informatique et en électronique numérique."
+      ],
+      "examples": [
+        "255 en décimal = 11111111 en binaire = 377 en octal = FF en hexadécimal.",
+        "1010 en binaire = 10 en décimal = A en hexadécimal.",
+        "Le caractère « A » a le code décimal 65, soit 0x41 en hexadécimal."
+      ],
+      "faq": [
+        { "q": "À quoi sert l'hexadécimal en informatique ?", "a": "L'hexadécimal est compact : deux chiffres hex représentent exactement un octet (8 bits). On le retrouve dans les couleurs web (#FF8800), les adresses mémoire et les codes d'erreur." },
+        { "q": "Pourquoi mon entrée est refusée ?", "a": "Chaque base n'accepte que certains symboles : le binaire seulement 0 et 1, l'octal 0 à 7, l'hexadécimal 0 à 9 et A à F. Un caractère hors de cet ensemble est signalé comme invalide." }
+      ]
     },
     "base64": {
       "tab": "Base64",
+      "name": "Encodeur / décodeur Base64",
+      "short": "Encode ou décode du texte en Base64, directement dans ton navigateur.",
+      "lead": "Colle ou tape ton texte, puis encode-le en Base64 ou décode une chaîne Base64 vers du texte lisible. Tout se passe localement dans le navigateur.",
+      "seoTitle": "Encodeur et décodeur Base64 en ligne",
+      "seoDescription": "Encode et décode du Base64 gratuitement et en ligne. Gestion correcte de l'UTF-8, traitement 100 % local dans le navigateur, sans envoi de données.",
       "input": "Texte à encoder",
       "decode": "Décoder",
       "encode": "Encoder",
       "output": "Résultat",
       "invalid": "Base64 invalide",
-      "placeholder": "Entre du texte à encoder/décoder…"
+      "placeholder": "Entre du texte à encoder/décoder…",
+      "about": [
+        "Le Base64 encode des données binaires en utilisant uniquement 64 caractères imprimables (lettres, chiffres, + et /). On l'utilise pour transporter du contenu dans des formats qui n'acceptent que du texte : e-mails, JSON, URL de données (data:) ou jetons d'authentification.",
+        "L'encodage augmente la taille d'environ un tiers et n'est pas du chiffrement : n'importe qui peut redécoder une chaîne Base64. Cet outil gère correctement l'UTF-8 (accents, emojis) et travaille entièrement dans ton navigateur."
+      ],
+      "examples": [
+        "« Bonjour » s'encode en « Qm9uam91ciA= ».",
+        "« SGVsbG8gd29ybGQ= » se décode en « Hello world ».",
+        "Une image peut être intégrée dans une page via une URL data:image/png;base64,…"
+      ],
+      "faq": [
+        { "q": "Le Base64 protège-t-il mes données ?", "a": "Non. Le Base64 est un encodage réversible, pas un chiffrement. Tout le monde peut décoder la chaîne. Pour protéger des données, il faut un vrai chiffrement." },
+        { "q": "Mes données sont-elles envoyées quelque part ?", "a": "Non, l'encodage et le décodage se font entièrement dans ton navigateur. Rien n'est transmis au serveur." }
+      ]
     },
     "jwt": {
       "tab": "JWT",
+      "name": "Décodeur JWT (JSON Web Token)",
+      "short": "Décode l'en-tête et le contenu d'un JWT. 100 % local, rien n'est envoyé au serveur.",
+      "lead": "Colle un JSON Web Token pour lire son en-tête, son contenu (claims) et vérifier ses dates d'émission et d'expiration. Le décodage est entièrement local.",
+      "seoTitle": "Décodeur JWT en ligne (100 % local)",
+      "seoDescription": "Décode un JSON Web Token (JWT) : en-tête, payload, dates d'émission et d'expiration. Outil 100 % local — le token n'est jamais envoyé à un serveur.",
       "help": "Colle un JSON Web Token ci-dessous. Tout reste local — le token n'est jamais envoyé au serveur.",
       "tokenLabel": "Token JWT",
       "header": "En-tête",
@@ -500,8 +583,123 @@
       "valid": "Encore valide",
       "expired": "Expiré",
       "issuedAt": "Émis le",
-      "expiresAt": "Expire le"
+      "expiresAt": "Expire le",
+      "about": [
+        "Un JSON Web Token (JWT) est une chaîne composée de trois parties séparées par des points : un en-tête, un contenu (les « claims ») et une signature. Les deux premières parties sont simplement encodées en Base64URL — elles sont donc lisibles par tout le monde, ce n'est pas du chiffrement.",
+        "Cet outil décode l'en-tête et le contenu, et interprète les champs de dates standards (iat pour l'émission, exp pour l'expiration) afin de te dire si le token est encore valide. La signature, elle, sert à garantir l'intégrité côté serveur et ne peut pas être vérifiée sans la clé de l'émetteur."
+      ],
+      "examples": [
+        "Un token de session contient souvent un champ « sub » (l'identifiant de l'utilisateur) et un champ « exp » (date d'expiration).",
+        "Si la date « exp » est passée, l'outil affiche le badge « Expiré ».",
+        "Le segment d'en-tête révèle l'algorithme de signature, par exemple HS256 ou RS256."
+      ],
+      "faq": [
+        { "q": "Décoder un JWT révèle-t-il des informations secrètes ?", "a": "Le contenu d'un JWT est seulement encodé, pas chiffré : il est lisible par quiconque possède le token. Il ne faut donc jamais y mettre de mot de passe ou de donnée sensible." },
+        { "q": "Pourquoi la signature n'est-elle pas vérifiée ?", "a": "Vérifier la signature nécessite la clé secrète (HS256) ou la clé publique (RS256) de l'émetteur. Cet outil reste 100 % local et ne dispose pas de ces clés, il décode donc sans valider la signature." }
+      ]
+    },
+    "grade": {
+      "tab": "Moyenne pondérée",
+      "name": "Calculateur de moyenne pondérée",
+      "short": "Calcule ta moyenne par cours avec coefficients, et la note finale du diplôme (TFE inclus).",
+      "lead": "Entre tes notes et leurs pondérations pour obtenir ta moyenne pondérée — avec un mode diplôme où le TFE (épreuve intégrée) compte pour deux tiers de la note finale.",
+      "seoTitle": "Calculateur de moyenne pondérée (sur 20)",
+      "seoDescription": "Calcule gratuitement ta moyenne pondérée par coefficients et ta note finale de diplôme (TFE = 2/3). Outil en ligne pour étudiants, sur 20 ou sur 100.",
+      "courseName": "Cours",
+      "courseNamePlaceholder": "Ex. : Mathématiques",
+      "grade": "Note",
+      "weight": "Coef.",
+      "addCourse": "Ajouter un cours",
+      "remove": "Supprimer",
+      "scale": "Échelle de notation",
+      "scale20": "Sur 20",
+      "scale100": "Sur 100",
+      "resultTitle": "Résultat",
+      "average": "Moyenne pondérée",
+      "courseAverage": "Moyenne des cours",
+      "totalWeight": "Somme des coefficients",
+      "passed": "Réussi",
+      "failed": "Échec",
+      "diplomaToggle": "Mode diplôme (TFE pondéré)",
+      "diplomaHint": "La note finale combine la moyenne des cours retenus et la note du TFE (épreuve intégrée). Par défaut le TFE compte pour deux tiers (⅔), mais tu peux ajuster ce pourcentage selon ta section. Coche uniquement les cours qui comptent pour le diplôme.",
+      "countsForDiploma": "Compte pour le diplôme",
+      "countsShort": "Compte",
+      "retainedAverage": "Moyenne des cours retenus",
+      "tfeShare": "Part du TFE",
+      "coursesShare": "Part des cours",
+      "tfeGrade": "Note du TFE",
+      "diplomaFormula": "Note finale = {{course}} % × moyenne des cours retenus + {{tfe}} % × TFE",
+      "diplomaFinal": "Note finale du diplôme",
+      "tfeMissing": "Entre la note du TFE pour calculer la note finale.",
+      "mentionSatisfaction": "Satisfaction",
+      "mentionDistinction": "Distinction",
+      "mentionHighDistinction": "Grande distinction",
+      "mentionHighestDistinction": "La plus grande distinction",
+      "about": [
+        "La moyenne pondérée tient compte du « poids » de chaque cours : un cours avec un coefficient 3 pèse trois fois plus qu'un cours à coefficient 1. Le calcul additionne chaque note multipliée par son coefficient, puis divise par la somme des coefficients. Laisse tous les coefficients à 1 pour une moyenne simple.",
+        "Le mode diplôme combine la moyenne des cours retenus et la note du TFE (épreuve intégrée). Tu choisis le pourcentage du TFE (deux tiers par défaut, comme à l'ISFCE) et tu coches les cours qui comptent — car tous les cours du bachelier n'entrent pas forcément dans la moyenne du diplôme.",
+        "Le résultat affiche aussi la mention obtenue selon le barème de l'enseignement supérieur belge : satisfaction à partir de 50 %, distinction à 60 %, grande distinction à 70 % et la plus grande distinction à 80 %. Le seuil de réussite est fixé à 50 % (soit 10/20)."
+      ],
+      "examples": [
+        "Deux cours : 14 (coef. 1) et 16 (coef. 3) → moyenne pondérée = (14×1 + 16×3) / 4 = 15,5/20, soit une grande distinction.",
+        "Mode diplôme par défaut : moyenne des cours retenus 13/20 et TFE 16/20 → note finale = ⅓×13 + ⅔×16 = 15/20.",
+        "Tu règles la part du TFE à 50 % : la note finale devient la moyenne simple entre tes cours retenus et ton TFE."
+      ],
+      "faq": [
+        { "q": "Comment fonctionne la pondération du TFE ?", "a": "Le TFE (épreuve intégrée) pèse lourd dans un bachelier. Par défaut l'outil lui donne deux tiers de la note finale et un tiers à la moyenne des cours retenus, mais tu peux changer ce pourcentage pour coller aux règles de ta section ou de ton école." },
+        { "q": "Pourquoi cocher les cours ?", "a": "Tous les cours d'un bachelier n'entrent pas forcément dans la moyenne qui détermine le diplôme. En mode diplôme, coche uniquement les cours retenus : seuls ceux-là sont moyennés avant d'être combinés avec le TFE." },
+        { "q": "Comment sont calculées les mentions ?", "a": "L'outil suit le barème belge de l'enseignement supérieur : moins de 50 % = échec, 50 à 59 % = satisfaction, 60 à 69 % = distinction, 70 à 79 % = grande distinction, 80 % et plus = la plus grande distinction." },
+        { "q": "Que mettre comme coefficient ?", "a": "Mets le poids relatif de chaque cours. Si tu ne connais pas les coefficients officiels, laisse-les tous à 1 : tu obtiens une moyenne arithmétique classique." }
+      ]
     }
+  },
+  "about": {
+    "metaTitle": "À propos de Freenote",
+    "metaDescription": "Freenote est la plateforme gratuite de partage de cours, synthèses, examens et TFE des étudiants de l'ISFCE. Découvre la mission, le fonctionnement et la vie privée du projet.",
+    "orgDescription": "Plateforme étudiante de partage de documents (cours, synthèses, examens, TFE) pour l'ISFCE, à Charleroi.",
+    "title": "À propos de Freenote",
+    "lead": "Freenote est une plateforme gratuite et indépendante qui rassemble les cours, synthèses, anciens examens et TFE des étudiants de l'ISFCE. L'objectif : que plus rien ne se perde et que chacun révise sur de bonnes bases.",
+    "missionTitle": "Notre mission",
+    "mission": [
+      "À l'ISFCE comme dans beaucoup d'écoles, les ressources des étudiants vivent éparpillées : un PDF dans une conversation, une synthèse sur une clé USB, un ancien examen que personne ne retrouve. Freenote centralise tout ça, rangé par section et par cours, pour que le travail d'une promo profite à la suivante.",
+      "Le projet est né au sein de la communauté étudiante de l'ISFCE et reste une initiative indépendante : il est financé par une publicité discrète et des dons facultatifs, jamais par la revente de données."
+    ],
+    "problemsTitle": "Les deux problèmes que Freenote résout",
+    "problems": [
+      { "title": "Vérifier les étudiants, simplement", "desc": "Pour protéger les échanges, seuls les étudiants disposant d'une adresse @isfce.be vérifiée accèdent aux documents. La vérification est automatique : un code par e-mail, et c'est réglé — sans démarche manuelle ni preuve à montrer." },
+      { "title": "Ne plus rien perdre", "desc": "Notes, synthèses, anciens examens et TFE sont rangés par section et par cours, et restent accessibles d'une année sur l'autre — au lieu de disparaître au fil des conversations." }
+    ],
+    "howTitle": "Comment ça marche",
+    "how": [
+      { "title": "Connecte-toi", "desc": "Crée ton compte en un clic via Discord, puis choisis ton pseudo et ta section." },
+      { "title": "Vérifie ton adresse ISFCE", "desc": "Reçois un code sur ton adresse @isfce.be pour débloquer l'accès complet — et, en bonus, le rôle « vérifié » sur le Discord étudiant." },
+      { "title": "Explore et partage", "desc": "Parcours les documents par cours, ouvre-les directement dans le navigateur, et partage les tiens pour aider ta promo et gagner de l'XP." }
+    ],
+    "featuresTitle": "Ce que tu trouves sur Freenote",
+    "features": [
+      { "title": "Documents par section et par cours", "desc": "Synthèses, examens, notes, exercices et TFE classés clairement, avec une recherche instantanée." },
+      { "title": "Lecture dans le navigateur", "desc": "Les PDF s'ouvrent directement sur le site, sans téléchargement forcé ni inscription à un service tiers." },
+      { "title": "Classement et XP", "desc": "Chaque document partagé rapporte des points : un classement met en avant les étudiants les plus généreux." },
+      { "title": "Des outils gratuits", "desc": "Un calculateur de moyenne pondérée, un calculateur IPv4, un convertisseur de bases et d'autres outils utiles, sans compte." }
+    ],
+    "privacyTitle": "Vie privée",
+    "privacy": [
+      "Freenote conserve le strict nécessaire : ton identifiant Discord, ton adresse @isfce.be sous forme hachée (jamais en clair), le pseudo et le profil que tu remplis, et les documents que tu déposes. Les fichiers PDF ne sont jamais exposés publiquement : ils transitent uniquement par le serveur, pour les comptes vérifiés.",
+      "Tu peux rester anonyme sur les documents que tu partages, garder ton profil privé, et supprimer ton compte à tout moment. Le code du projet est ouvert et consultable sur GitHub."
+    ],
+    "privacyLink": "Lire la politique de confidentialité",
+    "faqTitle": "Questions fréquentes",
+    "faq": [
+      { "q": "Freenote est-il gratuit ?", "a": "Oui, totalement. Une publicité discrète et des dons facultatifs (Ko-fi) financent l'hébergement ; un don retire les publicités pendant 30 jours." },
+      { "q": "Qui peut accéder aux documents ?", "a": "Les étudiants disposant d'une adresse @isfce.be vérifiée. Les pages publiques (accueil, outils, actualités, mentions légales) restent accessibles à tous." },
+      { "q": "Freenote est-il officiel ou affilié à l'ISFCE ?", "a": "Non. C'est une initiative étudiante indépendante, sans lien officiel avec l'école." },
+      { "q": "Comment partager un document ?", "a": "Une fois ton adresse vérifiée, clique sur « Partager » : choisis la section, le cours, la catégorie, puis dépose un PDF ou des photos (elles sont assemblées en un seul PDF)." }
+    ],
+    "ctaTitle": "Prêt à t'y mettre ?",
+    "ctaText": "Rejoins les étudiants de l'ISFCE qui révisent mieux grâce aux ressources partagées.",
+    "ctaBrowse": "Explorer les documents",
+    "ctaTools": "Voir les outils",
+    "ctaDiscord": "Rejoindre le Discord"
   },
   "notifications": {
     "title": "Notifications",

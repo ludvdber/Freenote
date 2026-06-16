@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -58,7 +60,8 @@ class StatsServiceImplTest {
         assertThat(result.totalContributors()).isEqualTo(50);
         assertThat(result.totalCourses()).isEqualTo(20);
         assertThat(result.weekUploads()).isEqualTo(5);
-        verify(valueOps).set(eq("stats:global"), any(StatsResponse.class), any());
+        // Boot 4.1 added a set(K,V,Consumer) overload, so the TTL arg must be typed to disambiguate.
+        verify(valueOps).set(eq("stats:global"), any(StatsResponse.class), any(Duration.class));
     }
 
     @Test

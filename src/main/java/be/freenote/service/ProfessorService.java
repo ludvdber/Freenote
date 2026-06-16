@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface ProfessorService {
     List<ProfessorResponse> getAll();
+    /** Professors already used on this course, most-used first (data-driven suggestion for upload). */
+    List<ProfessorResponse> getSuggestedForCourse(Long courseId);
     /** Admin: every professor (approved or not), alphabetically — the admin panel list. */
     List<ProfessorResponse> getAllForAdmin();
     ProfessorResponse create(String name);

@@ -49,10 +49,15 @@ export const searchDocuments = (params: {
 export const getPopularDocuments = (sectionId?: number) =>
   api.get<DocumentResponse[]>('/documents/popular', { params: sectionId ? { sectionId } : undefined }).then((r) => r.data);
 
-export const uploadDocument = (data: CreateDocumentRequest, file: File) => {
+export const uploadDocument = (data: CreateDocumentRequest, file: File | null, images?: File[]) => {
   const formData = new FormData();
   formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
-  formData.append('file', file);
+  if (images && images.length > 0) {
+    // Server assembles these JPG/PNG into a single PDF (strips EXIF). One part per image.
+    images.forEach((img) => formData.append('images', img));
+  } else if (file) {
+    formData.append('file', file);
+  }
   return api.post<DocumentResponse>('/documents', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then((r) => r.data);
@@ -101,6 +106,9 @@ export const createCourse = (data: CreateCourseRequest) =>
 // --- Professors ---
 export const getProfessors = () =>
   api.get<Professor[]>('/professors').then((r) => r.data);
+
+export const getSuggestedProfessors = (courseId: number) =>
+  api.get<Professor[]>(`/professors/suggested?courseId=${courseId}`).then((r) => r.data);
 
 export const createProfessor = (name: string) =>
   api.post<Professor>('/professors', { name }).then((r) => r.data);

@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface DocumentService {
     DocumentResponse create(CreateDocumentRequest request, MultipartFile file, Long userId);
+    /** Create a document from either a PDF (`file`) or 1–8 JPG/PNG images assembled into one PDF (`images`). */
+    DocumentResponse create(CreateDocumentRequest request, MultipartFile file, List<MultipartFile> images, Long userId);
     DocumentResponse getById(Long id);
     DocumentResponse adminUpdate(Long documentId, UpdateDocumentRequest request);
     PageResponse<DocumentResponse> search(String query, Long sectionId, Long courseId, String category, String sort, Pageable pageable);

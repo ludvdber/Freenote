@@ -8,6 +8,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  ListSubheader,
   FormControlLabel,
   Checkbox,
   Alert,
@@ -15,14 +16,14 @@ import {
   IconButton,
   FormHelperText,
 } from '@mui/material';
-import { CloudUpload, CheckCircle, HelpOutlined } from '@mui/icons-material';
+import { CloudUpload, CheckCircle, HelpOutlined, PhotoLibrary, Close } from '@mui/icons-material';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { uploadDocument, getSections, getCourses, getProfessors } from '@/api/endpoints';
-import { CATEGORIES, MAX_FILE_SIZE, STALE_15M } from '@/lib/constants';
+import { uploadDocument, getSections, getCourses, getProfessors, getSuggestedProfessors } from '@/api/endpoints';
+import { CATEGORIES, MAX_FILE_SIZE, MAX_IMAGES, IMAGE_MAX_SIZE, ACCEPTED_IMAGE_TYPES, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import * as s from './Upload.styles';
@@ -45,7 +46,9 @@ export default function Upload() {
   const [anonymous, setAnonymous] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [images, setImages] = useState<{ file: File; url: string }[]>([]);
   const [error, setError] = useState('');
+  const [professorTouched, setProfessorTouched] = useState(false);
   const [warning, setWarning] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -66,6 +69,24 @@ export default function Upload() {
   const sortedCourses = useMemo(() => [...(courses ?? [])].sort(byName), [courses]);
   const sortedProfessors = useMemo(() => [...(professors ?? [])].sort(byName), [professors]);
 
+  // Data-driven suggestion: profs already used on the chosen course, most-used first.
+  const { data: suggestedProfessors } = useQuery({
+    queryKey: ['suggested-professors', courseId],
+    queryFn: () => getSuggestedProfessors(courseId as number),
+    enabled: courseId !== '',
+    staleTime: STALE_15M,
+  });
+  const suggestedTop = useMemo(() => (suggestedProfessors ?? []).slice(0, 3), [suggestedProfessors]);
+  const suggestedIds = useMemo(() => new Set(suggestedTop.map((p) => p.id)), [suggestedTop]);
+  const otherProfessors = useMemo(
+    () => sortedProfessors.filter((p) => !suggestedIds.has(p.id)),
+    [sortedProfessors, suggestedIds]
+  );
+
+  // Derived (no setState in an effect): until the user touches the field, show/submit the top
+  // suggestion. Picking a course resets `professorTouched`, so the suggestion re-applies per course.
+  const effectiveProfessorId = professorTouched ? professorId : (suggestedTop[0]?.id ?? '');
+
   const mutation = useMutation({
     mutationFn: () =>
       uploadDocument(
@@ -74,14 +95,16 @@ export default function Upload() {
           courseId: courseId as number,
           category,
           year: year || undefined,
-          professorId: professorId || undefined,
+          professorId: effectiveProfessorId || undefined,
           language,
           aiGenerated,
           anonymous,
         },
-        file!
+        images.length > 0 ? null : file,
+        images.length > 0 ? images.map((i) => i.file) : undefined
       ),
     onSuccess: (doc) => {
+      images.forEach((i) => URL.revokeObjectURL(i.url));
       queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       if (user?.id) {
@@ -106,27 +129,55 @@ export default function Upload() {
     },
   });
 
-  const validateAndSet = (f: File) => {
-    if (f.type !== 'application/pdf') {
-      setError(t('upload.pdfOnly'));
+  // Accepts either a single PDF or 1–8 JPG/PNG images (assembled server-side into one PDF).
+  const handleFiles = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const all = Array.from(fileList);
+
+    const pdf = all.find((f) => f.type === 'application/pdf');
+    if (pdf) {
+      if (pdf.size > MAX_FILE_SIZE) {
+        setError(t('upload.maxSize'));
+        return;
+      }
+      images.forEach((i) => URL.revokeObjectURL(i.url)); // PDF replaces any selected images
+      setImages([]);
+      setFile(pdf);
+      setWarning(pdf.size > 5 * 1024 * 1024 ? t('upload.compressSuggestion') : '');
+      setError('');
       return;
     }
-    if (f.size > MAX_FILE_SIZE) {
-      setError(t('upload.maxSize'));
+
+    const imgs = all.filter((f) => (ACCEPTED_IMAGE_TYPES as readonly string[]).includes(f.type));
+    if (imgs.length === 0) {
+      setError(t('upload.invalidFileType'));
       return;
     }
-    if (f.size > 5 * 1024 * 1024) {
-      setWarning(t('upload.compressSuggestion'));
-    } else {
-      setWarning('');
+    if (imgs.some((f) => f.size > IMAGE_MAX_SIZE)) {
+      setError(t('upload.imageTooLarge'));
+      return;
     }
-    setFile(f);
-    setError('');
+    setFile(null);
+    setWarning('');
+    const room = MAX_IMAGES - images.length;
+    if (room <= 0) {
+      setError(t('upload.maxImages'));
+      return;
+    }
+    const added = imgs.slice(0, room).map((f) => ({ file: f, url: URL.createObjectURL(f) }));
+    setImages((prev) => [...prev, ...added]);
+    setError(imgs.length > room ? t('upload.maxImages') : '');
+  };
+
+  const removeImage = (idx: number) => {
+    const target = images[idx];
+    if (target) URL.revokeObjectURL(target.url);
+    setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) validateAndSet(f);
+    handleFiles(e.target.files);
+    e.target.value = ''; // allow re-selecting the same file / adding more images
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -145,14 +196,14 @@ export default function Upload() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) validateAndSet(f);
+    handleFiles(e.dataTransfer.files);
   };
 
   const openPicker = () => fileInputRef.current?.click();
 
+  const hasFile = Boolean(file) || images.length > 0;
   const yearValid = year === '' || /^20\d{2}$/.test(year);
-  const canSubmit = title && courseId && category && file && yearValid;
+  const canSubmit = title && courseId && category && hasFile && yearValid;
 
   return (
     <PageWrapper maxWidth="sm">
@@ -201,7 +252,11 @@ export default function Upload() {
             <Select
               value={courseId}
               label={t('document.course')}
-              onChange={(e) => setCourseId(e.target.value as number)}
+              onChange={(e) => {
+                setCourseId(e.target.value as number);
+                setProfessorId('');
+                setProfessorTouched(false);
+              }}
             >
               {sortedCourses.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
@@ -235,12 +290,26 @@ export default function Upload() {
         <FormControl>
           <InputLabel>{t('document.professor')}</InputLabel>
           <Select
-            value={professorId}
+            value={effectiveProfessorId}
             label={t('document.professor')}
-            onChange={(e) => setProfessorId(e.target.value as number)}
+            onChange={(e) => {
+              setProfessorId(e.target.value as number);
+              setProfessorTouched(true);
+            }}
           >
             <MenuItem value="">—</MenuItem>
-            {sortedProfessors.map((p) => (
+            {suggestedTop.length > 0 && (
+              <ListSubheader>{t('upload.professorSuggested')}</ListSubheader>
+            )}
+            {suggestedTop.map((p) => (
+              <MenuItem key={`s-${p.id}`} value={p.id}>
+                {p.name}
+              </MenuItem>
+            ))}
+            {suggestedTop.length > 0 && otherProfessors.length > 0 && (
+              <ListSubheader>{t('upload.professorAll')}</ListSubheader>
+            )}
+            {(suggestedTop.length > 0 ? otherProfessors : sortedProfessors).map((p) => (
               <MenuItem key={p.id} value={p.id}>
                 {p.name}
               </MenuItem>
@@ -305,25 +374,58 @@ export default function Upload() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           aria-label={t('upload.dragDrop')}
-          sx={s.dropzone(dragActive, Boolean(file))}
+          sx={s.dropzone(dragActive, hasFile)}
         >
           {file ? (
             <CheckCircle sx={s.dropzoneIcon} />
+          ) : images.length > 0 ? (
+            <PhotoLibrary sx={s.dropzoneIcon} />
           ) : (
             <CloudUpload sx={s.dropzoneIcon} />
           )}
           <Typography sx={s.dropzoneText}>
-            {file ? file.name : t('upload.dragDrop')}
+            {file
+              ? file.name
+              : images.length > 0
+                ? t('upload.imagesCount', { count: images.length, max: MAX_IMAGES })
+                : t('upload.dragDrop')}
           </Typography>
-          <Typography sx={s.dropzoneHint}>{t('upload.maxSize')}</Typography>
+          <Typography sx={s.dropzoneHint}>{t('upload.dropHint')}</Typography>
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept="application/pdf,image/jpeg,image/png"
+            multiple
             hidden
             onChange={handleFileChange}
           />
         </Box>
+
+        {images.length > 0 && (
+          <Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+              {images.map((img, idx) => (
+                <Box key={img.url} sx={{ position: 'relative', width: 84, height: 84 }}>
+                  <Box
+                    component="img"
+                    src={img.url}
+                    alt={`${t('upload.imagePreview')} ${idx + 1}`}
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => removeImage(idx)}
+                    aria-label={t('upload.removeImage')}
+                    sx={{ position: 'absolute', top: -10, right: -10, bgcolor: 'background.paper', boxShadow: 1, '&:hover': { bgcolor: 'background.paper' } }}
+                  >
+                    <Close fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+            <FormHelperText>{t('upload.imagesInfo')}</FormHelperText>
+          </Box>
+        )}
 
         <Button
           variant="contained"

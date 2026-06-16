@@ -86,9 +86,13 @@ test.describe('Visiteur non connecté', () => {
 
   test('outils accessibles sans login', async ({ page }) => {
     collectConsole(page, 'visitor-tools');
-    await page.goto('/tools');
+    await page.goto('/outils');
     await page.waitForLoadState('networkidle');
     await expect(page.getByText(either('Calculateur IPv4', 'IPv4 Calculator'))).toBeVisible({ timeout: 10_000 });
+    // Drill into one tool page (separate SEO URL)
+    await page.goto('/outils/calculateur-moyenne');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-tools.png'), fullPage: true });
   });
 

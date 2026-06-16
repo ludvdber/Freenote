@@ -1,11 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { isValidIp, calculateIPv4 } from '@/lib/ipv4';
 import { isValidForBase, convertBase } from '@/lib/baseConverter';
 
-// Mock i18n
+// Mock i18n — return the key (or a few known labels) so the UI renders predictably.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
@@ -19,7 +18,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock framer-motion
+// Mock framer-motion to plain elements
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...filterDomProps(props)}>{children}</div>,
@@ -37,23 +36,8 @@ function filterDomProps(props: Record<string, any>) {
   return clean;
 }
 
-// Mock Navbar and Footer to avoid their heavy dependencies
-vi.mock('@/components/layout/Navbar', () => ({
-  default: () => <nav data-testid="navbar" />,
-}));
-vi.mock('@/components/layout/Footer', () => ({
-  default: () => <footer data-testid="footer" />,
-}));
-
-import Tools from '../Tools';
-
-function renderTools() {
-  return render(
-    <MemoryRouter>
-      <Tools />
-    </MemoryRouter>,
-  );
-}
+import IPv4Calculator from '@/components/tools/IPv4Calculator';
+import BaseConverter from '@/components/tools/BaseConverter';
 
 // --- Pure logic tests (no DOM, 100% reliable) ---
 
@@ -101,13 +85,11 @@ describe('BaseConverter lib — convertBase', () => {
   });
 });
 
-// --- Component tests ---
+// --- Component tests (each tool is a standalone component now) ---
 
-describe('Tools — IPv4Calculator (default tab)', () => {
+describe('IPv4Calculator', () => {
   it('should show results for default IP 192.168.1.100/24', () => {
-    renderTools();
-
-    // Default state renders results immediately
+    render(<IPv4Calculator />);
     expect(screen.getByText('192.168.1.0')).toBeInTheDocument();
     expect(screen.getByText('192.168.1.255')).toBeInTheDocument();
     expect(screen.getByText('254')).toBeInTheDocument();
@@ -115,7 +97,7 @@ describe('Tools — IPv4Calculator (default tab)', () => {
 
   it('should show error for invalid IP', async () => {
     const user = userEvent.setup();
-    renderTools();
+    render(<IPv4Calculator />);
 
     const ipInput = screen.getByDisplayValue('192.168.1.100');
     await user.clear(ipInput);
@@ -125,18 +107,10 @@ describe('Tools — IPv4Calculator (default tab)', () => {
   });
 });
 
-describe('Tools — BaseConverter', () => {
+describe('BaseConverter', () => {
   it('should convert decimal 255 to binary, octal, hex', async () => {
     const user = userEvent.setup();
-    renderTools();
-
-    // Switch to base converter tab
-    const tabs = screen.getAllByRole('tab');
-    await user.click(tabs[1]);
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('42')).toBeInTheDocument();
-    });
+    render(<BaseConverter />);
 
     const input = screen.getByDisplayValue('42');
     await user.clear(input);

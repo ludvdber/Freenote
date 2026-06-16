@@ -2,7 +2,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     java
-    id("org.springframework.boot") version "4.0.6"
+    id("org.springframework.boot") version "4.1.0"
 }
 
 group = "be"
@@ -48,6 +48,9 @@ dependencies {
 
     // MinIO
     implementation("io.minio:minio:9.0.0")
+
+    // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
+    implementation("org.apache.pdfbox:pdfbox:3.0.4")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")

@@ -14,6 +14,7 @@ import be.freenote.repository.Repositories;
 import be.freenote.event.XpEvent;
 import be.freenote.service.ActivityLogService;
 import be.freenote.service.DocumentService;
+import be.freenote.service.ImageToPdfService;
 import be.freenote.service.MeilisearchService;
 import be.freenote.service.MinioService;
 import be.freenote.service.PdfValidationService;
@@ -51,6 +52,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentMapper documentMapper;
     private final MinioService minioService;
     private final PdfValidationService pdfValidationService;
+    private final ImageToPdfService imageToPdfService;
     private final MeilisearchService meilisearchService;
     private final StatsService statsService;
     private final ApplicationEventPublisher eventPublisher;
@@ -60,7 +62,25 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public DocumentResponse create(CreateDocumentRequest request, MultipartFile file, Long userId) {
-        byte[] pdfBytes = pdfValidationService.validate(file);
+        return create(request, file, null, userId);
+    }
+
+    @Override
+    @Transactional
+    public DocumentResponse create(CreateDocumentRequest request, MultipartFile file,
+                                   List<MultipartFile> images, Long userId) {
+        // Either a single PDF, or 1–8 JPG/PNG images assembled into one PDF (images take precedence).
+        byte[] pdfBytes;
+        String originalFilename;
+        if (images != null && !images.isEmpty()) {
+            pdfBytes = imageToPdfService.convertToPdf(images);
+            originalFilename = "document.pdf";
+        } else if (file != null && !file.isEmpty()) {
+            pdfBytes = pdfValidationService.validate(file);
+            originalFilename = file.getOriginalFilename();
+        } else {
+            throw new IllegalArgumentException("Aucun fichier fourni");
+        }
 
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
         Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
@@ -78,7 +98,7 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("Invalid category: " + request.getCategory());
         }
 
-        String fileKey = UUID.randomUUID() + "/" + FileUtil.sanitizeFileName(file.getOriginalFilename());
+        String fileKey = UUID.randomUUID() + "/" + FileUtil.sanitizeFileName(originalFilename);
         minioService.upload(fileKey, new ByteArrayInputStream(pdfBytes), pdfBytes.length, PDF_CONTENT_TYPE);
 
         Document document = Document.builder()

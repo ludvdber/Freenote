@@ -22,10 +22,12 @@ spring:
 
   servlet:
     multipart:
-      # A bit above the 7 MB business limit (enforced in PdfValidationService) so files in the
-      # 7–8 MB range get a clean 413 from the service rather than a raw multipart parse error.
+      # A bit above the 7 MB business limit (enforced in PdfValidationService) so a single PDF in the
+      # 7–8 MB range gets a clean 413 from the service rather than a raw multipart parse error.
       max-file-size: 8MB
-      max-request-size: 9MB
+      # Up to 8 images (image→PDF feature) can be sent in one request; each part is still capped at
+      # max-file-size, the assembled PDF is re-checked against the 7 MB limit in ImageToPdfService.
+      max-request-size: 50MB
 
   flyway:
     enabled: true

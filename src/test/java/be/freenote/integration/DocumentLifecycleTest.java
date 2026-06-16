@@ -12,11 +12,18 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -104,6 +111,61 @@ class DocumentLifecycleTest extends AbstractIntegrationTest {
         // XP is only awarded when an admin verifies the document (not at upload) to prevent spam farming.
         User refreshed = userRepository.findById(verifiedUser.getId()).orElseThrow();
         assertThat(refreshed.getXp()).isZero();
+    }
+
+    @Test
+    void shouldAssembleUploadedImagesIntoPdf() throws Exception {
+        // The image→PDF path runs the real ImageToPdfService (PDFBox) end-to-end; only MinIO is mocked.
+        when(minioService.upload(anyString(), any(InputStream.class), anyLong(), anyString()))
+                .thenReturn("test/scan.pdf");
+
+        String jsonData = """
+                {
+                    "title": "Scan Examen",
+                    "courseId": %d,
+                    "category": "EXAMEN",
+                    "language": "FR",
+                    "aiGenerated": false,
+                    "anonymous": false
+                }
+                """.formatted(course.getId());
+
+        MockMultipartFile data = new MockMultipartFile(
+                "data", "", "application/json", jsonData.getBytes());
+        MockMultipartFile img1 = new MockMultipartFile(
+                "images", "p1.png", "image/png", imageBytes(600, 800, "png"));
+        MockMultipartFile img2 = new MockMultipartFile(
+                "images", "p2.jpg", "image/jpeg", imageBytes(1000, 700, "jpg"));
+
+        mockMvc.perform(multipart("/api/documents")
+                        .file(img1)
+                        .file(img2)
+                        .file(data)
+                        .header("Authorization", "Bearer " + jwt)
+                        .with(csrf())
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Scan Examen"))
+                .andExpect(jsonPath("$.category").value("EXAMEN"));
+
+        var docs = documentRepository.findAll();
+        assertThat(docs).hasSize(1);
+        Document doc = docs.getFirst();
+        assertThat(doc.getFileSize()).isPositive();
+
+        // A real, non-empty PDF (not the raw images) was handed to storage.
+        verify(minioService).upload(anyString(), any(InputStream.class), longThat(len -> len > 0L), eq("application/pdf"));
+    }
+
+    private byte[] imageBytes(int w, int h, String format) throws IOException {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setColor(Color.BLUE);
+        g.fillRect(0, 0, w, h);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(img, format, out);
+        return out.toByteArray();
     }
 
     @Test

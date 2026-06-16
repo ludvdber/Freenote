@@ -33,10 +33,11 @@ public class DocumentController {
     @RateLimit(max = 5, window = 3600)
     public ResponseEntity<DocumentResponse> create(Authentication authentication,
                                                     @Valid @RequestPart("data") CreateDocumentRequest request,
-                                                    @RequestPart("file") MultipartFile file) {
+                                                    @RequestPart(value = "file", required = false) MultipartFile file,
+                                                    @RequestPart(value = "images", required = false) List<MultipartFile> images) {
         Long userId = SecurityUtils.currentUserId(authentication);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(documentService.create(request, file, userId));
+                .body(documentService.create(request, file, images, userId));
     }
 
     @GetMapping("/{id}")

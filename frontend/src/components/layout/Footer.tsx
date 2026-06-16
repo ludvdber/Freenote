@@ -32,6 +32,15 @@ export default function Footer() {
             <Box sx={s.linksCol}>
               <MuiLink
                 component={RouterLink}
+                to="/a-propos"
+                color="text.secondary"
+                underline="hover"
+                variant="body2"
+              >
+                {t('footer.about')}
+              </MuiLink>
+              <MuiLink
+                component={RouterLink}
                 to="/legal"
                 color="text.secondary"
                 underline="hover"

@@ -26,7 +26,9 @@ import { extractApiError } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 
-const LEGAL_ROUTES = new Set(['/legal', '/privacy', '/terms']);
+// Public content pages a provisional (not-yet-onboarded) account can still read without being
+// funnelled into the onboarding stepper — legal pages + the public "About" page.
+const LEGAL_ROUTES = new Set(['/legal', '/privacy', '/terms', '/a-propos']);
 
 /**
  * Funnels a freshly-logged-in (provisional) account through onboarding before it gets any access:

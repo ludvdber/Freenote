@@ -4,7 +4,13 @@
   <url><loc>https://freenote.be/browse</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://freenote.be/leaderboard</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://freenote.be/news</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-  <url><loc>https://freenote.be/tools</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://freenote.be/a-propos</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://freenote.be/outils</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://freenote.be/outils/calculateur-moyenne</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://freenote.be/outils/calculateur-ip</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://freenote.be/outils/convertisseur-bases</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://freenote.be/outils/base64</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://freenote.be/outils/jwt</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://freenote.be/legal</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://freenote.be/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://freenote.be/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>

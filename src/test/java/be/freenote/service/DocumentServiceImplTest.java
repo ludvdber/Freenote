@@ -41,6 +41,7 @@ class DocumentServiceImplTest {
     @Mock private DocumentMapper documentMapper;
     @Mock private MinioService minioService;
     @Mock private PdfValidationService pdfValidationService;
+    @Mock private ImageToPdfService imageToPdfService;
     @Mock private MeilisearchService meilisearchService;
     @Mock private StatsService statsService;
     @Mock private ActivityLogService activityLogService;
@@ -110,6 +111,41 @@ class DocumentServiceImplTest {
         verify(meilisearchService).indexDocument(any(Document.class));
         // XP is awarded on verify(), not create() — prevents spam farming
         verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
+    }
+
+    @Test
+    void shouldCreateDocumentFromImages() {
+        // Image-upload path: 1–8 JPG/PNG are assembled into one PDF by ImageToPdfService; the PDF
+        // validator is bypassed and the resulting bytes are stored as application/pdf.
+        MultipartFile image = mock(MultipartFile.class);
+        List<MultipartFile> images = List.of(image);
+        CreateDocumentRequest req = validRequest();
+
+        when(imageToPdfService.convertToPdf(images)).thenReturn(VALID_PDF_BYTES);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser()));
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(testCourse()));
+        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> {
+            Document d = inv.getArgument(0);
+            d.setId(100L);
+            return d;
+        });
+        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
+
+        DocumentResponse response = documentService.create(req, null, images, 1L);
+
+        assertThat(response).isNotNull();
+        verify(imageToPdfService).convertToPdf(images);
+        verify(pdfValidationService, never()).validate(any());
+        verify(minioService).upload(anyString(), any(), anyLong(), eq("application/pdf"));
+    }
+
+    @Test
+    void shouldThrowWhenNeitherFileNorImagesProvided() {
+        assertThatThrownBy(() -> documentService.create(validRequest(), null, null, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fichier");
+
+        verify(minioService, never()).upload(anyString(), any(), anyLong(), anyString());
     }
 
     @Test

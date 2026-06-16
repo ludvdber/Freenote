@@ -28,6 +28,14 @@ public class ProfessorController {
                 .body(professorService.getAll());
     }
 
+    /** Professors already used on this course (most-used first) — auto-fills the upload form. */
+    @GetMapping("/suggested")
+    public ResponseEntity<List<ProfessorResponse>> getSuggested(@RequestParam Long courseId) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                .body(professorService.getSuggestedForCourse(courseId));
+    }
+
     @PostMapping
     @RateLimit(max = 5, window = 3600)
     public ResponseEntity<ProfessorResponse> create(@Valid @RequestBody CreateProfessorRequest request) {

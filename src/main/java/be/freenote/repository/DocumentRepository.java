@@ -47,6 +47,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     long countByUserId(Long userId);
     long countByCourseId(Long courseId);
 
+    /** Professor IDs used on documents of a given course, most-used first — drives the
+     *  data-driven "suggested professor" auto-fill on the upload form. */
+    @Query("""
+        SELECT d.professor.id FROM Document d
+        WHERE d.course.id = :courseId AND d.professor IS NOT NULL
+        GROUP BY d.professor.id
+        ORDER BY COUNT(d) DESC
+        """)
+    List<Long> findProfessorIdsByCourseRankedByUsage(@Param("courseId") Long courseId);
+
     @Query("SELECT COUNT(d) FROM Document d WHERE d.course.section.id = :sectionId")
     long countBySectionId(@Param("sectionId") Long sectionId);
 

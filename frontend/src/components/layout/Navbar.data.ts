@@ -11,5 +11,5 @@ export const NAV_LINKS: NavLink[] = [
   { key: 'browse',      to: '/browse',      protected: true },
   { key: 'leaderboard', to: '/leaderboard', protected: true },
   { key: 'news',        to: '/news' },                       // Flux RSS école — public
-  { key: 'tools',       to: '/tools' },
+  { key: 'tools',       to: '/outils' },
 ];

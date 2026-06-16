@@ -3,6 +3,7 @@ package be.freenote.service.impl;
 import be.freenote.dto.response.ProfessorResponse;
 import be.freenote.entity.Professor;
 import be.freenote.mapper.ProfessorMapper;
+import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.ProfessorRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.service.ProfessorService;
@@ -11,6 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,11 +23,28 @@ import java.util.List;
 public class ProfessorServiceImpl implements ProfessorService {
 
     private final ProfessorRepository professorRepository;
+    private final DocumentRepository documentRepository;
     private final ProfessorMapper professorMapper;
 
     @Override
     public List<ProfessorResponse> getAll() {
         return professorRepository.findByApprovedTrue().stream()
+                .map(professorMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ProfessorResponse> getSuggestedForCourse(Long courseId) {
+        List<Long> rankedIds = documentRepository.findProfessorIdsByCourseRankedByUsage(courseId);
+        if (rankedIds.isEmpty()) {
+            return List.of();
+        }
+        // findAllById doesn't preserve order, so re-order by the usage ranking via a lookup map.
+        Map<Long, Professor> byId = professorRepository.findAllById(rankedIds).stream()
+                .collect(Collectors.toMap(Professor::getId, Function.identity()));
+        return rankedIds.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .map(professorMapper::toResponse)
                 .toList();
     }
