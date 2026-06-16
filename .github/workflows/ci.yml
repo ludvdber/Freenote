@@ -72,8 +72,8 @@ jobs:
       - name: Type check + build
         run: npm run build
 
-      - name: Unit tests
-        run: npx vitest run
+      - name: Unit tests + coverage (enforces 70% thresholds)
+        run: npx vitest run --coverage
 
   # E2E stays optional — it needs the full stack running.
   # Uncomment when a preview deployment is wired up.
