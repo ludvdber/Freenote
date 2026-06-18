@@ -265,7 +265,7 @@ export default function DocumentView() {
           </Typography>
           <StarRating
             value={avgRating ?? doc.averageRating}
-            readOnly={!isVerified}
+            readOnly={!isVerified || isOwner}
             onChange={(v) => rateMutation.mutate(v)}
           />
         </Box>

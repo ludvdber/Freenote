@@ -176,13 +176,16 @@ class DocumentServiceImplTest {
         CreateDocumentRequest req = validRequest();
         req.setCategory("INVALID_CAT");
 
+        // Category is validated in "phase 1" (after PDF prep, before the MinIO upload and any DB
+        // access), so an invalid category fails fast without uploading an orphan file or hitting the DB.
         when(pdfValidationService.validate(file)).thenReturn(VALID_PDF_BYTES);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser()));
-        when(courseRepository.findById(10L)).thenReturn(Optional.of(testCourse()));
 
         assertThatThrownBy(() -> documentService.create(req, file, 1L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid category");
+
+        verify(minioService, never()).upload(anyString(), any(), anyLong(), anyString());
+        verify(userRepository, never()).findById(anyLong());
     }
 
     @Test

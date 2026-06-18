@@ -1,6 +1,17 @@
 User-agent: *
 Allow: /
+
+# Login-gated routes return only the empty SPA shell to crawlers — keep them out of the
+# index to avoid "thin content" penalties. Public surface that SHOULD be indexed:
+# /  /outils  /outils/*  /a-propos  /news  /news/*  /legal  /privacy  /terms
 Disallow: /admin
 Disallow: /profile
 Disallow: /upload
+Disallow: /browse
+Disallow: /leaderboard
+Disallow: /documents
+Disallow: /courses
+Disallow: /users
+Disallow: /api/
+
 Sitemap: https://freenote.be/sitemap.xml

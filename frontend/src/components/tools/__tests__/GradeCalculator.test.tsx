@@ -40,7 +40,7 @@ describe('GradeCalculator', () => {
     const grades = screen.getAllByLabelText('tools.grade.grade /20');
     const weights = screen.getAllByLabelText('tools.grade.weight');
 
-    // (14×1 + 16×3) / 4 = 15.5 → 77.5% → high distinction
+    // (14×1 + 16×3) / 4 = 15.5 → 77.5% → distinction (ISFCE scale: 70–80%)
     await user.type(grades[0], '14');
     await user.type(grades[1], '16');
     await user.clear(weights[1]);
@@ -48,7 +48,7 @@ describe('GradeCalculator', () => {
 
     expect(screen.getByText('tools.grade.resultTitle')).toBeInTheDocument();
     expect(screen.getByText('15,5')).toBeInTheDocument();
-    expect(screen.getByText('tools.grade.mentionHighDistinction')).toBeInTheDocument();
+    expect(screen.getByText('tools.grade.mentionDistinction')).toBeInTheDocument();
   });
 
   it('applies the default ⅔ TFE weighting in diploma mode', async () => {
@@ -64,9 +64,9 @@ describe('GradeCalculator', () => {
     const tfe = await screen.findByLabelText('tools.grade.tfeGrade /20');
     await user.type(tfe, '15');
 
-    // final = ⅓×12 + ⅔×15 = 14 → 70% → high distinction
+    // final = ⅓×12 + ⅔×15 = 14 → 70% → distinction (ISFCE scale: 70–80%)
     expect(screen.getByText('tools.grade.diplomaFinal')).toBeInTheDocument();
     expect(screen.getByText('14')).toBeInTheDocument();
-    expect(screen.getByText('tools.grade.mentionHighDistinction')).toBeInTheDocument();
+    expect(screen.getByText('tools.grade.mentionDistinction')).toBeInTheDocument();
   });
 });

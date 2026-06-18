@@ -52,7 +52,11 @@ public class SpaForwardingConfig implements WebMvcConfigurer {
         @Override
         protected Resource getResource(String resourcePath, Resource location) throws IOException {
             Resource requested = location.createRelative(resourcePath);
-            if (requested.exists() && requested.isReadable()) {
+            // checkResource = the parent's isResourceUnderLocation guard: belt-and-suspenders against a
+            // crafted "../"-style path escaping /static/ to read an arbitrary classpath resource
+            // (e.g. application-*.yml). ResourceHttpRequestHandler.isInvalidPath already rejects such
+            // paths upstream, but re-validating here keeps this custom resolver safe on its own.
+            if (requested.exists() && requested.isReadable() && checkResource(requested, location)) {
                 return requested;
             }
             // Backend paths: do not rewrite to index.html, let Spring return the normal 404/response.

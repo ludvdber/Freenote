@@ -84,12 +84,15 @@ export default function GradeCalculator() {
 
   const fmt = (v: number) => v.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 
-  /** Belgian higher-education distinction from a percentage. */
+  /** Belgian higher-education mention (ISFCE scale) from a percentage:
+   *  <50 échec · 50–60 réussite avec fruit · 60–70 satisfaction · 70–80 distinction ·
+   *  80–90 grande distinction · 90+ la plus grande distinction. */
   const mention = (p: number): { label: string; color: ChipProps['color'] } => {
     if (p < PASS_PERCENT) return { label: t('tools.grade.failed'), color: 'error' };
-    if (p < 60) return { label: t('tools.grade.mentionSatisfaction'), color: 'info' };
-    if (p < 70) return { label: t('tools.grade.mentionDistinction'), color: 'primary' };
-    if (p < 80) return { label: t('tools.grade.mentionHighDistinction'), color: 'secondary' };
+    if (p < 60) return { label: t('tools.grade.mentionFruit'), color: 'warning' };
+    if (p < 70) return { label: t('tools.grade.mentionSatisfaction'), color: 'info' };
+    if (p < 80) return { label: t('tools.grade.mentionDistinction'), color: 'primary' };
+    if (p < 90) return { label: t('tools.grade.mentionHighDistinction'), color: 'secondary' };
     return { label: t('tools.grade.mentionHighestDistinction'), color: 'success' };
   };
 

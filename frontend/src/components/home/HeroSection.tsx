@@ -1,10 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
-import { Box, Typography, Button, Container } from '@mui/material';
+import { Box, Typography, Button, Container, useMediaQuery } from '@mui/material';
 import { Explore, CloudUpload, KeyboardArrowDown } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '@/stores/useThemeStore';
+// OrbsFallback is a pure-CSS component (no Three.js import), so referencing it here does NOT pull
+// the heavy @react-three/fiber + three bundle into the entry chunk.
+import OrbsFallback from '@/components/three/ParticleField/OrbsFallback';
 
 const HeroBackground = lazy(() => import('@/components/three/ParticleField'));
 import * as s from './HeroSection.styles';
@@ -14,11 +17,16 @@ export default function HeroSection() {
   const theme = useThemeStore((st) => st.theme);
   const scrolledRef = useRef(false);
   const [showBackground, setShowBackground] = useState(false);
+  // noSsr so the first render already reflects the real viewport — on mobile we must NOT even
+  // mount <HeroBackground/>, otherwise React.lazy would fetch the ~230 KB gz Three.js chunk that
+  // mobile never uses (it only renders the CSS orbs). This is the PageSpeed mobile P1 fix.
+  const isMobile = useMediaQuery('(max-width: 768px)', { noSsr: true });
 
   // Defer the heavy Three.js background (≈230 KB gz) until the browser is idle, so it never
   // competes with hydration / LCP on first load. It fades in anyway, so the short delay is
-  // invisible; the base gradient stands in for the few ms before it mounts.
+  // invisible; the base gradient stands in for the few ms before it mounts. Desktop only.
   useEffect(() => {
+    if (isMobile) return;
     const ric = window.requestIdleCallback;
     if (ric) {
       const id = ric(() => setShowBackground(true), { timeout: 2000 });
@@ -26,7 +34,7 @@ export default function HeroSection() {
     }
     const id = window.setTimeout(() => setShowBackground(true), 300);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [isMobile]);
 
   const handleScrollDown = useCallback(() => {
     const hero = document.getElementById('hero-section');
@@ -58,10 +66,16 @@ export default function HeroSection() {
   return (
     <motion.section initial="hidden" animate="show" variants={s.staggerVariants}>
       <Box id="hero-section" sx={s.heroContainer}>
-        {showBackground && (
-          <Suspense fallback={null}>
-            <HeroBackground theme={theme} />
-          </Suspense>
+        {/* Mobile renders the cheap CSS orbs directly — never importing Three.js. Desktop lazy-loads
+            the particle field once the browser is idle. */}
+        {isMobile ? (
+          <OrbsFallback theme={theme} />
+        ) : (
+          showBackground && (
+            <Suspense fallback={null}>
+              <HeroBackground theme={theme} />
+            </Suspense>
+          )
         )}
         <Container maxWidth="md" sx={s.inner}>
           <motion.div variants={s.titleVariants}>

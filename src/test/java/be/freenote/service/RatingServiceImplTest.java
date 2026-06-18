@@ -5,6 +5,7 @@ import be.freenote.entity.Rating;
 import be.freenote.entity.User;
 import be.freenote.enums.Category;
 import be.freenote.event.XpEvent;
+import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.RatingRepository;
@@ -91,6 +92,23 @@ class RatingServiceImplTest {
         ratingService.rate(2L, 100L, 3);
 
         verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
+    }
+
+    @Test
+    void shouldRejectSelfRating() {
+        User author = testUser(1L);
+        Document doc = testDocument(author);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+
+        assertThatThrownBy(() -> ratingService.rate(1L, 100L, 5))
+                .isInstanceOf(ForbiddenException.class);
+
+        // No rating persisted, no XP farmed, no average inflated.
+        verify(ratingRepository, never()).save(any());
+        verify(documentRepository, never()).recalcRatingStats(anyLong());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     // ---- Update existing rating ----

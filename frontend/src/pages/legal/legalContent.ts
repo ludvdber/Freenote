@@ -16,7 +16,7 @@ export interface LegalPage {
 }
 
 // Updated when the content materially changes. Shown to users.
-export const LEGAL_UPDATED_AT = '2026-06-01';
+export const LEGAL_UPDATED_AT = '2026-06-17';
 
 // -------------------- LEGAL (mentions légales) --------------------
 
@@ -111,7 +111,7 @@ const privacyFr: LegalPage = {
     {
       heading: 'Responsable du traitement',
       body: [
-        "Le responsable du traitement des données personnelles est l'éditeur du site, identifié dans les mentions légales. Pour exercer vos droits, contactez l'éditeur via le serveur Discord communautaire (lien en pied de page) en mentionnant explicitement « Demande RGPD ».",
+        "Le responsable du traitement des données personnelles est l'éditeur du site, identifié dans les mentions légales. Pour exercer vos droits ou pour toute question, contactez l'éditeur via le serveur Discord communautaire (lien en pied de page) en mentionnant explicitement « Demande RGPD ».",
       ],
     },
     {
@@ -136,13 +136,14 @@ const privacyFr: LegalPage = {
       body: [
         "Discord : fournisseur d'authentification OAuth2 (données limitées : identifiant, nom affiché, email).",
         "Brevo (ex-Sendinblue), serveurs hébergés à Paris : envoi d'emails transactionnels (vérification). Politique RGPD disponible sur brevo.com.",
-        "Aucun autre sous-traitant. Les bases de données, le stockage des fichiers et l'indexation de recherche sont hébergés sur l'infrastructure personnelle de l'éditeur en Belgique.",
+        "Google AdSense (Google Ireland Limited) : régie publicitaire affichant des annonces sur les pages publiques du site. Google et ses partenaires peuvent traiter des données de navigation à des fins de diffusion et de mesure publicitaires, uniquement après recueil de votre consentement (voir « Cookies » ci-dessous). Politique de confidentialité : policies.google.com/privacy.",
+        "Hormis ces prestataires, les bases de données, le stockage des fichiers et l'indexation de recherche sont hébergés sur l'infrastructure personnelle de l'éditeur en Belgique.",
       ],
     },
     {
       heading: 'Transferts hors Union européenne',
       body: [
-        "Aucun transfert structurel hors UE n'est effectué. Discord, en tant que fournisseur OAuth, peut traiter certaines données sur ses propres serveurs selon sa politique.",
+        "Aucun transfert structurel hors UE n'est effectué pour les données de compte. Discord (OAuth) et Google (AdSense), en tant que prestataires internationaux, peuvent traiter certaines données sur des serveurs situés hors UE selon leurs politiques respectives, encadrées par les clauses contractuelles types de la Commission européenne.",
       ],
     },
     {
@@ -165,7 +166,9 @@ const privacyFr: LegalPage = {
     {
       heading: 'Cookies et stockage local',
       body: [
-        "Freenote n'utilise pas de cookies publicitaires ni d'outils d'analyse (Google Analytics, Plausible, etc.). Le seul cookie utilisé est un cookie HttpOnly contenant le jeton JWT d'authentification, strictement nécessaire au fonctionnement du service, donc exempté de consentement préalable au sens de l'article 5(3) de la directive ePrivacy.",
+        "Cookie strictement nécessaire : un cookie HttpOnly contenant le jeton JWT d'authentification (non accessible par JavaScript), indispensable au fonctionnement du service et donc exempté de consentement préalable au sens de l'article 5(3) de la directive ePrivacy.",
+        "Cookies publicitaires et de mesure : les pages publiques affichent de la publicité via Google AdSense. Google et ses partenaires peuvent déposer des cookies de publicité, de personnalisation et de mesure d'audience. Ces cookies ne sont déposés qu'après votre consentement explicite, recueilli via une bannière de gestion du consentement (CMP) certifiée par Google et conforme au cadre de transparence et de consentement (TCF) de l'IAB. Vous pouvez modifier ou retirer votre choix à tout moment depuis cette bannière.",
+        "Freenote n'utilise aucun outil d'analyse d'audience tiers (Google Analytics, Plausible, etc.) au-delà de la mesure publicitaire mentionnée ci-dessus.",
       ],
     },
   ],
@@ -178,7 +181,7 @@ const privacyEn: LegalPage = {
     {
       heading: 'Data controller',
       body: [
-        'The controller of personal data is the site publisher, identified in the legal notice. To exercise your rights, reach out to the publisher via the community Discord server (link in the footer) explicitly mentioning "GDPR request".',
+        'The controller of personal data is the site publisher, identified in the legal notice. To exercise your rights or for any question, reach out to the publisher via the community Discord server (link in the footer) explicitly mentioning "GDPR request".',
       ],
     },
     {
@@ -203,13 +206,14 @@ const privacyEn: LegalPage = {
       body: [
         'Discord: OAuth2 authentication provider (limited data: identifier, display name, email).',
         'Brevo (formerly Sendinblue), servers hosted in Paris: transactional email delivery (verification). GDPR policy on brevo.com.',
-        "No other processor. Databases, file storage and search indexing run on the publisher's personal infrastructure in Belgium.",
+        'Google AdSense (Google Ireland Limited): advertising network displaying ads on the public pages of the site. Google and its partners may process browsing data for ad serving and measurement, only after your consent is collected (see "Cookies" below). Privacy policy: policies.google.com/privacy.',
+        "Apart from these providers, databases, file storage and search indexing run on the publisher's personal infrastructure in Belgium.",
       ],
     },
     {
       heading: 'Transfers outside the European Union',
       body: [
-        'No structural transfer outside the EU is performed. Discord, as an OAuth provider, may process some data on its own servers according to its policy.',
+        'No structural transfer outside the EU is performed for account data. Discord (OAuth) and Google (AdSense), as international providers, may process some data on servers located outside the EU according to their respective policies, governed by the European Commission Standard Contractual Clauses.',
       ],
     },
     {
@@ -232,7 +236,9 @@ const privacyEn: LegalPage = {
     {
       heading: 'Cookies and local storage',
       body: [
-        'Freenote uses no advertising cookies or analytics tools (Google Analytics, Plausible, etc.). The only cookie used is an HttpOnly cookie containing the JWT authentication token, strictly necessary for the service to function, therefore exempt from prior consent under article 5(3) of the ePrivacy Directive.',
+        'Strictly necessary cookie: an HttpOnly cookie containing the JWT authentication token (not accessible by JavaScript), essential for the service to function and therefore exempt from prior consent under article 5(3) of the ePrivacy Directive.',
+        'Advertising and measurement cookies: the public pages display advertising via Google AdSense. Google and its partners may set advertising, personalization and audience-measurement cookies. These cookies are only set after your explicit consent, collected through a Google-certified consent management platform (CMP) compliant with the IAB Transparency and Consent Framework (TCF). You can change or withdraw your choice at any time from that banner.',
+        'Freenote uses no third-party audience analytics tools (Google Analytics, Plausible, etc.) beyond the advertising measurement mentioned above.',
       ],
     },
   ],
@@ -247,7 +253,7 @@ const termsFr: LegalPage = {
     {
       heading: 'Objet',
       body: [
-        "Freenote est une plateforme communautaire et gratuite de partage de documents d'études destinée exclusivement aux membres vérifiés de la communauté ISFCE. Son objectif est d'entraider les étudiants : synthèses, notes de cours, anciens examens, exercices.",
+        "Freenote est une plateforme communautaire et gratuite de partage de documents d'études destinée exclusivement aux membres vérifiés de la communauté ISFCE. Son objectif est d'entraider les étudiants : synthèses, notes de cours, exercices.",
         "L'utilisation du site implique l'acceptation pleine et entière des présentes conditions.",
       ],
     },
@@ -325,7 +331,7 @@ const termsEn: LegalPage = {
     {
       heading: 'Purpose',
       body: [
-        'Freenote is a free, community-driven document sharing platform reserved exclusively for verified members of the ISFCE community. Its goal is to help students help each other: summaries, course notes, past exams, exercises.',
+        'Freenote is a free, community-driven document sharing platform reserved exclusively for verified members of the ISFCE community. Its goal is to help students help each other: summaries, course notes, exercises.',
         'Using the site implies full acceptance of these terms.',
       ],
     },

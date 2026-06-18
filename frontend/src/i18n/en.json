@@ -19,7 +19,7 @@
   "hero": {
     "title": "Learn faster",
     "titleHighlight": "together.",
-    "subtitle": "Summaries, past exams, course notes — every shared document helps the next class succeed.",
+    "subtitle": "Summaries, exercises, course notes — every shared document helps the next class succeed.",
     "cta": "Browse courses",
     "ctaSecondary": "Share a doc",
     "scrollDown": "Scroll down",
@@ -78,8 +78,7 @@
   },
   "ad": {
     "disclaimer": "Ad — support Freenote to hide these.",
-    "loginHint": "Log in so your donation disables ads.",
-    "afterDonation": "Just donated? Reload the page and the ads will disappear (no need to log back in)."
+    "loginHint": "Log in so your donation disables ads."
   },
   "links": {
     "title": "Useful links",
@@ -290,7 +289,11 @@
     "imagesCount": "{{count}}/{{max}} photos selected",
     "imagePreview": "Preview",
     "removeImage": "Remove image",
-    "imagesInfo": "Your photos will be merged into a single PDF, and their metadata (EXIF) is stripped.",
+    "imagesInfo": "Your photos are merged into a single PDF (1 photo = 1 page, in the shown order). Use the arrows to reorder. Metadata (EXIF) is stripped.",
+    "moveUp": "Move image earlier",
+    "moveDown": "Move image later",
+    "totalTooLarge": "Too much data: reduce the number or size of photos (45 MB total max).",
+    "tooLarge": "File too large. Reduce the size or number of images.",
     "maxSize": "Max size: 7 MB",
     "yearHelp": "Year between 2000 and 2099",
     "compressSuggestion": "Your PDF is larger than 5 MB — consider compressing it (e.g. ilovepdf.com/compress_pdf) before uploading to save bandwidth.",
@@ -631,6 +634,7 @@
       "diplomaFormula": "Final grade = {{course}} % × retained courses average + {{tfe}} % × TFE",
       "diplomaFinal": "Final diploma grade",
       "tfeMissing": "Enter the TFE grade to compute the final grade.",
+      "mentionFruit": "Pass with merit",
       "mentionSatisfaction": "Satisfactory",
       "mentionDistinction": "Distinction",
       "mentionHighDistinction": "High distinction",
@@ -638,36 +642,36 @@
       "about": [
         "A weighted average takes each course's weight into account: a course with a coefficient of 3 counts three times as much as one with coefficient 1. The calculation sums each grade times its coefficient, then divides by the sum of coefficients. Leave every coefficient at 1 for a simple average.",
         "Diploma mode combines the average of the retained courses and the final project (TFE) grade. You choose the TFE percentage (two thirds by default, as at ISFCE) and tick the courses that count — because not every course of a bachelor necessarily enters the diploma average.",
-        "The result also shows the distinction earned on the Belgian higher-education scale: satisfactory from 50%, distinction at 60%, high distinction at 70% and highest distinction at 80%. The pass threshold is 50% (i.e. 10/20)."
+        "The result also shows the distinction earned on the Belgian higher-education scale: pass with merit from 50 to 60%, satisfactory from 60 to 70%, distinction from 70 to 80%, high distinction from 80 to 90% and highest distinction from 90%. The pass threshold is 50% (i.e. 10/20)."
       ],
       "examples": [
-        "Two courses: 14 (weight 1) and 16 (weight 3) → weighted average = (14×1 + 16×3) / 4 = 15.5/20, a high distinction.",
-        "Default diploma mode: retained courses average 13/20 and TFE 16/20 → final grade = ⅓×13 + ⅔×16 = 15/20.",
+        "Two courses: 14 (weight 1) and 16 (weight 3) → weighted average = (14×1 + 16×3) / 4 = 15.5/20, a distinction (77.5%).",
+        "Default diploma mode: retained courses average 13/20 and TFE 16/20 → final grade = ⅓×13 + ⅔×16 = 15/20, a distinction (75%).",
         "Set the TFE share to 50%: the final grade becomes the plain average of your retained courses and your TFE."
       ],
       "faq": [
         { "q": "How does the TFE weighting work?", "a": "The TFE (final integrated project) carries a lot of weight in a bachelor. By default the tool gives it two thirds of the final grade and one third to the retained courses average, but you can change this percentage to match your programme or school." },
         { "q": "Why tick the courses?", "a": "Not every course of a bachelor necessarily enters the average that determines the diploma. In diploma mode, tick only the retained courses: only those are averaged before being combined with the TFE." },
-        { "q": "How are distinctions computed?", "a": "The tool follows the Belgian higher-education scale: below 50% = fail, 50 to 59% = satisfactory, 60 to 69% = distinction, 70 to 79% = high distinction, 80% and above = highest distinction." },
+        { "q": "How are distinctions computed?", "a": "The tool follows the Belgian higher-education scale (ISFCE): below 50% = fail, 50 to 60% = pass with merit, 60 to 70% = satisfactory, 70 to 80% = distinction, 80 to 90% = high distinction, 90% and above = highest distinction." },
         { "q": "What should I put as a coefficient?", "a": "Use each course's relative weight. If you do not know the official coefficients, leave them all at 1: you get a classic arithmetic average." }
       ]
     }
   },
   "about": {
     "metaTitle": "About Freenote",
-    "metaDescription": "Freenote is the free platform where ISFCE students share course notes, summaries, past exams and final projects. Discover the project's mission, how it works and its privacy stance.",
-    "orgDescription": "Student platform for sharing documents (course notes, summaries, exams, final projects) for ISFCE, in Charleroi, Belgium.",
+    "metaDescription": "Freenote is the free platform where ISFCE students share course notes, summaries, exercises and final projects. Discover the project's mission, how it works and its privacy stance.",
+    "orgDescription": "Student platform for sharing documents (course notes, summaries, exercises, final projects) for ISFCE, in Charleroi, Belgium.",
     "title": "About Freenote",
-    "lead": "Freenote is a free, independent platform that gathers the course notes, summaries, past exams and final projects of ISFCE students. The goal: that nothing gets lost and everyone revises from solid material.",
+    "lead": "Freenote is a free, independent platform that gathers the course notes, summaries, exercises and final projects of ISFCE students. The goal: that nothing gets lost and everyone revises from solid material.",
     "missionTitle": "Our mission",
     "mission": [
-      "At ISFCE, like in many schools, student resources live scattered around: a PDF buried in a chat, a summary on a USB stick, a past exam nobody can find. Freenote centralises all of it, organised by section and course, so one cohort's work benefits the next.",
+      "At ISFCE, like in many schools, student resources live scattered around: a PDF buried in a chat, a summary on a USB stick, a worked exercise nobody can find. Freenote centralises all of it, organised by section and course, so one cohort's work benefits the next.",
       "The project was born within the ISFCE student community and remains an independent initiative: it is funded by discreet advertising and optional donations, never by selling data."
     ],
     "problemsTitle": "The two problems Freenote solves",
     "problems": [
       { "title": "Verifying students, simply", "desc": "To protect the exchanges, only students with a verified @isfce.be address can access the documents. Verification is automatic: a code by email and you're done — no manual steps, no proof to show." },
-      { "title": "Never lose anything again", "desc": "Notes, summaries, past exams and final projects are organised by section and course, and stay available year after year — instead of vanishing into old conversations." }
+      { "title": "Never lose anything again", "desc": "Notes, summaries, exercises and final projects are organised by section and course, and stay available year after year — instead of vanishing into old conversations." }
     ],
     "howTitle": "How it works",
     "how": [
@@ -677,7 +681,7 @@
     ],
     "featuresTitle": "What you'll find on Freenote",
     "features": [
-      { "title": "Documents by section and course", "desc": "Summaries, exams, notes, exercises and final projects clearly sorted, with instant search." },
+      { "title": "Documents by section and course", "desc": "Summaries, notes, exercises and final projects clearly sorted, with instant search." },
       { "title": "In-browser reading", "desc": "PDFs open directly on the site, with no forced download and no sign-up to a third-party service." },
       { "title": "Leaderboard and XP", "desc": "Every shared document earns points: a leaderboard highlights the most generous students." },
       { "title": "Free tools", "desc": "A weighted grade calculator, an IPv4 calculator, a base converter and other handy tools, no account needed." }

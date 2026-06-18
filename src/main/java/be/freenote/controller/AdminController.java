@@ -223,12 +223,21 @@ public class AdminController {
     }
 
     @PatchMapping("/users/{id}/role")
-    public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @RequestParam String role) {
+    public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @RequestParam String role,
+                                                       Authentication authentication) {
+        // Block self-demotion: an admin changing their own role to non-ADMIN would lose access on the
+        // very next request (AdminRoleVerificationFilter re-reads the role from the DB) — a lockout footgun.
+        if (id.equals(SecurityUtils.currentUserId(authentication)) && !"ADMIN".equals(role)) {
+            throw new be.freenote.exception.ForbiddenException("Un admin ne peut pas se retirer lui-même le rôle admin");
+        }
         return ResponseEntity.ok(userService.adminUpdateRole(id, role));
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id, Authentication authentication) {
+        if (id.equals(SecurityUtils.currentUserId(authentication))) {
+            throw new be.freenote.exception.ForbiddenException("Utilise la suppression de compte (/api/users/me) pour ton propre compte");
+        }
         userService.adminDeleteUser(id);
         return ResponseEntity.noContent().build();
     }
@@ -238,6 +247,9 @@ public class AdminController {
                                         @RequestParam(required = false) String reason,
                                         Authentication authentication) {
         Long adminId = SecurityUtils.currentUserId(authentication);
+        if (id.equals(adminId)) {
+            throw new be.freenote.exception.ForbiddenException("Un admin ne peut pas se bannir lui-même");
+        }
         userService.banUser(id, reason, adminId);
         return ResponseEntity.noContent().build();
     }

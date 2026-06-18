@@ -19,7 +19,7 @@
   "hero": {
     "title": "Réussis plus vite",
     "titleHighlight": "à plusieurs.",
-    "subtitle": "Synthèses, anciens examens, notes de cours — chaque document partagé aide la prochaine promo à réussir.",
+    "subtitle": "Synthèses, exercices, notes de cours — chaque document partagé aide la prochaine promo à réussir.",
     "cta": "Explorer les cours",
     "ctaSecondary": "Partager un doc",
     "scrollDown": "Faire défiler",
@@ -78,8 +78,7 @@
   },
   "ad": {
     "disclaimer": "Pub — soutiens Freenote pour la cacher.",
-    "loginHint": "Connecte-toi pour que ton don désactive les pubs.",
-    "afterDonation": "Tu viens de faire un don ? Recharge la page, les pubs disparaîtront (pas besoin de te reconnecter)."
+    "loginHint": "Connecte-toi pour que ton don désactive les pubs."
   },
   "links": {
     "title": "Liens utiles",
@@ -290,7 +289,11 @@
     "imagesCount": "{{count}}/{{max}} photos sélectionnées",
     "imagePreview": "Aperçu",
     "removeImage": "Retirer l'image",
-    "imagesInfo": "Tes photos seront assemblées en un seul PDF, leurs métadonnées (EXIF) sont supprimées.",
+    "imagesInfo": "Tes photos sont assemblées en un seul PDF (1 photo = 1 page, dans l'ordre affiché). Utilise les flèches pour réordonner. Les métadonnées (EXIF) sont supprimées.",
+    "moveUp": "Avancer cette image",
+    "moveDown": "Reculer cette image",
+    "totalTooLarge": "Trop de données : réduis le nombre ou le poids des photos (45 Mo max au total).",
+    "tooLarge": "Fichier trop volumineux. Réduis la taille ou le nombre d'images.",
     "maxSize": "Taille maximale : 7 Mo",
     "yearHelp": "Année entre 2000 et 2099",
     "compressSuggestion": "Ton PDF fait plus de 5 Mo — pense à le compresser (ex : ilovepdf.com/compress_pdf) avant l'upload pour économiser de la bande passante.",
@@ -631,6 +634,7 @@
       "diplomaFormula": "Note finale = {{course}} % × moyenne des cours retenus + {{tfe}} % × TFE",
       "diplomaFinal": "Note finale du diplôme",
       "tfeMissing": "Entre la note du TFE pour calculer la note finale.",
+      "mentionFruit": "Réussite avec fruit",
       "mentionSatisfaction": "Satisfaction",
       "mentionDistinction": "Distinction",
       "mentionHighDistinction": "Grande distinction",
@@ -638,36 +642,36 @@
       "about": [
         "La moyenne pondérée tient compte du « poids » de chaque cours : un cours avec un coefficient 3 pèse trois fois plus qu'un cours à coefficient 1. Le calcul additionne chaque note multipliée par son coefficient, puis divise par la somme des coefficients. Laisse tous les coefficients à 1 pour une moyenne simple.",
         "Le mode diplôme combine la moyenne des cours retenus et la note du TFE (épreuve intégrée). Tu choisis le pourcentage du TFE (deux tiers par défaut, comme à l'ISFCE) et tu coches les cours qui comptent — car tous les cours du bachelier n'entrent pas forcément dans la moyenne du diplôme.",
-        "Le résultat affiche aussi la mention obtenue selon le barème de l'enseignement supérieur belge : satisfaction à partir de 50 %, distinction à 60 %, grande distinction à 70 % et la plus grande distinction à 80 %. Le seuil de réussite est fixé à 50 % (soit 10/20)."
+        "Le résultat affiche aussi la mention obtenue selon le barème de l'enseignement supérieur belge : réussite avec fruit de 50 à 60 %, satisfaction de 60 à 70 %, distinction de 70 à 80 %, grande distinction de 80 à 90 % et la plus grande distinction à partir de 90 %. Le seuil de réussite est fixé à 50 % (soit 10/20)."
       ],
       "examples": [
-        "Deux cours : 14 (coef. 1) et 16 (coef. 3) → moyenne pondérée = (14×1 + 16×3) / 4 = 15,5/20, soit une grande distinction.",
-        "Mode diplôme par défaut : moyenne des cours retenus 13/20 et TFE 16/20 → note finale = ⅓×13 + ⅔×16 = 15/20.",
+        "Deux cours : 14 (coef. 1) et 16 (coef. 3) → moyenne pondérée = (14×1 + 16×3) / 4 = 15,5/20, soit une distinction (77,5 %).",
+        "Mode diplôme par défaut : moyenne des cours retenus 13/20 et TFE 16/20 → note finale = ⅓×13 + ⅔×16 = 15/20, soit une distinction (75 %).",
         "Tu règles la part du TFE à 50 % : la note finale devient la moyenne simple entre tes cours retenus et ton TFE."
       ],
       "faq": [
         { "q": "Comment fonctionne la pondération du TFE ?", "a": "Le TFE (épreuve intégrée) pèse lourd dans un bachelier. Par défaut l'outil lui donne deux tiers de la note finale et un tiers à la moyenne des cours retenus, mais tu peux changer ce pourcentage pour coller aux règles de ta section ou de ton école." },
         { "q": "Pourquoi cocher les cours ?", "a": "Tous les cours d'un bachelier n'entrent pas forcément dans la moyenne qui détermine le diplôme. En mode diplôme, coche uniquement les cours retenus : seuls ceux-là sont moyennés avant d'être combinés avec le TFE." },
-        { "q": "Comment sont calculées les mentions ?", "a": "L'outil suit le barème belge de l'enseignement supérieur : moins de 50 % = échec, 50 à 59 % = satisfaction, 60 à 69 % = distinction, 70 à 79 % = grande distinction, 80 % et plus = la plus grande distinction." },
+        { "q": "Comment sont calculées les mentions ?", "a": "L'outil suit le barème belge de l'enseignement supérieur (ISFCE) : moins de 50 % = échec, 50 à 60 % = réussite avec fruit, 60 à 70 % = satisfaction, 70 à 80 % = distinction, 80 à 90 % = grande distinction, 90 % et plus = la plus grande distinction." },
         { "q": "Que mettre comme coefficient ?", "a": "Mets le poids relatif de chaque cours. Si tu ne connais pas les coefficients officiels, laisse-les tous à 1 : tu obtiens une moyenne arithmétique classique." }
       ]
     }
   },
   "about": {
     "metaTitle": "À propos de Freenote",
-    "metaDescription": "Freenote est la plateforme gratuite de partage de cours, synthèses, examens et TFE des étudiants de l'ISFCE. Découvre la mission, le fonctionnement et la vie privée du projet.",
-    "orgDescription": "Plateforme étudiante de partage de documents (cours, synthèses, examens, TFE) pour l'ISFCE, à Charleroi.",
+    "metaDescription": "Freenote est la plateforme gratuite de partage de cours, synthèses, exercices et TFE des étudiants de l'ISFCE. Découvre la mission, le fonctionnement et la vie privée du projet.",
+    "orgDescription": "Plateforme étudiante de partage de documents (cours, synthèses, exercices, TFE) pour l'ISFCE, à Charleroi.",
     "title": "À propos de Freenote",
-    "lead": "Freenote est une plateforme gratuite et indépendante qui rassemble les cours, synthèses, anciens examens et TFE des étudiants de l'ISFCE. L'objectif : que plus rien ne se perde et que chacun révise sur de bonnes bases.",
+    "lead": "Freenote est une plateforme gratuite et indépendante qui rassemble les cours, synthèses, exercices et TFE des étudiants de l'ISFCE. L'objectif : que plus rien ne se perde et que chacun révise sur de bonnes bases.",
     "missionTitle": "Notre mission",
     "mission": [
-      "À l'ISFCE comme dans beaucoup d'écoles, les ressources des étudiants vivent éparpillées : un PDF dans une conversation, une synthèse sur une clé USB, un ancien examen que personne ne retrouve. Freenote centralise tout ça, rangé par section et par cours, pour que le travail d'une promo profite à la suivante.",
+      "À l'ISFCE comme dans beaucoup d'écoles, les ressources des étudiants vivent éparpillées : un PDF dans une conversation, une synthèse sur une clé USB, un exercice corrigé que personne ne retrouve. Freenote centralise tout ça, rangé par section et par cours, pour que le travail d'une promo profite à la suivante.",
       "Le projet est né au sein de la communauté étudiante de l'ISFCE et reste une initiative indépendante : il est financé par une publicité discrète et des dons facultatifs, jamais par la revente de données."
     ],
     "problemsTitle": "Les deux problèmes que Freenote résout",
     "problems": [
       { "title": "Vérifier les étudiants, simplement", "desc": "Pour protéger les échanges, seuls les étudiants disposant d'une adresse @isfce.be vérifiée accèdent aux documents. La vérification est automatique : un code par e-mail, et c'est réglé — sans démarche manuelle ni preuve à montrer." },
-      { "title": "Ne plus rien perdre", "desc": "Notes, synthèses, anciens examens et TFE sont rangés par section et par cours, et restent accessibles d'une année sur l'autre — au lieu de disparaître au fil des conversations." }
+      { "title": "Ne plus rien perdre", "desc": "Notes, synthèses, exercices et TFE sont rangés par section et par cours, et restent accessibles d'une année sur l'autre — au lieu de disparaître au fil des conversations." }
     ],
     "howTitle": "Comment ça marche",
     "how": [
@@ -677,7 +681,7 @@
     ],
     "featuresTitle": "Ce que tu trouves sur Freenote",
     "features": [
-      { "title": "Documents par section et par cours", "desc": "Synthèses, examens, notes, exercices et TFE classés clairement, avec une recherche instantanée." },
+      { "title": "Documents par section et par cours", "desc": "Synthèses, notes, exercices et TFE classés clairement, avec une recherche instantanée." },
       { "title": "Lecture dans le navigateur", "desc": "Les PDF s'ouvrent directement sur le site, sans téléchargement forcé ni inscription à un service tiers." },
       { "title": "Classement et XP", "desc": "Chaque document partagé rapporte des points : un classement met en avant les étudiants les plus généreux." },
       { "title": "Des outils gratuits", "desc": "Un calculateur de moyenne pondérée, un calculateur IPv4, un convertisseur de bases et d'autres outils utiles, sans compte." }

@@ -71,9 +71,35 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    /**
+     * A unique/foreign-key constraint was violated under a race the service couldn't pre-check
+     * (e.g. two provisional accounts confirming the same unclaimed {@code @isfce.be} email within the
+     * 15-min window — {@code users.email_hash} is UNIQUE). Without this handler it would fall through
+     * to {@link #handleGeneric} as a 500 + full stack trace; surface a clean 409 instead. The DB
+     * message is not echoed back (it can leak column/constraint names).
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        return buildResponse(HttpStatus.CONFLICT, "Conflit : cette donnée existe déjà ou n'est plus valide");
+    }
+
     @ExceptionHandler(PayloadTooLargeException.class)
     public ResponseEntity<ErrorResponse> handlePayloadTooLarge(PayloadTooLargeException ex) {
         return buildResponse(HttpStatus.CONTENT_TOO_LARGE, ex.getMessage());
+    }
+
+    /**
+     * Multipart payload over the configured limits (a single part &gt; {@code max-file-size} or the whole
+     * request &gt; {@code max-request-size} — e.g. too many / too heavy uploaded photos). Spring throws this
+     * during multipart parsing; without an explicit handler it would fall through to {@link #handleGeneric}
+     * and surface as a 500 + full-stack ERROR log instead of a clean 413.
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUpload(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return buildResponse(HttpStatus.CONTENT_TOO_LARGE, "Fichier trop volumineux (limite d'envoi dépassée)");
     }
 
     @ExceptionHandler(RateLimitExceededException.class)

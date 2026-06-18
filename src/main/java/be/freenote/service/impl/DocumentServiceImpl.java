@@ -69,6 +69,13 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional
     public DocumentResponse create(CreateDocumentRequest request, MultipartFile file,
                                    List<MultipartFile> images, Long userId) {
+        // ── Phase 1: no DB access ──────────────────────────────────────────────────────────────
+        // Do every slow, connection-free step (CPU-heavy image→PDF conversion / PDF validation,
+        // enum check, and the MinIO upload) BEFORE the first repository call. Hibernate borrows the
+        // JDBC connection lazily on the first SQL statement, so keeping all I/O above that line means
+        // the pooled connection is never held during the conversion or the object-store upload —
+        // only across the quick INSERT below. Reordered (was: fetch user/course, then upload).
+
         // Either a single PDF, or 1–8 JPG/PNG images assembled into one PDF (images take precedence).
         byte[] pdfBytes;
         String originalFilename;
@@ -82,15 +89,7 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("Aucun fichier fourni");
         }
 
-        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
-        Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
-
-        Professor professor = null;
-        if (request.getProfessorId() != null) {
-            professor = Repositories.findByIdOrThrow(professorRepository, request.getProfessorId(), "Professor");
-        }
-
-        // Validate category against enum
+        // Validate category against enum (no DB) before the upload, so a bad category can't orphan a file.
         Category category;
         try {
             category = Category.valueOf(request.getCategory());
@@ -100,6 +99,15 @@ public class DocumentServiceImpl implements DocumentService {
 
         String fileKey = UUID.randomUUID() + "/" + FileUtil.sanitizeFileName(originalFilename);
         minioService.upload(fileKey, new ByteArrayInputStream(pdfBytes), pdfBytes.length, PDF_CONTENT_TYPE);
+
+        // ── Phase 2: DB transaction ────────────────────────────────────────────────────────────
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
+
+        Professor professor = null;
+        if (request.getProfessorId() != null) {
+            professor = Repositories.findByIdOrThrow(professorRepository, request.getProfessorId(), "Professor");
+        }
 
         Document document = Document.builder()
                 .title(request.getTitle().trim())

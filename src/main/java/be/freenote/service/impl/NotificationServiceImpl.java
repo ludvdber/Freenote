@@ -33,6 +33,11 @@ public class NotificationServiceImpl implements NotificationService {
     /** 30 minutes matches typical CDN / nginx proxy_read_timeout; the browser reconnects after. */
     private static final long SSE_TIMEOUT_MS = 30L * 60 * 1000;
 
+    /** Hard cap on concurrent SSE streams per user (a few tabs is normal). Prevents a single account
+     *  from opening unbounded EventSource connections and exhausting server connections — the oldest
+     *  stream is evicted when the cap is reached. */
+    private static final int MAX_EMITTERS_PER_USER = 5;
+
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
@@ -74,7 +79,14 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public SseEmitter subscribe(Long userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        emitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        CopyOnWriteArrayList<SseEmitter> userEmitters =
+                emitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>());
+        // Evict the oldest streams over the cap so one user can't open unbounded connections.
+        while (userEmitters.size() >= MAX_EMITTERS_PER_USER && !userEmitters.isEmpty()) {
+            SseEmitter oldest = userEmitters.remove(0);
+            try { oldest.complete(); } catch (Exception ignored) { /* already gone */ }
+        }
+        userEmitters.add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(userId, emitter));
         emitter.onTimeout(() -> { emitter.complete(); removeEmitter(userId, emitter); });

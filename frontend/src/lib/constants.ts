@@ -5,6 +5,8 @@ export const MAX_FILE_SIZE = 7 * 1024 * 1024; // 7 MB (PDF)
 // Image→PDF upload: up to 8 JPG/PNG images are merged server-side into one PDF.
 export const MAX_IMAGES = 8;
 export const IMAGE_MAX_SIZE = 8 * 1024 * 1024; // 8 MB per image (matches the backend multipart per-part cap)
+// Keep the whole multipart request under the backend's 50 MB max-request-size (leaving room for overhead).
+export const MAX_TOTAL_UPLOAD = 45 * 1024 * 1024;
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'] as const;
 
 export const DISCORD_OAUTH_URL = '/oauth2/authorization/discord';

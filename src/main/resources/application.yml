@@ -128,7 +128,10 @@ management:
         include: health,info,metrics
   endpoint:
     health:
+      # Anonymous (the permitAll /actuator/health) sees only UP/DOWN; component details (DB, Redis,
+      # MinIO, disk space) are restricted to admins — a verified user has no business reading them.
       show-details: when-authorized
+      roles: ADMIN
 
 logging:
   level:

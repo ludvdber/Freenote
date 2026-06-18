@@ -120,12 +120,26 @@ class ImageToPdfServiceImplTest {
 
     @Test
     void shouldRejectImageWithExcessiveResolution() {
-        // Craft a PNG header declaring 8000x8000 (= 64 MP > 40 MP). The dimension guard reads the
+        // Craft a PNG header declaring 8000x8000 (= 64 MP > 24 MP cap). The dimension guard reads the
         // IHDR only (no pixel decode), so we never allocate a huge raster in the test either.
         MultipartFile huge = new MockMultipartFile("images", "big.png", "image/png", pngHeader(8000, 8000));
 
         assertThatThrownBy(() -> service.convertToPdf(List.of(huge)))
                 .isInstanceOf(PayloadTooLargeException.class);
+    }
+
+    @Test
+    void shouldDownsampleOversizedImageToValidPdf() throws IOException {
+        // 7020-px long side (> 2×3508) triggers source sub-sampling (factor 2) at decode time —
+        // the full-res raster is never held in memory. Still under the 24 MP cap, so it's accepted
+        // and produces a valid single-page PDF.
+        byte[] pdf = service.convertToPdf(List.of(jpg(7020, 800)));
+
+        assertThat(pdf).isNotEmpty();
+        assertThat(java.util.Arrays.copyOf(pdf, 5)).isEqualTo(PDF_MAGIC);
+        try (PDDocument doc = Loader.loadPDF(pdf)) {
+            assertThat(doc.getNumberOfPages()).isEqualTo(1);
+        }
     }
 
     /** Minimal PNG (signature + IHDR + IEND) — enough for ImageIO to report width/height. */

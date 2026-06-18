@@ -37,7 +37,7 @@ public class KofiServiceImpl implements KofiService {
     @Override
     @Transactional
     public void processWebhook(KofiWebhookPayload payload) {
-        if (expectedToken.isBlank() || !expectedToken.equals(payload.getVerificationToken())) {
+        if (expectedToken.isBlank() || !constantTimeEquals(expectedToken, payload.getVerificationToken())) {
             log.warn("Ko-fi webhook rejected: invalid verification token");
             return;
         }
@@ -106,5 +106,14 @@ public class KofiServiceImpl implements KofiService {
                 .kofiTransactionId(payload.getKofiTransactionId())
                 .adFreeUntil(adFreeUntil)
                 .build());
+    }
+
+    /** Constant-time comparison so a forged-webhook attacker can't recover the token byte-by-byte
+     *  via response timing. Null/empty candidate is rejected (length mismatch ⇒ false). */
+    private static boolean constantTimeEquals(String expected, String candidate) {
+        if (candidate == null) return false;
+        return java.security.MessageDigest.isEqual(
+                expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                candidate.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

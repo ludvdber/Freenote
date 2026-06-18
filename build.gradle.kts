@@ -51,6 +51,8 @@ dependencies {
 
     // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
     implementation("org.apache.pdfbox:pdfbox:3.0.4")
+    // metadata-extractor — read the EXIF Orientation tag so phone photos aren't rotated in the PDF
+    implementation("com.drewnoakes:metadata-extractor:2.19.0")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")

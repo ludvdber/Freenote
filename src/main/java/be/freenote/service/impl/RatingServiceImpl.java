@@ -4,6 +4,7 @@ import be.freenote.entity.Document;
 import be.freenote.entity.Rating;
 import be.freenote.entity.User;
 import be.freenote.event.XpEvent;
+import be.freenote.exception.ForbiddenException;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.RatingRepository;
 import be.freenote.repository.Repositories;
@@ -32,6 +33,12 @@ public class RatingServiceImpl implements RatingService {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
         // Capture the author before recalcRatingStats clears the persistence context (lazy guard).
         Long authorId = document.getUser() != null ? document.getUser().getId() : null;
+
+        // Refuse self-rating: it would farm XP for the author (XpEvent.DocumentRated) AND inflate the
+        // document's average_rating. Mirrors the self-download guard in DocumentServiceImpl.download.
+        if (authorId != null && authorId.equals(userId)) {
+            throw new ForbiddenException("Vous ne pouvez pas noter votre propre document");
+        }
 
         Optional<Rating> existing = ratingRepository.findByDocumentIdAndUserId(documentId, userId);
         boolean isNew = existing.isEmpty();

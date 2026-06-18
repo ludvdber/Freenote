@@ -16,14 +16,14 @@ import {
   IconButton,
   FormHelperText,
 } from '@mui/material';
-import { CloudUpload, CheckCircle, HelpOutlined, PhotoLibrary, Close } from '@mui/icons-material';
+import { CloudUpload, CheckCircle, HelpOutlined, PhotoLibrary, Close, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { uploadDocument, getSections, getCourses, getProfessors, getSuggestedProfessors } from '@/api/endpoints';
-import { CATEGORIES, MAX_FILE_SIZE, MAX_IMAGES, IMAGE_MAX_SIZE, ACCEPTED_IMAGE_TYPES, STALE_15M } from '@/lib/constants';
+import { CATEGORIES, MAX_FILE_SIZE, MAX_IMAGES, IMAGE_MAX_SIZE, MAX_TOTAL_UPLOAD, ACCEPTED_IMAGE_TYPES, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import * as s from './Upload.styles';
@@ -123,6 +123,10 @@ export default function Upload() {
               : `${retry} s`
             : '';
         setError(time ? t('upload.rateLimited', { time }) : t('upload.rateLimitedNoTime'));
+      } else if (axios.isAxiosError(err) && err.response?.status === 413) {
+        // Server-side size cap (assembled PDF > 7 MB or request over the multipart limit).
+        const msg = (err.response.data as { message?: string } | undefined)?.message;
+        setError(msg || t('upload.tooLarge'));
       } else {
         setError(t('common.error'));
       }
@@ -164,7 +168,14 @@ export default function Upload() {
       setError(t('upload.maxImages'));
       return;
     }
-    const added = imgs.slice(0, room).map((f) => ({ file: f, url: URL.createObjectURL(f) }));
+    const candidates = imgs.slice(0, room);
+    const existingBytes = images.reduce((sum, i) => sum + i.file.size, 0);
+    const addedBytes = candidates.reduce((sum, f) => sum + f.size, 0);
+    if (existingBytes + addedBytes > MAX_TOTAL_UPLOAD) {
+      setError(t('upload.totalTooLarge'));
+      return;
+    }
+    const added = candidates.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
     setImages((prev) => [...prev, ...added]);
     setError(imgs.length > room ? t('upload.maxImages') : '');
   };
@@ -173,6 +184,17 @@ export default function Upload() {
     const target = images[idx];
     if (target) URL.revokeObjectURL(target.url);
     setImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Reorder pages in the final PDF: the array order is the upload (and page) order.
+  const moveImage = (idx: number, dir: -1 | 1) => {
+    setImages((prev) => {
+      const j = idx + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -405,21 +427,35 @@ export default function Upload() {
           <Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
               {images.map((img, idx) => (
-                <Box key={img.url} sx={{ position: 'relative', width: 84, height: 84 }}>
-                  <Box
-                    component="img"
-                    src={img.url}
-                    alt={`${t('upload.imagePreview')} ${idx + 1}`}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => removeImage(idx)}
-                    aria-label={t('upload.removeImage')}
-                    sx={{ position: 'absolute', top: -10, right: -10, bgcolor: 'background.paper', boxShadow: 1, '&:hover': { bgcolor: 'background.paper' } }}
-                  >
-                    <Close fontSize="small" />
-                  </IconButton>
+                <Box key={img.url} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ position: 'relative', width: 84, height: 84 }}>
+                    {/* Page number = order in the final PDF */}
+                    <Box sx={{ position: 'absolute', top: -8, left: -8, zIndex: 1, width: 20, height: 20, borderRadius: '50%', bgcolor: 'primary.main', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                      {idx + 1}
+                    </Box>
+                    <Box
+                      component="img"
+                      src={img.url}
+                      alt={`${t('upload.imagePreview')} ${idx + 1}`}
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => removeImage(idx)}
+                      aria-label={t('upload.removeImage')}
+                      sx={{ position: 'absolute', top: -10, right: -10, bgcolor: 'background.paper', boxShadow: 1, '&:hover': { bgcolor: 'background.paper' } }}
+                    >
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.25 }}>
+                    <IconButton size="small" onClick={() => moveImage(idx, -1)} disabled={idx === 0} aria-label={t('upload.moveUp')}>
+                      <ArrowUpward sx={{ fontSize: 16 }} />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => moveImage(idx, 1)} disabled={idx === images.length - 1} aria-label={t('upload.moveDown')}>
+                      <ArrowDownward sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
                 </Box>
               ))}
             </Box>
