@@ -25,6 +25,15 @@ import type {
   ReportResponse,
   DonationResponse,
   ActivityLog,
+  PublishDeckRequest,
+  FlashcardDeckSummary,
+  FlashcardDeckResponse,
+  CreateQuizRequest,
+  SubmitAttemptRequest,
+  QuizSummary,
+  QuizPlayResponse,
+  AttemptResultResponse,
+  QuizLeaderboardEntry,
 } from '@/types';
 
 // --- Stats ---
@@ -308,6 +317,38 @@ export const confirmVerification = (code: string) =>
 
 export const logout = () =>
   api.post('/auth/logout');
+
+// --- Shared flashcard decks (palier C) ---
+export const publishDeck = (body: PublishDeckRequest) =>
+  api.post<FlashcardDeckResponse>('/flashcard-decks', body).then((r) => r.data);
+
+export const listSharedDecks = (params: { courseId?: number; page?: number; size?: number } = {}) =>
+  api.get<PageResponse<FlashcardDeckSummary>>('/flashcard-decks', { params }).then((r) => r.data);
+
+export const getSharedDeck = (id: number) =>
+  api.get<FlashcardDeckResponse>(`/flashcard-decks/${id}`).then((r) => r.data);
+
+export const deleteSharedDeck = (id: number) =>
+  api.delete<void>(`/flashcard-decks/${id}`);
+
+// --- Shared quizzes ---
+export const createQuiz = (body: CreateQuizRequest) =>
+  api.post<QuizSummary>('/quizzes', body).then((r) => r.data);
+
+export const listQuizzes = (params: { courseId?: number; page?: number; size?: number } = {}) =>
+  api.get<PageResponse<QuizSummary>>('/quizzes', { params }).then((r) => r.data);
+
+export const getQuizPlay = (id: number) =>
+  api.get<QuizPlayResponse>(`/quizzes/${id}/play`).then((r) => r.data);
+
+export const submitQuizAttempt = (id: number, body: SubmitAttemptRequest) =>
+  api.post<AttemptResultResponse>(`/quizzes/${id}/attempts`, body).then((r) => r.data);
+
+export const getQuizLeaderboard = (id: number, size = 20) =>
+  api.get<QuizLeaderboardEntry[]>(`/quizzes/${id}/leaderboard`, { params: { size } }).then((r) => r.data);
+
+export const deleteQuiz = (id: number) =>
+  api.delete<void>(`/quizzes/${id}`);
 
 // --- Dev-only ---
 export const devLogin = (username: string) =>

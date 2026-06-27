@@ -242,3 +242,96 @@ export interface DonationResponse {
 
 export type Category = 'SYNTHESE' | 'EXAMEN' | 'NOTES' | 'EXERCICES' | 'COURS' | 'TFE' | 'DIVERS';
 
+// --- Shared flashcard decks (palier C) ---
+export interface FlashcardCardDto {
+  front: string;
+  back: string;
+}
+
+export interface PublishDeckRequest {
+  title: string;
+  description?: string | null;
+  courseId?: number | null;
+  cards: FlashcardCardDto[];
+}
+
+export interface FlashcardDeckSummary {
+  id: number;
+  title: string;
+  description: string | null;
+  cardCount: number;
+  ownerName: string;
+  courseId: number | null;
+  courseName: string | null;
+  createdAt: string;
+}
+
+export interface FlashcardDeckResponse extends FlashcardDeckSummary {
+  cards: FlashcardCardDto[];
+}
+
+// --- Shared quizzes ---
+export interface QuizQuestionDto {
+  question: string;
+  choices: string[];
+  /** 0-based index of the correct choice. */
+  answer: number;
+}
+
+export interface CreateQuizRequest {
+  title: string;
+  description?: string | null;
+  courseId?: number | null;
+  questions: QuizQuestionDto[];
+}
+
+export interface SubmitAttemptRequest {
+  /** Chosen choice index per question; null = skipped. */
+  answers: (number | null)[];
+  durationMs: number;
+}
+
+export interface QuizSummary {
+  id: number;
+  title: string;
+  description: string | null;
+  questionCount: number;
+  attemptCount: number;
+  ownerName: string;
+  courseId: number | null;
+  courseName: string | null;
+  createdAt: string;
+}
+
+/** A question served for playing — WITHOUT the answer index (server grades on submit). */
+export interface QuizPlayQuestion {
+  question: string;
+  choices: string[];
+}
+
+export interface QuizPlayResponse {
+  id: number;
+  title: string;
+  description: string | null;
+  questions: QuizPlayQuestion[];
+}
+
+export interface AttemptResultResponse {
+  score: number;
+  total: number;
+  durationMs: number;
+  /** Correct choice index per question — revealed only after submitting, for review. */
+  correctAnswers: number[];
+  rank: number;
+}
+
+export interface QuizLeaderboardEntry {
+  rank: number;
+  userId: number;
+  userName: string;
+  score: number;
+  total: number;
+  durationMs: number;
+  achievedAt: string;
+}
+

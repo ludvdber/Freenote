@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert } from '@mui/material';
+import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress } from '@mui/material';
 import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,9 @@ import StarRating from '@/components/ui/StarRating';
 import Shimmer from '@/components/ui/Shimmer';
 import AdSlot from '@/components/ui/AdSlot';
 import * as s from './DocumentView.styles';
+
+// Lazy so pdf.js (heavy) only loads once a document is actually open.
+const PdfViewer = lazy(() => import('@/components/common/PdfViewer'));
 
 export default function DocumentView() {
   const { id } = useParams<{ id: string }>();
@@ -71,9 +74,9 @@ export default function DocumentView() {
     if (favStatus) setIsFav(favStatus.isFavorite);
   }
 
-  // Iframe pulls the PDF directly from the authenticated endpoint — same-origin, browser sends the
-  // HttpOnly JWT cookie automatically. Avoids the blob/URL.createObjectURL dance which raced with
-  // React StrictMode's double-mount cleanup and left the iframe pointing at a revoked URL on first paint.
+  // Direct URL to the authenticated file endpoint (same-origin → HttpOnly JWT cookie sent
+  // automatically). Used by the "Download" action; the inline preview now goes through <PdfViewer>
+  // (pdf.js canvas) which renders on mobile too, unlike the old <iframe> that Chrome Android blocks.
   const pdfSrc = isVerified && doc ? `/api/documents/${id}/file` : null;
 
   // Record visit so this doc surfaces in the user's "recent" trail on the home page
@@ -197,16 +200,11 @@ export default function DocumentView() {
         </Typography>
       </Box>
 
-      {/* PDF Viewer */}
-      {isVerified && pdfSrc && (
-        <Box sx={s.pdfViewerWrapper}>
-          <Box
-            component="iframe"
-            src={pdfSrc}
-            sx={s.pdfIframe}
-            title={doc.title}
-          />
-        </Box>
+      {/* PDF Viewer — pdf.js canvas (renders inline on mobile, unlike an <iframe>) */}
+      {isVerified && (
+        <Suspense fallback={<Box sx={s.pdfViewerWrapper}><Box sx={s.pdfLoading}><CircularProgress /></Box></Box>}>
+          <PdfViewer docId={Number(id)} title={doc.title} />
+        </Suspense>
       )}
 
       {!isVerified && token && (

@@ -79,7 +79,10 @@ public class SecurityConfig {
                         // AdSense + Google CMP (Funding Choices) loaders. Manual <ins> ad units
                         // work without 'unsafe-inline'; if an ad format is blocked, the browser
                         // console logs the exact missing domain/directive to add here.
-                        "script-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
+                        // 'wasm-unsafe-eval' lets the Flashcards tool instantiate the sql.js
+                        // WebAssembly module (Anki .apkg import) — it permits WASM compilation only,
+                        // NOT arbitrary eval(), so it is a narrow, well-understood relaxation.
+                        "script-src 'self' 'wasm-unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
                             "https://adservice.google.com https://*.googleadservices.com https://*.google.com " +
                             "https://www.googletagservices.com https://fundingchoicesmessages.google.com; " +
                         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
@@ -89,6 +92,9 @@ public class SecurityConfig {
                             "https://*.googleusercontent.com https://*.bp.blogspot.com https://*.blogspot.com; " +
                         "connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
                             "https://*.google.com https://*.doubleclick.net; " +
+                        // pdf.js (PDF viewer) spawns its rendering Web Worker from a same-origin asset;
+                        // 'blob:' covers the fallback worker some bundlers materialise as a blob URL.
+                        "worker-src 'self' blob:; " +
                         "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com " +
                             "https://*.googlesyndication.com https://*.doubleclick.net https://fundingchoicesmessages.google.com; " +
                         "frame-ancestors 'self'; " +

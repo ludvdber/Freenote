@@ -68,13 +68,6 @@ export const pdfViewerWrapper: Sx = {
   position: 'relative',
 };
 
-export const pdfIframe: Sx = {
-  width: '100%',
-  height: { xs: '60vh', md: '80vh' },
-  border: 'none',
-  display: 'block',
-};
-
 export const pdfLoading: Sx = {
   display: 'flex',
   alignItems: 'center',

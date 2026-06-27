@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { TOOLS, toolBySlug } from '../toolsData';
 
 describe('tools registry', () => {
-  it('exposes the five tools with unique slugs and i18n keys', () => {
-    expect(TOOLS).toHaveLength(5);
+  it('exposes the tools with unique slugs and i18n keys', () => {
+    expect(TOOLS).toHaveLength(7);
 
     const slugs = TOOLS.map((t) => t.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
     expect(slugs).toEqual(
-      expect.arrayContaining(['calculateur-moyenne', 'calculateur-ip', 'convertisseur-bases', 'base64', 'jwt']),
+      expect.arrayContaining(['flashcards', 'quiz', 'calculateur-moyenne', 'calculateur-ip', 'convertisseur-bases', 'base64', 'jwt']),
     );
 
     const keys = TOOLS.map((t) => t.key);

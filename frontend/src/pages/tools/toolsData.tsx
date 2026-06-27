@@ -3,9 +3,11 @@
    exports the TOOLS array + helpers alongside the lazy() tool components. */
 import { lazy } from 'react';
 import type { ComponentType, ReactNode } from 'react';
-import { Lan, SwapHoriz, Code, VpnKey, Calculate } from '@mui/icons-material';
+import { Lan, SwapHoriz, Code, VpnKey, Calculate, Style, Quiz as QuizIcon } from '@mui/icons-material';
 
 const GradeCalculator = lazy(() => import('@/components/tools/GradeCalculator'));
+const Flashcards = lazy(() => import('@/components/tools/Flashcards'));
+const Quiz = lazy(() => import('@/components/tools/Quiz'));
 const IPv4Calculator = lazy(() => import('@/components/tools/IPv4Calculator'));
 const BaseConverter = lazy(() => import('@/components/tools/BaseConverter'));
 const Base64Converter = lazy(() => import('@/components/tools/Base64Converter'));
@@ -22,6 +24,8 @@ export interface ToolDef {
 
 /** Single source of truth for the tools collection — drives routes, the index grid and SEO. */
 export const TOOLS: ToolDef[] = [
+  { slug: 'flashcards', key: 'flashcards', icon: <Style />, Component: Flashcards },
+  { slug: 'quiz', key: 'quiz', icon: <QuizIcon />, Component: Quiz },
   { slug: 'calculateur-moyenne', key: 'grade', icon: <Calculate />, Component: GradeCalculator },
   { slug: 'calculateur-ip', key: 'ipv4', icon: <Lan />, Component: IPv4Calculator },
   { slug: 'convertisseur-bases', key: 'base', icon: <SwapHoriz />, Component: BaseConverter },
