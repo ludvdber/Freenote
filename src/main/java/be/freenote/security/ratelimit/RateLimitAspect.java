@@ -1,6 +1,8 @@
 package be.freenote.security.ratelimit;
 
+import be.freenote.entity.User;
 import be.freenote.exception.RateLimitExceededException;
+import be.freenote.repository.UserRepository;
 import be.freenote.service.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +23,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class RateLimitAspect {
 
     private final RateLimitService rateLimitService;
+    private final UserRepository userRepository;
 
     @Around("@annotation(rateLimit)")
     public Object enforce(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
+        // Admins and "trusted" uploaders bypass rate limits entirely. Trusted is read live from the DB
+        // (roles come from the JWT claims, so a freshly-granted flag would otherwise need a re-login).
+        if (isExempt()) {
+            return joinPoint.proceed();
+        }
         String key = resolveKey(joinPoint);
         if (!rateLimitService.isAllowed(key, rateLimit.max(), rateLimit.window())) {
             long retryAfter = rateLimitService.retryAfterSeconds(key);
@@ -31,6 +39,21 @@ public class RateLimitAspect {
             throw new RateLimitExceededException("Rate limit exceeded. Try again later.", retryAfter);
         }
         return joinPoint.proceed();
+    }
+
+    private boolean isExempt() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return false;
+        }
+        boolean admin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (admin) {
+            return true;
+        }
+        if (auth.getPrincipal() instanceof Long userId) {
+            return userRepository.findById(userId).map(User::isTrusted).orElse(false);
+        }
+        return false;
     }
 
     private String resolveKey(ProceedingJoinPoint joinPoint) {

@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface DelegateHistoryRepository extends JpaRepository<DelegateHistory, Long> {
     List<DelegateHistory> findByEndDateIsNull();
+    /** Ended mandates (former delegates), most recently ended first. */
+    List<DelegateHistory> findByEndDateIsNotNullOrderByEndDateDesc();
     List<DelegateHistory> findByUserId(Long userId);
     Optional<DelegateHistory> findByUserIdAndEndDateIsNull(Long userId);
 }

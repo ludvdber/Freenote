@@ -7,6 +7,7 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.entity.*;
 import be.freenote.enums.ActivityType;
 import be.freenote.enums.Category;
+import be.freenote.exception.DuplicateResourceException;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.mapper.DocumentMapper;
 import be.freenote.repository.*;
@@ -97,10 +98,21 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("Invalid category: " + request.getCategory());
         }
 
+        // Content fingerprint for exact-duplicate detection (checked in phase 2, before the INSERT).
+        String fileHash = sha256Hex(pdfBytes);
+
         String fileKey = UUID.randomUUID() + "/" + FileUtil.sanitizeFileName(originalFilename);
         minioService.upload(fileKey, new ByteArrayInputStream(pdfBytes), pdfBytes.length, PDF_CONTENT_TYPE);
 
         // ── Phase 2: DB transaction ────────────────────────────────────────────────────────────
+        // Reject an exact-duplicate PDF (same content hash). Done here rather than before the upload
+        // so the object-store upload stays connection-free; the rare duplicate's orphan object is
+        // cleaned up. Works against pre-existing docs once DocumentHashBackfill has run.
+        documentRepository.findFirstByFileHash(fileHash).ifPresent(existing -> {
+            minioService.delete(fileKey);
+            throw new DuplicateResourceException("Ce document existe déjà : « " + existing.getTitle() + " ».");
+        });
+
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
         Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
 
@@ -121,6 +133,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .year(request.getYear())
                 .professor(professor)
                 .fileSize((long) pdfBytes.length)
+                .fileHash(fileHash)
                 .build();
 
         Document saved = documentRepository.save(document);
@@ -137,6 +150,29 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean titleExists(String title, Long courseId) {
+        if (title == null || title.isBlank() || courseId == null) {
+            return false;
+        }
+        return documentRepository.existsByTitleIgnoreCaseAndCourseId(title.trim(), courseId);
+    }
+
+    /** SHA-256 of the PDF bytes, lowercase hex (64 chars) — the content fingerprint for de-duplication. */
+    public static String sha256Hex(byte[] bytes) {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(bytes);
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : digest) {
+                sb.append(Character.forDigit((b >> 4) & 0xf, 16)).append(Character.forDigit(b & 0xf, 16));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e); // never happens on a JVM
+        }
+    }
+
+    @Override
     public DocumentResponse getById(Long id) {
         Document document = Repositories.findByIdOrThrow(documentRepository, id, "Document");
         return documentMapper.toResponse(document);
@@ -145,8 +181,14 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public PageResponse<DocumentResponse> search(String query, Long sectionId, Long courseId, String category,
                                                    String sort, Pageable pageable) {
+        // Validate up front for BOTH paths: the DB path needs the enum anyway, and the Meilisearch
+        // path must never receive a raw user string (it is concatenated into the filter expression).
+        // A clean 400 without the enum's internal message ("No enum constant be.freenote...").
+        Category cat = parseCategory(category);
+
         if (query != null && !query.isBlank()) {
-            MeilisearchService.SearchResult result = meilisearchService.search(query, sectionId, courseId, category, sort, pageable);
+            MeilisearchService.SearchResult result = meilisearchService.search(
+                    query, sectionId, courseId, cat != null ? cat.name() : null, sort, pageable);
             List<Long> ids = result.ids();
             if (ids.isEmpty()) {
                 return new PageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
@@ -164,13 +206,24 @@ public class DocumentServiceImpl implements DocumentService {
             return new PageResponse<>(content, pageable.getPageNumber(), pageable.getPageSize(), total, totalPages);
         }
 
-        Category cat = category != null ? Category.valueOf(category) : null;
         Page<Document> page = documentRepository.findFiltered(sectionId, courseId, cat, pageable);
 
         List<DocumentResponse> content = page.getContent().stream()
                 .map(documentMapper::toResponse)
                 .toList();
         return PageResponse.from(page, content);
+    }
+
+    /** User-supplied category filter → enum, or a clean 400 that doesn't leak the enum class name. */
+    private static Category parseCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        try {
+            return Category.valueOf(category);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Catégorie invalide");
+        }
     }
 
     @Override

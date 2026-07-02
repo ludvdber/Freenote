@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Box, Typography, TextField, IconButton, Button, Chip, Stack, Tooltip, Menu, MenuItem,
-  Tabs, Tab, Radio, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
-  Snackbar, Alert, CircularProgress,
+  Tabs, Tab, Radio, ToggleButtonGroup, ToggleButton, LinearProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import {
   Add, DeleteOutlined, EditOutlined, MoreVert, Share, CloudUpload, PlayArrow, EmojiEvents,
   ArrowBack, Check, Close, ContentCopy, Quiz as QuizIcon, FileDownload, FileUpload,
+  Image as ImageIcon, Code as CodeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +16,9 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import {
   createQuiz, listQuizzes, getQuizPlay, submitQuizAttempt, getQuizLeaderboard,
 } from '@/api/endpoints';
-import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry } from '@/types';
+import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry, QuizQuestionDto } from '@/types';
+import CodeBlock from './quiz/CodeBlock';
+import { fileToDataUrl } from './quiz/image';
 import {
   type Quiz, type QuizQuestion,
   newQuiz, newQuestion, gradeQuiz, validateQuiz, normalizeQuiz,
@@ -54,8 +57,8 @@ function download(filename: string, content: string, type: string) {
 }
 
 type Feedback = { msg: string; severity: 'success' | 'error' };
-type PlayResult = { score: number; total: number; rank?: number; correctAnswers: number[] };
-type GradeFn = (answers: (number | null)[], durationMs: number) => Promise<PlayResult>;
+type PlayResult = { score: number; total: number; rank?: number; correct: boolean[]; correctAnswers: string[] };
+type GradeFn = (answers: (string | null)[], durationMs: number) => Promise<PlayResult>;
 type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn };
 
 export default function Quiz() {
@@ -114,8 +117,10 @@ export default function Quiz() {
     const err = validateQuiz(quiz);
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const url = `${window.location.origin}${window.location.pathname}#quiz=${encodeQuiz(quiz)}`;
-    // The whole quiz rides in the URL fragment; a huge quiz makes a link some apps truncate.
-    if (url.length > 8000) setFeedback({ msg: t('tools.quiz.shareTooLong'), severity: 'error' });
+    // The whole quiz rides in the URL fragment; a huge quiz makes a link some apps truncate, so we
+    // block the share dialog and point the author to publishing instead (rather than hand out a
+    // link that won't paste everywhere).
+    if (url.length > 8000) { setFeedback({ msg: t('tools.quiz.shareTooLong'), severity: 'error' }); return; }
     setShareUrl(url);
   };
 
@@ -124,7 +129,7 @@ export default function Quiz() {
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const n = normalizeQuiz(quiz);
     try {
-      await createQuiz({ title: n.title, questions: n.questions.map((q) => ({ question: q.question, choices: q.choices, answer: q.answer })) });
+      await createQuiz({ title: n.title, questions: n.questions.map(toQuestionDto) });
       markShared(quiz.id);
       setFeedback({ msg: t('tools.quiz.publishOk'), severity: 'success' });
     } catch {
@@ -161,7 +166,6 @@ export default function Quiz() {
         onCancel={() => setEditing(null)}
         onSave={(q) => { upsert(q); setEditing(null); }}
         onPlay={(q) => { upsert(q); setEditing(null); playLocal(q); }}
-        onShare={(q) => { upsert(q); share(q); }}
         onPublish={(q) => { upsert(q); publish(q); }}
       />
     );
@@ -233,17 +237,31 @@ export default function Quiz() {
   );
 }
 
+/** Map a local question to the publish DTO (full shape, images included for published quizzes). */
+function toQuestionDto(q: QuizQuestion): QuizQuestionDto {
+  return {
+    type: q.type,
+    question: q.question,
+    choices: q.choices,
+    answer: q.answer,
+    openAnswer: q.openAnswer,
+    image: q.image ?? null,
+    code: q.code ?? null,
+    language: q.language ?? null,
+  };
+}
+
 // Grading strategies ──────────────────────────────────────────────
 function localGrade(quiz: Quiz): GradeFn {
   return async (answers) => {
-    const { score, total } = gradeQuiz(quiz, answers);
-    return { score, total, correctAnswers: quiz.questions.map((q) => q.answer) };
+    const r = gradeQuiz(quiz, answers);
+    return { score: r.score, total: r.total, correct: r.correct, correctAnswers: r.correctAnswers };
   };
 }
 function backendGrade(id: number): GradeFn {
   return async (answers, durationMs) => {
     const res = await submitQuizAttempt(id, { answers, durationMs });
-    return { score: res.score, total: res.total, rank: res.rank, correctAnswers: res.correctAnswers };
+    return { score: res.score, total: res.total, rank: res.rank, correct: res.correct, correctAnswers: res.correctAnswers };
   };
 }
 
@@ -287,12 +305,16 @@ function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onPublish, onDele
         </Box>
       </Box>
       <Button variant="contained" size="small" startIcon={<PlayArrow />} onClick={onPlay}>{t('tools.quiz.play')}</Button>
+      <Tooltip title={t('tools.quiz.shareLink')}>
+        <IconButton size="small" color="primary" onClick={onShare} aria-label={t('tools.quiz.shareLink')}>
+          <Share fontSize="small" />
+        </IconButton>
+      </Tooltip>
       <IconButton size="small" onClick={(e) => setMenu(e.currentTarget)} aria-label={t('tools.quiz.actions')}>
         <MoreVert fontSize="small" />
       </IconButton>
       <Menu anchorEl={menu} open={Boolean(menu)} onClose={close}>
         <MenuItem onClick={() => { close(); onEdit(); }}><EditOutlined fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.edit')}</MenuItem>
-        <MenuItem onClick={() => { close(); onShare(); }}><Share fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.shareLink')}</MenuItem>
         {canPublish && (
           <MenuItem onClick={() => { close(); onPublish(); }}><CloudUpload fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.publish')}</MenuItem>
         )}
@@ -303,10 +325,10 @@ function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onPublish, onDele
 }
 
 /** Create/edit a local quiz. Holds its own working draft; commits via callbacks. */
-function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onShare, onPublish }: {
+function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }: {
   initial: Quiz; canPublish: boolean;
   onCancel: () => void; onSave: (q: Quiz) => void;
-  onPlay: (q: Quiz) => void; onShare: (q: Quiz) => void; onPublish: (q: Quiz) => void;
+  onPlay: (q: Quiz) => void; onPublish: (q: Quiz) => void;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Quiz>(initial);
@@ -330,6 +352,30 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onShare, on
       return { ...q, choices, answer };
     });
 
+  const setType = (qid: string, type: 'mcq' | 'open') => patchQuestion(qid, (q) => ({ ...q, type }));
+
+  // Per-question image picker (verified only; one hidden input reused, target tracked by id).
+  const imageInput = useRef<HTMLInputElement>(null);
+  const [imageForQid, setImageForQid] = useState<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const pickImage = (qid: string) => { setImageForQid(qid); imageInput.current?.click(); };
+  const onImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !imageForQid) return;
+    const qid = imageForQid;
+    setImageBusy(true);
+    try {
+      const url = await fileToDataUrl(file);
+      patchQuestion(qid, (q) => ({ ...q, image: url }));
+    } catch {
+      /* unreadable image — ignored */
+    } finally {
+      setImageBusy(false);
+      setImageForQid(null);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -346,11 +392,18 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onShare, on
         />
       </GlassCard>
 
+      <input ref={imageInput} type="file" accept="image/*" hidden onChange={onImageFile} />
+
       <Stack spacing={2}>
         {draft.questions.map((q, qi) => (
           <GlassCard key={q.id} sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{t('tools.quiz.questionN', { n: qi + 1 })}</Typography>
+              <ToggleButtonGroup size="small" exclusive value={q.type}
+                onChange={(_, v) => v && setType(q.id, v)} aria-label={t('tools.quiz.questionType')}>
+                <ToggleButton value="mcq">{t('tools.quiz.typeMcq')}</ToggleButton>
+                <ToggleButton value="open">{t('tools.quiz.typeOpen')}</ToggleButton>
+              </ToggleButtonGroup>
               <Box sx={{ flexGrow: 1 }} />
               <Tooltip title={t('tools.quiz.deleteQuestion')}>
                 <span>
@@ -360,39 +413,88 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onShare, on
                 </span>
               </Tooltip>
             </Box>
+
             <TextField
               fullWidth multiline maxRows={3} size="small" label={t('tools.quiz.questionLabel')} value={q.question}
               onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, question: e.target.value }))}
               slotProps={{ htmlInput: { maxLength: 500 } }} sx={{ mb: 1.5 }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-              {t('tools.quiz.chooseCorrect')}
-            </Typography>
-            <Stack spacing={1}>
-              {q.choices.map((choice, ci) => (
-                <Box key={ci} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Tooltip title={t('tools.quiz.markCorrect')}>
-                    <Radio
-                      size="small" checked={q.answer === ci}
-                      onChange={() => patchQuestion(q.id, (qq) => ({ ...qq, answer: ci }))}
-                      aria-label={t('tools.quiz.markCorrect')}
-                    />
-                  </Tooltip>
-                  <TextField
-                    fullWidth size="small" placeholder={t('tools.quiz.choiceN', { n: ci + 1 })}
-                    value={choice} onChange={(e) => setChoice(q.id, ci, e.target.value)}
-                    slotProps={{ htmlInput: { maxLength: 200 } }}
-                  />
-                  <IconButton size="small" onClick={() => removeChoice(q.id, ci)} disabled={q.choices.length <= MIN_CHOICES} aria-label={t('tools.quiz.removeChoice')}>
-                    <Close fontSize="small" />
-                  </IconButton>
-                </Box>
-              ))}
-            </Stack>
-            {q.choices.length < MAX_CHOICES && (
-              <Button size="small" startIcon={<Add />} onClick={() => addChoice(q.id)} sx={{ mt: 1 }}>
-                {t('tools.quiz.addChoice')}
+
+            {/* Optional image — published quizzes only (verified) */}
+            {canPublish && (q.image ? (
+              <Box sx={{ mb: 1.5 }}>
+                <Box component="img" src={q.image} alt="" sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: 1, display: 'block', mb: 0.5 }} />
+                <Button size="small" color="error" startIcon={<Close />} onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, image: undefined }))}>
+                  {t('tools.quiz.removeImage')}
+                </Button>
+              </Box>
+            ) : (
+              <Box sx={{ mb: 1.5 }}>
+                <Button size="small" startIcon={imageBusy && imageForQid === q.id ? <CircularProgress size={14} /> : <ImageIcon />}
+                  onClick={() => pickImage(q.id)} disabled={imageBusy}>
+                  {t('tools.quiz.addImage')}
+                </Button>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{t('tools.quiz.imageHint')}</Typography>
+              </Box>
+            ))}
+
+            {/* Optional code snippet */}
+            {q.code === undefined ? (
+              <Button size="small" startIcon={<CodeIcon />} onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, code: '' }))} sx={{ mb: 1.5 }}>
+                {t('tools.quiz.addCode')}
               </Button>
+            ) : (
+              <Box sx={{ mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <TextField size="small" placeholder={t('tools.quiz.languagePlaceholder')} value={q.language ?? ''}
+                    onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, language: e.target.value }))}
+                    slotProps={{ htmlInput: { maxLength: 30 } }} sx={{ width: 170 }} />
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Button size="small" color="error" startIcon={<Close />}
+                    onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, code: undefined, language: undefined }))}>
+                    {t('tools.quiz.removeCode')}
+                  </Button>
+                </Box>
+                <TextField fullWidth multiline minRows={3} value={q.code} placeholder={t('tools.quiz.codePlaceholder')}
+                  onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, code: e.target.value }))}
+                  slotProps={{ htmlInput: { maxLength: 5000, style: { fontFamily: 'monospace' } } }} />
+              </Box>
+            )}
+
+            {/* Answer area — by question type */}
+            {q.type === 'open' ? (
+              <TextField
+                fullWidth size="small" label={t('tools.quiz.expectedAnswer')} value={q.openAnswer}
+                onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, openAnswer: e.target.value }))}
+                helperText={t('tools.quiz.openHint')}
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+            ) : (
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {t('tools.quiz.chooseCorrect')}
+                </Typography>
+                <Stack spacing={1}>
+                  {q.choices.map((choice, ci) => (
+                    <Box key={ci} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Tooltip title={t('tools.quiz.markCorrect')}>
+                        <Radio size="small" checked={q.answer === ci}
+                          onChange={() => patchQuestion(q.id, (qq) => ({ ...qq, answer: ci }))} aria-label={t('tools.quiz.markCorrect')} />
+                      </Tooltip>
+                      <TextField fullWidth size="small" placeholder={t('tools.quiz.choiceN', { n: ci + 1 })} value={choice}
+                        onChange={(e) => setChoice(q.id, ci, e.target.value)} slotProps={{ htmlInput: { maxLength: 200 } }} />
+                      <IconButton size="small" onClick={() => removeChoice(q.id, ci)} disabled={q.choices.length <= MIN_CHOICES} aria-label={t('tools.quiz.removeChoice')}>
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Stack>
+                {q.choices.length < MAX_CHOICES && (
+                  <Button size="small" startIcon={<Add />} onClick={() => addChoice(q.id)} sx={{ mt: 1 }}>
+                    {t('tools.quiz.addChoice')}
+                  </Button>
+                )}
+              </>
             )}
           </GlassCard>
         ))}
@@ -404,7 +506,6 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onShare, on
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button variant="contained" startIcon={<PlayArrow />} onClick={() => onPlay(draft)}>{t('tools.quiz.play')}</Button>
-        <Button variant="outlined" startIcon={<Share />} onClick={() => onShare(draft)}>{t('tools.quiz.shareLink')}</Button>
         <Box sx={{ flexGrow: 1 }} />
         {canPublish && (
           <Button variant="outlined" color="success" startIcon={<CloudUpload />} onClick={() => onPublish(draft)}>
@@ -529,12 +630,23 @@ function LeaderboardPanel({ quizId, title, onBack }: { quizId: number; title: st
   );
 }
 
+/** Renders a question's body: text + optional image + optional highlighted code. */
+function QuestionContent({ q }: { q: QuizPlayQuestion }) {
+  return (
+    <Box sx={{ mb: 2.5 }}>
+      <Typography sx={{ fontSize: 20, fontWeight: 600, whiteSpace: 'pre-wrap', mb: q.image || q.code ? 1.5 : 0 }}>{q.question}</Typography>
+      {q.image && <Box component="img" src={q.image} alt="" sx={{ maxWidth: '100%', maxHeight: 320, borderRadius: 2, display: 'block', mb: q.code ? 1.5 : 0 }} />}
+      {q.code && <CodeBlock code={q.code} language={q.language} />}
+    </Box>
+  );
+}
+
 /** A focused play session: one question per screen, then a result + review. Grading is injected. */
 function PlaySession({ title, questions, grade, onExit }: {
   title: string; questions: QuizPlayQuestion[]; grade: GradeFn; onExit: () => void;
 }) {
   const { t } = useTranslation();
-  const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
+  const [answers, setAnswers] = useState<(string | null)[]>(() => questions.map(() => null));
   const [pos, setPos] = useState(0);
   const [result, setResult] = useState<PlayResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -544,7 +656,7 @@ function PlaySession({ title, questions, grade, onExit }: {
   const last = pos >= questions.length - 1;
   const current = questions[pos];
 
-  const choose = (i: number) => setAnswers((a) => a.map((v, j) => (j === pos ? i : v)));
+  const setAnswer = (value: string) => setAnswers((a) => a.map((v, j) => (j === pos ? value : v)));
 
   const finish = async () => {
     setSubmitting(true);
@@ -581,21 +693,30 @@ function PlaySession({ title, questions, grade, onExit }: {
       <AnimatePresence mode="wait">
         <motion.div key={pos} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
           <GlassCard sx={{ p: { xs: 2.5, sm: 4 } }}>
-            <Typography sx={{ fontSize: 20, fontWeight: 600, mb: 2.5, whiteSpace: 'pre-wrap' }}>{current.question}</Typography>
-            <Stack spacing={1}>
-              {current.choices.map((choice, i) => {
-                const selected = answers[pos] === i;
-                return (
-                  <Button
-                    key={i} fullWidth variant={selected ? 'contained' : 'outlined'}
-                    onClick={() => choose(i)}
-                    sx={{ justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none', py: 1.25, px: 2 }}
-                  >
-                    {choice}
-                  </Button>
-                );
-              })}
-            </Stack>
+            <QuestionContent q={current} />
+            {current.type === 'open' ? (
+              <TextField
+                fullWidth autoFocus label={t('tools.quiz.yourAnswer')} value={answers[pos] ?? ''}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !last) { e.preventDefault(); setPos((p) => p + 1); } }}
+                slotProps={{ htmlInput: { maxLength: 200 } }}
+              />
+            ) : (
+              <Stack spacing={1}>
+                {current.choices.map((choice, i) => {
+                  const selected = answers[pos] === String(i);
+                  return (
+                    <Button
+                      key={i} fullWidth variant={selected ? 'contained' : 'outlined'}
+                      onClick={() => setAnswer(String(i))}
+                      sx={{ justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none', py: 1.25, px: 2 }}
+                    >
+                      {choice}
+                    </Button>
+                  );
+                })}
+              </Stack>
+            )}
           </GlassCard>
         </motion.div>
       </AnimatePresence>
@@ -618,13 +739,21 @@ function PlaySession({ title, questions, grade, onExit }: {
   );
 }
 
-/** Score + per-question review after a finished play. */
+/** Score + per-question review after a finished play (server/client-graded, type-agnostic). */
 function ResultView({ title, questions, answers, result, onRestart, onExit }: {
-  title: string; questions: QuizPlayQuestion[]; answers: (number | null)[]; result: PlayResult;
+  title: string; questions: QuizPlayQuestion[]; answers: (string | null)[]; result: PlayResult;
   onRestart: () => void; onExit: () => void;
 }) {
   const { t } = useTranslation();
   const pct = Math.round((result.score / Math.max(1, result.total)) * 100);
+
+  const myAnswer = (q: QuizPlayQuestion, raw: string | null): string => {
+    if (raw == null || raw === '') return t('tools.quiz.skipped');
+    if (q.type === 'open') return raw;
+    const idx = Number(raw);
+    return Number.isInteger(idx) && idx >= 0 && idx < q.choices.length ? q.choices[idx] : t('tools.quiz.skipped');
+  };
+
   return (
     <Box>
       <GlassCard sx={{ p: 4, textAlign: 'center', mb: 2 }}>
@@ -639,18 +768,16 @@ function ResultView({ title, questions, answers, result, onRestart, onExit }: {
       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.review')}</Typography>
       <Stack spacing={1}>
         {questions.map((q, qi) => {
-          const mine = answers[qi];
-          const correct = result.correctAnswers[qi];
-          const ok = mine === correct;
+          const ok = result.correct[qi];
           return (
             <GlassCard key={qi} sx={{ p: 1.75, borderLeft: '3px solid', borderColor: ok ? 'success.main' : 'error.main' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>{q.question}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, whiteSpace: 'pre-wrap' }}>{q.question}</Typography>
               <Typography variant="caption" sx={{ display: 'block', color: ok ? 'success.main' : 'error.main' }}>
-                {ok ? '✓ ' : '✗ '}{mine != null ? q.choices[mine] : t('tools.quiz.skipped')}
+                {ok ? '✓ ' : '✗ '}{myAnswer(q, answers[qi])}
               </Typography>
               {!ok && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  {t('tools.quiz.correctIs', { answer: q.choices[correct] })}
+                  {t('tools.quiz.correctIs', { answer: result.correctAnswers[qi] })}
                 </Typography>
               )}
             </GlassCard>

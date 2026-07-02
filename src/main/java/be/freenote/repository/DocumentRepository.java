@@ -11,10 +11,31 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
+
+    /** Public teaser listing: only VERIFIED docs in the copyright-safe categories (Notes/Divers),
+     *  newest first, with course + section fetch-joined to avoid N+1 over the page. */
+    @Query(value = """
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        WHERE d.verified = true AND d.category IN :categories
+        ORDER BY d.createdAt DESC
+        """,
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.category IN :categories")
+    Page<Document> findPublicExcerpts(@Param("categories") Collection<Category> categories, Pageable pageable);
+
+    /** A single public teaser by id — present only if verified AND in an allowed public category. */
+    @Query("""
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        WHERE d.id = :id AND d.verified = true AND d.category IN :categories
+        """)
+    Optional<Document> findPublicExcerptById(@Param("id") Long id, @Param("categories") Collection<Category> categories);
     /** Popular docs for the home page: verified ones first (admin-reviewed), then unverified,
      *  each group ordered by download count. Both are visible — verification is a visual aid only. */
     List<Document> findTop10ByOrderByVerifiedDescDownloadCountDesc();
@@ -65,6 +86,23 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Object[]> countByUserIds(@Param("userIds") List<Long> userIds);
 
     Page<Document> findByUserIdAndVerifiedTrue(Long userId, Pageable pageable);
+
+    /** Content-based duplicate check: an existing document with the same PDF hash, if any. */
+    Optional<Document> findFirstByFileHash(String fileHash);
+
+    /** Documents still missing a content hash — drained once by the startup backfill. */
+    List<Document> findByFileHashIsNull();
+
+    /** All documents sharing a given content hash (a duplicate group). */
+    List<Document> findAllByFileHash(String fileHash);
+
+    /** Content hashes shared by ≥2 documents — i.e. groups of exact duplicates already in the DB. */
+    @Query("SELECT d.fileHash FROM Document d WHERE d.fileHash IS NOT NULL "
+            + "GROUP BY d.fileHash HAVING COUNT(d) > 1")
+    List<String> findDuplicateHashes();
+
+    /** Soft duplicate signal: a same-titled document already exists in the same course. */
+    boolean existsByTitleIgnoreCaseAndCourseId(String title, Long courseId);
 
     @Modifying
     @Query("UPDATE Document d SET d.anonymous = true, d.user = null WHERE d.user.id = :userId")

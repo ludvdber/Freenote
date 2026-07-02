@@ -1,7 +1,14 @@
+import { useEffect, useRef } from 'react';
 import { Box, Typography, Fade, Link as MuiLink } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { KOFI_URL } from '@/lib/constants';
+import { KOFI_URL, ADSENSE_CLIENT, ADSENSE_SLOT } from '@/lib/constants';
+
+declare global {
+  interface Window {
+    adsbygoogle?: Record<string, unknown>[];
+  }
+}
 
 interface AdBannerProps {
   width?: number;
@@ -9,15 +16,18 @@ interface AdBannerProps {
 }
 
 /**
- * Returns the placeholder when an ad should be shown, or `null` for Ko-fi supporters
- * (so the surrounding layout collapses instead of leaving a reserved empty slot).
- * Anonymous visitors see the ad — tracking is still gated by cookie consent at the slot level.
+ * Renders a real Google AdSense unit when a slot id is configured (VITE_ADSENSE_SLOT), else a styled
+ * placeholder (dev/preview, or until the slot exists). Returns `null` for Ko-fi supporters so the
+ * surrounding layout collapses instead of leaving a reserved empty slot. EEA consent is enforced by
+ * Google's certified CMP (Consent Mode v2, loaded by adsbygoogle.js) — not by this component.
  */
 export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
   const { t } = useTranslation();
   const { user, token } = useAuthStore();
 
   if (user?.supporter) return null;
+
+  if (ADSENSE_SLOT) return <AdsenseUnit width={width} height={height} />;
 
   return (
     <Fade in timeout={600}>
@@ -60,5 +70,33 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
         </Typography>
       </Box>
     </Fade>
+  );
+}
+
+/**
+ * One real AdSense display unit. The wrapping AdSlot already reserves `minHeight` so the push causes
+ * no layout shift. The push is guarded against React Strict-Mode double-invoke; a failure (script
+ * blocked / not ready) leaves the reserved space empty rather than throwing.
+ */
+function AdsenseUnit({ width, height }: { width: number; height: number }) {
+  const pushed = useRef(false);
+
+  useEffect(() => {
+    if (pushed.current) return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      pushed.current = true;
+    } catch {
+      /* AdSense not ready or blocked by an ad blocker — keep the empty reserved slot */
+    }
+  }, []);
+
+  return (
+    <ins
+      className="adsbygoogle"
+      style={{ display: 'inline-block', width, height }}
+      data-ad-client={ADSENSE_CLIENT}
+      data-ad-slot={ADSENSE_SLOT}
+    />
   );
 }

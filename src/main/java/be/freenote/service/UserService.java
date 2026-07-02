@@ -31,6 +31,8 @@ public interface UserService {
     UserResponse adminVerifyUser(Long userId);
     /** Admin: revoke the verified flag. */
     UserResponse adminUnverifyUser(Long userId);
+    /** Admin: mark a user as a trusted uploader (bypasses upload rate limits), or revoke it. */
+    UserResponse adminSetTrusted(Long userId, boolean trusted);
     /** Admin: update the role of a user (USER, VERIFIED, ADMIN). */
     UserResponse adminUpdateRole(Long userId, String role);
     /** Admin: delete a user account. Documents are anonymized (kept) — same semantics as self-deletion. */

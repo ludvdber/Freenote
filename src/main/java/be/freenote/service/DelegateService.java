@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface DelegateService {
     List<DelegateResponse> getActiveDelegates();
+    /** Former delegates: ended mandates, grouped by section. */
+    List<DelegateResponse> getFormerDelegates();
     List<DelegateHistoryResponse> getHistory(Long userId);
     List<DelegateMember> getAllMandates();
     DelegateMember assignDelegate(AssignDelegateRequest request);

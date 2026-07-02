@@ -126,6 +126,12 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    mail:
+      # L'app reste pleinement fonctionnelle sans SMTP (les mails de vérification échouent en 503
+      # propre) — un incident Brevo ne doit pas faire passer TOUT /actuator/health en DOWN et
+      # affoler le monitoring. Le suivi SMTP a son propre endpoint admin (/api/admin/smtp-status).
+      enabled: false
   endpoint:
     health:
       # Anonymous (the permitAll /actuator/health) sees only UP/DOWN; component details (DB, Redis,

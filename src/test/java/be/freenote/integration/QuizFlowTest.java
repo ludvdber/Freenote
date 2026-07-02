@@ -67,12 +67,14 @@ class QuizFlowTest extends AbstractIntegrationTest {
         // JSONB persisted correctly (read straight from the DB).
         Quiz stored = quizRepository.findById(id).orElseThrow();
         assertThat(stored.getQuestions()).hasSize(2);
+        assertThat(stored.getQuestions().get(0).type()).isEqualTo("mcq");
         assertThat(stored.getQuestions().get(0).choices()).containsExactly("UDP", "TCP");
         assertThat(stored.getQuestions().get(0).answer()).isEqualTo(1);
 
         // The play view exposes choices but NOT the answer index (anti-cheat).
         mockMvc.perform(get("/api/quizzes/{id}/play", id).header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].type").value("mcq"))
                 .andExpect(jsonPath("$.questions[0].choices.length()").value(2))
                 .andExpect(jsonPath("$.questions[0].answer").doesNotExist())
                 .andExpect(jsonPath("$.questions[1].choices[2]").value("HTTP"));
@@ -86,12 +88,14 @@ class QuizFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/quizzes/{id}/attempts", id)
                         .header("Authorization", "Bearer " + jwt).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"answers\":[1,2],\"durationMs\":5000}"))
+                        .content("{\"answers\":[\"1\",\"2\"],\"durationMs\":5000}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.score").value(1))
                 .andExpect(jsonPath("$.total").value(2))
-                .andExpect(jsonPath("$.correctAnswers[0]").value(1))
-                .andExpect(jsonPath("$.correctAnswers[1]").value(0))
+                .andExpect(jsonPath("$.correct[0]").value(true))
+                .andExpect(jsonPath("$.correct[1]").value(false))
+                .andExpect(jsonPath("$.correctAnswers[0]").value("TCP"))  // display text of the right choice
+                .andExpect(jsonPath("$.correctAnswers[1]").value("ARP"))
                 .andExpect(jsonPath("$.rank").value(1));
 
         // A second user aces it (2/2) → takes rank 1; the author drops to rank 2 (best-per-user).
@@ -99,7 +103,7 @@ class QuizFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/quizzes/{id}/attempts", id)
                         .header("Authorization", "Bearer " + jwtFor(other)).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"answers\":[1,0],\"durationMs\":3000}"))
+                        .content("{\"answers\":[\"1\",\"0\"],\"durationMs\":3000}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.score").value(2));
 
@@ -122,7 +126,7 @@ class QuizFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/quizzes/{id}/attempts", id)
                         .header("Authorization", "Bearer " + jwt).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"answers\":[1,0],\"durationMs\":1000}"))
+                        .content("{\"answers\":[\"1\",\"0\"],\"durationMs\":1000}"))
                 .andExpect(status().isOk());
         assertThat(attemptRepository.count()).isEqualTo(1);
 

@@ -25,6 +25,7 @@ public abstract class UserMapper {
                 user.getUsername(),
                 user.getRole(),
                 user.isVerified(),
+                user.isTrusted(),
                 user.getXp(),
                 p != null ? p.getBio() : null,
                 p != null ? p.getWebsite() : null,
@@ -52,13 +53,14 @@ public abstract class UserMapper {
     public UserResponse toPublicResponse(User user, long documentCount) {
         UserProfile p = user.getProfile();
         if (p != null && p.isProfilePublic()) {
-            return toResponse(user, documentCount);
+            return scrubSensitive(toResponse(user, documentCount));
         }
         AvatarSource source = p != null && p.getAvatarSource() != null ? p.getAvatarSource() : AvatarSource.AUTO;
         return new UserResponse(
                 user.getId(),
                 user.getUsername(),
                 null,
+                false,
                 false,
                 user.getXp(),
                 null, null, null, null, null,
@@ -76,6 +78,22 @@ public abstract class UserMapper {
                 p != null && p.getSection() != null ? p.getSection().getId() : null,
                 p != null && p.getSection() != null ? p.getSection().getName() : null,
                 false,
+                null
+        );
+    }
+
+    /** Strips the fields another user has no business seeing, whatever the profile visibility:
+     *  {@code role} and {@code trusted} are internal moderation state, and {@code discordAvatarUrl}
+     *  embeds the user's Discord snowflake ID (de-anonymisation vector) — it is only ever exposed
+     *  on the OWN profile ({@link #toResponse}) for the avatar picker preview. */
+    private static UserResponse scrubSensitive(UserResponse r) {
+        return new UserResponse(
+                r.id(), r.username(), null, r.verified(), false, r.xp(),
+                r.bio(), r.website(), r.github(), r.linkedin(), r.discord(),
+                r.documentCount(), r.profilePublic(), r.showInCarousel(), r.supporter(),
+                r.termsAccepted(), r.avatarUrl(), r.avatarSource(), r.displayName(),
+                r.firstName(), r.lastName(), r.displayRealName(),
+                r.sectionId(), r.sectionName(), r.usernameChosen(),
                 null
         );
     }

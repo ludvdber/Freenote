@@ -3,7 +3,7 @@ Allow: /
 
 # Login-gated routes return only the empty SPA shell to crawlers — keep them out of the
 # index to avoid "thin content" penalties. Public surface that SHOULD be indexed:
-# /  /outils  /outils/*  /a-propos  /news  /news/*  /legal  /privacy  /terms
+# /  /outils  /outils/*  /guides  /guides/*  /ressources  /ressources/*  /a-propos  /news  /news/*  /legal  /privacy  /terms
 Disallow: /admin
 Disallow: /profile
 Disallow: /upload

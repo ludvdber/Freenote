@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,6 +43,25 @@ public class DelegateServiceImpl implements DelegateService {
 
         Map<String, List<DelegateHistory>> bySection = active.stream()
                 .collect(Collectors.groupingBy(dh -> dh.getSection().getName()));
+
+        return bySection.entrySet().stream()
+                .map(entry -> new DelegateResponse(
+                        entry.getKey(),
+                        entry.getValue().getFirst().getSection().getIcon(),
+                        entry.getValue().stream()
+                                .map(delegateMapper::toMember)
+                                .toList()
+                ))
+                .toList();
+    }
+
+    @Override
+    public List<DelegateResponse> getFormerDelegates() {
+        List<DelegateHistory> former = delegateHistoryRepository.findByEndDateIsNotNullOrderByEndDateDesc();
+
+        // groupingBy on a LinkedHashMap keeps sections in first-seen (most-recently-ended) order.
+        Map<String, List<DelegateHistory>> bySection = former.stream()
+                .collect(Collectors.groupingBy(dh -> dh.getSection().getName(), LinkedHashMap::new, Collectors.toList()));
 
         return bySection.entrySet().stream()
                 .map(entry -> new DelegateResponse(

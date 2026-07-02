@@ -20,6 +20,10 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
 const News = lazy(() => import('@/pages/News'));
 const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
+const GuidesIndex = lazy(() => import('@/pages/GuidesIndex'));
+const GuideDetail = lazy(() => import('@/pages/GuideDetail'));
+const ResourcesIndex = lazy(() => import('@/pages/ResourcesIndex'));
+const ResourceDetail = lazy(() => import('@/pages/ResourceDetail'));
 const ToolsIndex = lazy(() => import('@/pages/tools/ToolsIndex'));
 const ToolPage = lazy(() => import('@/pages/tools/ToolPage'));
 const Admin = lazy(() => import('@/pages/Admin'));
@@ -98,6 +102,10 @@ export default function App() {
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/guides" element={<GuidesIndex />} />
+          <Route path="/guides/:slug" element={<GuideDetail />} />
+          <Route path="/ressources" element={<ResourcesIndex />} />
+          <Route path="/ressources/:id" element={<ResourceDetail />} />
           <Route path="/a-propos" element={<About />} />
           <Route path="/about" element={<Navigate to="/a-propos" replace />} />
           <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />

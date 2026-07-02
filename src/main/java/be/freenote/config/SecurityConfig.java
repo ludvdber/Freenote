@@ -117,7 +117,7 @@ public class SecurityConfig {
                 // — everything served by SpaForwardingConfig must be publicly reachable,
                 // otherwise the login page itself would require a login.
                 .requestMatchers(HttpMethod.GET,
-                        "/", "/index.html", "/favicon.ico", "/robots.txt", "/ads.txt",
+                        "/", "/index.html", "/favicon.ico", "/robots.txt", "/ads.txt", "/sitemap.xml",
                         "/assets/**", "/static/**", "/*.svg", "/*.png", "/*.jpg", "/*.webp", "/*.ico"
                 ).permitAll()
 
@@ -129,6 +129,8 @@ public class SecurityConfig {
                 // All other actuator endpoints (metrics, info, …) are admin-only — never public.
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/guides", "/api/guides/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/webhooks/kofi").permitAll()
 
                 // SPA deep-link routes (React Router owns them; index.html is served back by SpaForwardingConfig)
@@ -138,9 +140,12 @@ public class SecurityConfig {
                         "/profile", "/profile/**",
                         "/leaderboard",
                         "/news", "/news/**",
+                        "/guides", "/guides/**",
+                        "/ressources", "/ressources/**",
                         "/admin", "/admin/**",
-                        "/tools", "/tools/**",
+                        "/outils", "/outils/**", "/tools", "/tools/**",
                         "/legal", "/privacy", "/terms",
+                        "/a-propos", "/about",
                         "/courses/**",
                         "/documents/**",
                         "/users/**"

@@ -61,6 +61,11 @@ public class Document {
 
     private String year;
 
+    /** SHA-256 (hex) of the stored PDF bytes — rejects exact-duplicate uploads. Nullable: pre-existing
+     *  rows are filled asynchronously at startup by {@code DocumentHashBackfill} (re-reads MinIO). */
+    @Column(name = "file_hash", length = 64)
+    private String fileHash;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professor_id")
     private Professor professor;

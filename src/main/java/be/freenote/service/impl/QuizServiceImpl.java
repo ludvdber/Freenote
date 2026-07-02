@@ -58,11 +58,7 @@ public class QuizServiceImpl implements QuizService {
 
         List<QuizQuestionJson> questions = new ArrayList<>(request.questions().size());
         for (QuizQuestionDto dto : request.questions()) {
-            List<String> choices = dto.choices().stream().map(String::trim).toList();
-            if (dto.answer() < 0 || dto.answer() >= choices.size()) {
-                throw new IllegalArgumentException("Index de réponse invalide pour une question.");
-            }
-            questions.add(new QuizQuestionJson(dto.question().trim(), choices, dto.answer()));
+            questions.add(buildQuestion(dto));
         }
 
         Quiz quiz = Quiz.builder()
@@ -99,17 +95,30 @@ public class QuizServiceImpl implements QuizService {
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
 
         List<QuizQuestionJson> questions = quiz.getQuestions();
-        List<Integer> answers = request.answers();
+        List<String> answers = request.answers();
         int total = questions.size();
-        List<Integer> correct = new ArrayList<>(total);
+        List<Boolean> correct = new ArrayList<>(total);
+        List<String> correctAnswers = new ArrayList<>(total);
         int score = 0;
         for (int i = 0; i < total; i++) {
-            int correctIdx = questions.get(i).answer();
-            correct.add(correctIdx);
-            Integer chosen = i < answers.size() ? answers.get(i) : null;
-            if (chosen != null && chosen == correctIdx) {
+            QuizQuestionJson q = questions.get(i);
+            String given = i < answers.size() ? answers.get(i) : null;
+            boolean ok;
+            String display;
+            if ("open".equals(q.type())) {
+                display = q.openAnswer() == null ? "" : q.openAnswer();
+                ok = given != null && normalize(given).equals(normalize(display));
+            } else {
+                int idx = q.answer();
+                display = idx >= 0 && idx < q.choices().size() ? q.choices().get(idx) : "";
+                Integer chosen = parseIndex(given);
+                ok = chosen != null && chosen == idx;
+            }
+            if (ok) {
                 score++;
             }
+            correct.add(ok);
+            correctAnswers.add(display);
         }
         long duration = Math.max(0, request.durationMs());
 
@@ -118,7 +127,7 @@ public class QuizServiceImpl implements QuizService {
         quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
 
         int rank = rankOf(quizId, userId);
-        return new AttemptResultResponse(score, total, duration, correct, rank);
+        return new AttemptResultResponse(score, total, duration, correct, correctAnswers, rank);
     }
 
     @Override
@@ -171,5 +180,52 @@ public class QuizServiceImpl implements QuizService {
             }
         }
         return 0;
+    }
+
+    /** Validate + normalise one question DTO into its stored JSONB form (per {@code type}). */
+    private QuizQuestionJson buildQuestion(QuizQuestionDto dto) {
+        String question = dto.question().trim();
+        String image = blankToNull(dto.image());
+        String code = blankToNull(dto.code());
+        String language = blankToNull(dto.language());
+
+        if ("open".equalsIgnoreCase(dto.type())) {
+            String open = dto.openAnswer() == null ? "" : dto.openAnswer().trim();
+            if (open.isBlank()) {
+                throw new IllegalArgumentException("Réponse attendue manquante pour une question ouverte.");
+            }
+            return new QuizQuestionJson("open", question, List.of(), -1, open, image, code, language);
+        }
+
+        List<String> choices = (dto.choices() == null ? List.<String>of() : dto.choices())
+                .stream().map(c -> c == null ? "" : c.trim()).toList();
+        if (choices.size() < 2 || choices.stream().anyMatch(String::isBlank)) {
+            throw new IllegalArgumentException("Un QCM exige au moins deux réponses non vides.");
+        }
+        if (dto.answer() < 0 || dto.answer() >= choices.size()) {
+            throw new IllegalArgumentException("Index de bonne réponse invalide.");
+        }
+        return new QuizQuestionJson("mcq", question, choices, dto.answer(), "", image, code, language);
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    /** Case/space-insensitive comparison key for open answers. */
+    private static String normalize(String s) {
+        return s == null ? "" : s.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
+    /** Parse a chosen MCQ index sent as a string, or null if it isn't an integer. */
+    private static Integer parseIndex(String s) {
+        if (s == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

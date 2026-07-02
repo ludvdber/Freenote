@@ -302,6 +302,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserResponse adminSetTrusted(Long userId, boolean trusted) {
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        user.setTrusted(trusted);
+        User saved = userRepository.save(user);
+        long docCount = documentRepository.countByUserId(userId);
+        log.info("Admin set trusted={} for user: id={}, username={}", trusted, userId, user.getUsername());
+        return userMapper.toResponse(saved, docCount);
+    }
+
+    @Override
+    @Transactional
     public UserResponse adminUpdateRole(Long userId, String role) {
         if (role == null || !(role.equals("USER") || role.equals("VERIFIED") || role.equals("ADMIN"))) {
             throw new IllegalArgumentException("Role must be USER, VERIFIED or ADMIN");

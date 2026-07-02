@@ -51,7 +51,7 @@ describe('GradeCalculator', () => {
     expect(screen.getByText('tools.grade.mentionDistinction')).toBeInTheDocument();
   });
 
-  it('applies the default ⅔ TFE weighting in diploma mode', async () => {
+  it('applies the default ⅓ TFE weighting in diploma mode', async () => {
     const user = userEvent.setup();
     render(<GradeCalculator />);
 
@@ -64,9 +64,9 @@ describe('GradeCalculator', () => {
     const tfe = await screen.findByLabelText('tools.grade.tfeGrade /20');
     await user.type(tfe, '15');
 
-    // final = ⅓×12 + ⅔×15 = 14 → 70% → distinction (ISFCE scale: 70–80%)
+    // final = ⅔×12 + ⅓×15 = 13 → 65% → satisfaction (ISFCE scale: 60–70%)
     expect(screen.getByText('tools.grade.diplomaFinal')).toBeInTheDocument();
-    expect(screen.getByText('14')).toBeInTheDocument();
-    expect(screen.getByText('tools.grade.mentionDistinction')).toBeInTheDocument();
+    expect(screen.getByText('13')).toBeInTheDocument();
+    expect(screen.getByText('tools.grade.mentionSatisfaction')).toBeInTheDocument();
   });
 });

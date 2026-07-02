@@ -5,13 +5,23 @@
  * in isolation — the React component only wires it to local state, the API and the URL hash.
  */
 
+export type QuestionType = 'mcq' | 'open';
+
 export interface QuizQuestion {
   id: string;
+  type: QuestionType;
   question: string;
-  /** 2–6 answer choices. */
+  /** MCQ: 2–6 answer choices. */
   choices: string[];
-  /** 0-based index of the correct choice. */
+  /** MCQ: 0-based index of the correct choice. */
   answer: number;
+  /** Open question: the expected answer (matched case/space-insensitively). */
+  openAnswer: string;
+  /** Optional base64 data URI — published quizzes only, never carried in a share link. */
+  image?: string;
+  /** Optional code snippet (syntax-highlighted at render) + its language hint. */
+  code?: string;
+  language?: string;
 }
 
 export interface Quiz {
@@ -21,6 +31,15 @@ export interface Quiz {
   createdAt: number;
   /** Epoch ms of the last time this quiz was published to the shared catalogue. */
   sharedAt?: number;
+}
+
+export interface GradeResult {
+  score: number;
+  total: number;
+  /** Per-question right/wrong. */
+  correct: boolean[];
+  /** Per-question display text of the correct answer (for the review screen). */
+  correctAnswers: string[];
 }
 
 export const MIN_CHOICES = 2;
@@ -34,52 +53,87 @@ export function uid(): string {
 }
 
 export function newQuestion(): QuizQuestion {
-  return { id: uid(), question: '', choices: ['', ''], answer: 0 };
+  return { id: uid(), type: 'mcq', question: '', choices: ['', ''], answer: 0, openAnswer: '' };
 }
 
 export function newQuiz(title: string, now: number = Date.now()): Quiz {
   return { id: uid(), title: title.trim() || 'Quiz', questions: [newQuestion()], createdAt: now };
 }
 
-// ── Grading (client-side, for ephemeral play) ────────────────────────────────
+/** Case/space-insensitive comparison key for open answers — mirrors the backend. */
+function normalizeText(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
+}
 
-/** Number of correct answers. `answers[i]` is the chosen index for question i (null/undefined = skipped). */
-export function gradeQuiz(quiz: Quiz, answers: (number | null)[]): { score: number; total: number } {
+// ── Grading (client-side, for ephemeral / local play) ────────────────────────
+
+/**
+ * Grade a finished play. `answers[i]` is the player's answer to question i as a string (the chosen
+ * 0-based index for an MCQ, the typed text for an open question); null = skipped. Mirrors the server.
+ */
+export function gradeQuiz(quiz: Quiz, answers: (string | null)[]): GradeResult {
+  const correct: boolean[] = [];
+  const correctAnswers: string[] = [];
   let score = 0;
   quiz.questions.forEach((q, i) => {
-    if (answers[i] != null && answers[i] === q.answer) score++;
+    const given = answers[i];
+    let ok: boolean;
+    let display: string;
+    if (q.type === 'open') {
+      display = q.openAnswer;
+      ok = given != null && normalizeText(given) === normalizeText(q.openAnswer);
+    } else {
+      display = q.choices[q.answer] ?? '';
+      ok = given != null && given !== '' && Number(given) === q.answer;
+    }
+    if (ok) score++;
+    correct.push(ok);
+    correctAnswers.push(display);
   });
-  return { score, total: quiz.questions.length };
+  return { score, total: quiz.questions.length, correct, correctAnswers };
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
 
 /**
  * Returns an i18n error key if the quiz can't be published/shared, else null. Mirrors the backend
- * Bean Validation + the cross-field answer-range rule, so the UI fails fast before a round-trip.
+ * rules so the UI fails fast before a round-trip.
  */
 export function validateQuiz(quiz: Quiz): string | null {
   if (!quiz.title.trim()) return 'errTitle';
   if (quiz.questions.length === 0) return 'errNoQuestions';
   for (const q of quiz.questions) {
     if (!q.question.trim()) return 'errQuestionText';
-    const filled = q.choices.map((c) => c.trim()).filter(Boolean);
-    if (filled.length < MIN_CHOICES) return 'errChoices';
-    if (q.answer < 0 || q.answer >= q.choices.length || !q.choices[q.answer]?.trim()) return 'errAnswer';
+    if (q.type === 'open') {
+      if (!q.openAnswer.trim()) return 'errOpenAnswer';
+    } else {
+      const filled = q.choices.map((c) => c.trim()).filter(Boolean);
+      if (filled.length < MIN_CHOICES) return 'errChoices';
+      if (q.answer < 0 || q.answer >= q.choices.length || !q.choices[q.answer]?.trim()) return 'errAnswer';
+    }
   }
   return null;
 }
 
-/** Drop blank trailing choices and trim, keeping the answer pointing at the right choice. */
+/** Trim, drop blank MCQ choices (keeping the answer on the right one), clear the unused branch. */
 export function normalizeQuiz(quiz: Quiz): Quiz {
   return {
     ...quiz,
     title: quiz.title.trim(),
     questions: quiz.questions.map((q) => {
+      const base: QuizQuestion = {
+        ...q,
+        question: q.question.trim(),
+        code: q.code?.trim() ? q.code.trim() : undefined,
+        language: q.language?.trim() ? q.language.trim() : undefined,
+      };
+      if (q.type === 'open') {
+        return { ...base, openAnswer: q.openAnswer.trim(), choices: [], answer: 0 };
+      }
       const correct = q.choices[q.answer];
       const choices = q.choices.map((c) => c.trim()).filter(Boolean);
       const answer = Math.max(0, choices.indexOf((correct ?? '').trim()));
-      return { ...q, question: q.question.trim(), choices, answer };
+      return { ...base, choices, answer, openAnswer: '' };
     }),
   };
 }
@@ -114,26 +168,42 @@ function healQuiz(input: unknown, now: number): Quiz {
 
 function healQuestion(input: unknown): QuizQuestion {
   const q = input as Partial<QuizQuestion>;
+  const type: QuestionType = q.type === 'open' ? 'open' : 'mcq';
   const choices = Array.isArray(q.choices) ? q.choices.map((c) => String(c)) : ['', ''];
   const answer = Number.isInteger(q.answer) ? (q.answer as number) : 0;
   return {
     id: typeof q.id === 'string' ? q.id : uid(),
+    type,
     question: typeof q.question === 'string' ? q.question : '',
     choices,
     answer: answer >= 0 && answer < choices.length ? answer : 0,
+    openAnswer: typeof q.openAnswer === 'string' ? q.openAnswer : '',
+    image: typeof q.image === 'string' ? q.image : undefined,
+    code: typeof q.code === 'string' ? q.code : undefined,
+    language: typeof q.language === 'string' ? q.language : undefined,
   };
 }
 
 // ── Ephemeral URL sharing (no backend) ───────────────────────────────────────
 //
-// A quiz is packed into a compact `{ t, q:[{q,c,a}] }` shape, JSON-encoded, then base64url-encoded so
-// it rides in the URL hash. Anyone (even logged-out) can open the link and play 100% client-side — no
-// storage, no account, no leaderboard. The answers ARE present in the payload (a curious player could
-// decode them), which is fine for a casual shared quiz with no score stakes.
+// A quiz is packed into a compact shape, JSON-encoded, then base64url-encoded so it rides in the URL
+// hash. Anyone (even logged-out) can open the link and play 100% client-side. IMAGES ARE DROPPED from
+// the share payload (a base64 image would blow up the URL) — so a shared/anonymous quiz never has
+// images, by design. The answers ARE present (a curious player could decode them), fine for a casual
+// shared quiz with no score stakes.
 
+interface CompactQ {
+  t: QuestionType;
+  q: string;
+  c?: string[];
+  a?: number;
+  o?: string;
+  code?: string;
+  lang?: string;
+}
 interface CompactQuiz {
   t: string;
-  q: { q: string; c: string[]; a: number }[];
+  q: CompactQ[];
 }
 
 /** UTF-8-safe base64url of an arbitrary string. */
@@ -155,29 +225,38 @@ export function encodeQuiz(quiz: Quiz): string {
   const n = normalizeQuiz(quiz);
   const compact: CompactQuiz = {
     t: n.title,
-    q: n.questions.map((q) => ({ q: q.question, c: q.choices, a: q.answer })),
+    q: n.questions.map((q) => {
+      const extra = q.code ? { code: q.code, lang: q.language } : {};
+      return q.type === 'open'
+        ? { t: 'open' as const, q: q.question, o: q.openAnswer, ...extra }
+        : { t: 'mcq' as const, q: q.question, c: q.choices, a: q.answer, ...extra };
+    }),
   };
   return toBase64Url(JSON.stringify(compact));
 }
 
-/** Decode a shared quiz back into a playable Quiz (fresh ids). Throws on malformed input. */
+/** Decode a shared quiz back into a playable Quiz (fresh ids, no images). Throws on malformed input. */
 export function decodeQuiz(encoded: string, now: number = Date.now()): Quiz {
   const parsed = JSON.parse(fromBase64Url(encoded)) as CompactQuiz;
   if (typeof parsed.t !== 'string' || !Array.isArray(parsed.q) || parsed.q.length === 0) {
     throw new Error('Invalid shared quiz');
   }
-  const quiz: Quiz = {
+  return {
     id: uid(),
     title: parsed.t,
     createdAt: now,
-    questions: parsed.q.map((q) => {
-      if (typeof q.q !== 'string' || !Array.isArray(q.c) || q.c.length < MIN_CHOICES) {
-        throw new Error('Invalid shared question');
+    questions: parsed.q.map((cq) => {
+      if (typeof cq.q !== 'string') throw new Error('Invalid shared question');
+      const code = typeof cq.code === 'string' ? cq.code : undefined;
+      const language = typeof cq.lang === 'string' ? cq.lang : undefined;
+      if (cq.t === 'open') {
+        if (typeof cq.o !== 'string') throw new Error('Invalid open question');
+        return { id: uid(), type: 'open', question: cq.q, choices: [], answer: 0, openAnswer: cq.o, code, language };
       }
-      const choices = q.c.map((c) => String(c));
-      const answer = Number.isInteger(q.a) && q.a >= 0 && q.a < choices.length ? q.a : 0;
-      return { id: uid(), question: q.q, choices, answer };
+      if (!Array.isArray(cq.c) || cq.c.length < MIN_CHOICES) throw new Error('Invalid mcq question');
+      const choices = cq.c.map((c) => String(c));
+      const answer = Number.isInteger(cq.a) && cq.a! >= 0 && cq.a! < choices.length ? cq.a! : 0;
+      return { id: uid(), type: 'mcq', question: cq.q, choices, answer, openAnswer: '', code, language };
     }),
   };
-  return quiz;
 }

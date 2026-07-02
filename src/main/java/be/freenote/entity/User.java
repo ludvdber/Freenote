@@ -38,6 +38,11 @@ public class User {
     @Builder.Default
     private boolean verified = false;
 
+    /** Trusted uploader (set by an admin): bypasses upload rate limits. Checked live by RateLimitAspect. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean trusted = false;
+
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String role = "USER";

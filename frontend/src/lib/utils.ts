@@ -7,7 +7,7 @@ export function formatNumber(n: number): string {
 }
 
 export function formatDate(dateStr: string, locale: string = 'fr'): string {
-  return new Date(dateStr).toLocaleDateString(locale === 'fr' ? 'fr-BE' : 'en-GB', {
+  return new Date(dateStr).toLocaleDateString(locale.startsWith('fr') ? 'fr-BE' : 'en-GB', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -24,15 +24,15 @@ export function formatRelativeDate(dateStr: string, locale: string = 'fr'): stri
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffDay >= 7) {
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-BE' : 'en-GB', {
+    return date.toLocaleDateString(locale.startsWith('fr') ? 'fr-BE' : 'en-GB', {
       month: 'short',
       day: 'numeric',
     });
   }
-  if (diffDay >= 1) return locale === 'fr' ? `Il y a ${diffDay}j` : `${diffDay}d ago`;
-  if (diffHour >= 1) return locale === 'fr' ? `Il y a ${diffHour}h` : `${diffHour}h ago`;
-  if (diffMin >= 1) return locale === 'fr' ? `Il y a ${diffMin}min` : `${diffMin}min ago`;
-  return locale === 'fr' ? 'À l\'instant' : 'Just now';
+  if (diffDay >= 1) return locale.startsWith('fr') ? `Il y a ${diffDay}j` : `${diffDay}d ago`;
+  if (diffHour >= 1) return locale.startsWith('fr') ? `Il y a ${diffHour}h` : `${diffHour}h ago`;
+  if (diffMin >= 1) return locale.startsWith('fr') ? `Il y a ${diffMin}min` : `${diffMin}min ago`;
+  return locale.startsWith('fr') ? 'À l\'instant' : 'Just now';
 }
 
 export function categoryColor(category: string): string {

@@ -1,0 +1,11 @@
+-- ================================================================
+-- V7 — USERS.TRUSTED : uploadeur de confiance (upload sans limite de débit)
+-- ================================================================
+-- Migration ADDITIVE (après V1..V6). ALTER ADD COLUMN NOT NULL DEFAULT FALSE :
+-- toutes les lignes existantes deviennent trusted=false.
+--
+-- Un compte « de confiance » (basculé par un admin) contourne le rate-limit
+-- d'upload. La vérification se fait EN BASE au moment du rate-limit (les rôles
+-- viennent des claims JWT, donc un flag ne s'appliquerait qu'au re-login sinon) —
+-- effet immédiat. Voir RateLimitAspect.
+ALTER TABLE users ADD COLUMN trusted BOOLEAN NOT NULL DEFAULT FALSE;

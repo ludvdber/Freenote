@@ -7,11 +7,12 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * A finished play submitted for grading. {@code answers} holds the chosen 0-based choice index per
- * question (a {@code null} entry = skipped); the server re-grades against the stored answers, so the
- * client never sends a score. {@code durationMs} is client-measured (low-stakes) and clamped server-side.
+ * A finished play submitted for grading. {@code answers[i]} is the player's answer to question i as a
+ * STRING — for an MCQ it's the chosen 0-based index ("2"), for an open question it's the typed text;
+ * a {@code null} entry = skipped. The server re-grades against the stored answers, so the client never
+ * sends a score. {@code durationMs} is client-measured (low-stakes) and clamped server-side.
  */
 public record SubmitAttemptRequest(
-        @NotNull @Size(max = 100) List<Integer> answers,
+        @NotNull @Size(max = 100) List<@Size(max = 500) String> answers,
         @Min(0) long durationMs
 ) {}

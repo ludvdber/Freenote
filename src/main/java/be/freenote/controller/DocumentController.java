@@ -27,10 +27,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentController {
 
+    /** Hard cap on page size — a verified user must not be able to pull the whole table in one call. */
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final DocumentService documentService;
 
+    private static PageRequest pageable(int page, int size) {
+        return PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE));
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RateLimit(max = 5, window = 3600)
+    @RateLimit(max = 3, window = 60)
     public ResponseEntity<DocumentResponse> create(Authentication authentication,
                                                     @Valid @RequestPart("data") CreateDocumentRequest request,
                                                     @RequestPart(value = "file", required = false) MultipartFile file,
@@ -43,6 +50,13 @@ public class DocumentController {
     @GetMapping("/{id}")
     public ResponseEntity<DocumentResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(documentService.getById(id));
+    }
+
+    /** Soft duplicate signal for the upload form: is there already a same-titled doc in this course?
+     *  Never blocks the upload — the frontend just shows a warning. */
+    @GetMapping("/title-exists")
+    public ResponseEntity<Boolean> titleExists(@RequestParam String title, @RequestParam Long courseId) {
+        return ResponseEntity.ok(documentService.titleExists(title, courseId));
     }
 
     @GetMapping("/{id}/file")
@@ -69,7 +83,7 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(documentService.search(q, sectionId, courseId, category, sort,
-                PageRequest.of(page, size)));
+                pageable(page, size)));
     }
 
     @GetMapping("/popular")
@@ -85,7 +99,7 @@ public class DocumentController {
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size) {
-        return ResponseEntity.ok(documentService.getByUser(userId, PageRequest.of(page, size)));
+        return ResponseEntity.ok(documentService.getByUser(userId, pageable(page, size)));
     }
 
     @DeleteMapping("/{id}")

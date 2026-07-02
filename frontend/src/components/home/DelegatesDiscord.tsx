@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Chip, Avatar } from '@mui/material';
+import { Box, Typography, Chip, Avatar, Button, Collapse } from '@mui/material';
+import { ExpandMore, ExpandLess, History } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDelegates } from '@/api/endpoints';
+import { getDelegates, getFormerDelegates } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { formatDate } from '@/lib/utils';
 import type { DelegateMember } from '@/types';
@@ -16,7 +17,9 @@ export default function DelegatesDiscord() {
   const { t, i18n } = useTranslation();
   const { token } = useAuthStore();
   const { data: delegates } = useQuery({ queryKey: ['delegates'], queryFn: getDelegates });
+  const { data: former } = useQuery({ queryKey: ['delegates-former'], queryFn: getFormerDelegates });
   const [selectedDelegate, setSelectedDelegate] = useState<DelegateMember | null>(null);
+  const [showFormer, setShowFormer] = useState(false);
   const delegatesCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export default function DelegatesDiscord() {
   }, [selectedDelegate]);
 
   const hasDelegates = (delegates?.length ?? 0) > 0;
+  const hasFormer = (former?.length ?? 0) > 0;
 
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -121,6 +125,42 @@ export default function DelegatesDiscord() {
                 </AnimatePresence>
               </GlassCard>
             </Box>
+
+            {hasFormer && (
+              <Box sx={{ mt: 1.5 }}>
+                <Button
+                  size="small"
+                  startIcon={<History />}
+                  endIcon={showFormer ? <ExpandLess /> : <ExpandMore />}
+                  onClick={() => setShowFormer((v) => !v)}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  {t('delegates.formerToggle')}
+                </Button>
+                <Collapse in={showFormer}>
+                  <GlassCard sx={{ p: 2, mt: 1 }}>
+                    {former?.map((d) => (
+                      <Box key={d.sectionName} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          {d.sectionName}
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                          {d.members.map((m, i) => (
+                            <Chip
+                              key={`${m.username}-${i}`}
+                              size="small"
+                              variant="outlined"
+                              label={m.displayName ? `${m.displayName} (${m.username})` : m.username}
+                              sx={{ opacity: 0.7 }}
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+                    ))}
+                  </GlassCard>
+                </Collapse>
+              </Box>
+            )}
           </Box>
 
           <Box sx={s.adCol}>

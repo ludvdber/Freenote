@@ -114,6 +114,22 @@ class DocumentServiceImplTest {
     }
 
     @Test
+    void shouldRejectDuplicatePdfByHash() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getOriginalFilename()).thenReturn("dup.pdf");
+        when(pdfValidationService.validate(file)).thenReturn(VALID_PDF_BYTES);
+        Document existing = Document.builder().id(7L).title("Original").build();
+        when(documentRepository.findFirstByFileHash(anyString())).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> documentService.create(validRequest(), file, 1L))
+                .isInstanceOf(be.freenote.exception.DuplicateResourceException.class)
+                .hasMessageContaining("Original");
+
+        verify(minioService).delete(anyString());                 // orphan object cleaned up
+        verify(documentRepository, never()).save(any(Document.class));
+    }
+
+    @Test
     void shouldCreateDocumentFromImages() {
         // Image-upload path: 1–8 JPG/PNG are assembled into one PDF by ImageToPdfService; the PDF
         // validator is bypassed and the resulting bytes are stored as application/pdf.

@@ -1,19 +1,22 @@
 package be.freenote.dto.request;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
 /**
- * A single multiple-choice question in a create request. {@code answer} is the 0-based index of the
- * correct choice; the upper bound (answer &lt; choices.size()) is a cross-field rule checked in the
- * service. The container-element constraints validate each choice string.
+ * A single question in a create request. The shape depends on {@code type} ("mcq" / "open"); the
+ * cross-field rules (mcq → ≥2 non-blank choices + answer in range ; open → non-blank openAnswer) are
+ * enforced in the service. Sizes are capped here; {@code image} is a base64 data URI (≈ a 200 KB image).
  */
 public record QuizQuestionDto(
+        String type,
         @NotBlank @Size(max = 500) String question,
-        @NotEmpty @Size(min = 2, max = 6) List<@NotBlank @Size(max = 200) String> choices,
-        @Min(0) int answer
+        @Size(max = 6) List<@Size(max = 200) String> choices,
+        int answer,
+        @Size(max = 200) String openAnswer,
+        @Size(max = 300_000) String image,
+        @Size(max = 5000) String code,
+        @Size(max = 30) String language
 ) {}

@@ -34,6 +34,13 @@ import type {
   QuizPlayResponse,
   AttemptResultResponse,
   QuizLeaderboardEntry,
+  GuideSummary,
+  GuideResponse,
+  CreateGuideRequest,
+  PublicDocumentSummary,
+  GanttSummary,
+  GanttResponse,
+  SaveGanttRequest,
 } from '@/types';
 
 // --- Stats ---
@@ -169,6 +176,9 @@ export const getLeaderboard = (size?: number, sectionId?: number) =>
 export const getDelegates = () =>
   api.get<DelegateResponse[]>('/delegates').then((r) => r.data);
 
+export const getFormerDelegates = () =>
+  api.get<DelegateResponse[]>('/delegates/former').then((r) => r.data);
+
 export const getDelegateHistory = (userId: number) =>
   api.get<DelegateHistoryResponse[]>(`/delegates/user/${userId}`).then((r) => r.data);
 
@@ -247,6 +257,12 @@ export const adminVerifyUser = (id: number) =>
 
 export const adminUnverifyUser = (id: number) =>
   api.put<User>(`/admin/users/${id}/unverify`).then((r) => r.data);
+
+export const adminTrustUser = (id: number) =>
+  api.put<User>(`/admin/users/${id}/trust`).then((r) => r.data);
+
+export const adminUntrustUser = (id: number) =>
+  api.put<User>(`/admin/users/${id}/untrust`).then((r) => r.data);
 
 export const adminUpdateUserRole = (id: number, role: 'USER' | 'VERIFIED' | 'ADMIN') =>
   api.patch<User>(`/admin/users/${id}/role`, null, { params: { role } }).then((r) => r.data);
@@ -346,6 +362,59 @@ export const submitQuizAttempt = (id: number, body: SubmitAttemptRequest) =>
 
 export const getQuizLeaderboard = (id: number, size = 20) =>
   api.get<QuizLeaderboardEntry[]>(`/quizzes/${id}/leaderboard`, { params: { size } }).then((r) => r.data);
+
+// --- Guides (public read) ---
+export const listGuides = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<GuideSummary>>('/guides', { params }).then((r) => r.data);
+
+export const getGuide = (slug: string) =>
+  api.get<GuideResponse>(`/guides/${slug}`).then((r) => r.data);
+
+// --- Guides (admin authoring) ---
+export const adminListGuides = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<GuideSummary>>('/admin/guides', { params }).then((r) => r.data);
+
+export const adminGetGuide = (id: number) =>
+  api.get<GuideResponse>(`/admin/guides/${id}`).then((r) => r.data);
+
+export const adminCreateGuide = (body: CreateGuideRequest) =>
+  api.post<GuideResponse>('/admin/guides', body).then((r) => r.data);
+
+export const adminUpdateGuide = (id: number, body: CreateGuideRequest) =>
+  api.put<GuideResponse>(`/admin/guides/${id}`, body).then((r) => r.data);
+
+export const adminDeleteGuide = (id: number) =>
+  api.delete<void>(`/admin/guides/${id}`);
+
+// --- Public catalogue teaser (anonymous) ---
+export const listPublicDocuments = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<PublicDocumentSummary>>('/public/documents', { params }).then((r) => r.data);
+
+export const getPublicDocument = (id: number) =>
+  api.get<PublicDocumentSummary>(`/public/documents/${id}`).then((r) => r.data);
+
+/** Soft duplicate signal for the upload form — true if a same-titled doc already exists in the course. */
+export const checkDocumentTitle = (title: string, courseId: number) =>
+  api.get<boolean>('/documents/title-exists', { params: { title, courseId } }).then((r) => r.data);
+
+// --- Gantt charts (verified-only save + share) ---
+export const listMyGanttCharts = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<GanttSummary>>('/gantt-charts/mine', { params }).then((r) => r.data);
+
+export const listSharedGanttCharts = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<GanttSummary>>('/gantt-charts/shared', { params }).then((r) => r.data);
+
+export const getGanttChart = (id: number) =>
+  api.get<GanttResponse>(`/gantt-charts/${id}`).then((r) => r.data);
+
+export const createGanttChart = (body: SaveGanttRequest) =>
+  api.post<GanttResponse>('/gantt-charts', body).then((r) => r.data);
+
+export const updateGanttChart = (id: number, body: SaveGanttRequest) =>
+  api.put<GanttResponse>(`/gantt-charts/${id}`, body).then((r) => r.data);
+
+export const deleteGanttChart = (id: number) =>
+  api.delete<void>(`/gantt-charts/${id}`);
 
 export const deleteQuiz = (id: number) =>
   api.delete<void>(`/quizzes/${id}`);

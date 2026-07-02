@@ -28,6 +28,11 @@ public class DelegateController {
         return ResponseEntity.ok(delegateService.getActiveDelegates());
     }
 
+    @GetMapping("/api/delegates/former")
+    public ResponseEntity<List<DelegateResponse>> getFormerDelegates() {
+        return ResponseEntity.ok(delegateService.getFormerDelegates());
+    }
+
     @GetMapping("/api/delegates/user/{userId}")
     public ResponseEntity<List<DelegateHistoryResponse>> getUserHistory(@PathVariable Long userId) {
         return ResponseEntity.ok(delegateService.getHistory(userId));

@@ -21,7 +21,7 @@ interface Row {
 type Scale = 20 | 100;
 
 const PASS_PERCENT = 50;
-const DEFAULT_TFE_SHARE = 66.67; // ⅔ — Belgian "épreuve intégrée" default
+const DEFAULT_TFE_SHARE = 33.33; // ⅓ — Belgian "épreuve intégrée" (TFE) default share
 
 /** Parse a French-or-English decimal ("12,5" or "12.5") to a finite number, else NaN. */
 function num(value: string): number {
@@ -66,7 +66,7 @@ export default function GradeCalculator() {
     retained: weightedAverage(rows, (r) => r.counts),
   }), [rows]);
 
-  // Diploma weighting (adjustable, default ⅔ TFE).
+  // Diploma weighting (adjustable, default ⅓ TFE).
   const shareRaw = num(tfeShare);
   const tfeShareEff = Number.isNaN(shareRaw) ? DEFAULT_TFE_SHARE : Math.min(100, Math.max(0, shareRaw));
   const courseShareEff = 100 - tfeShareEff;

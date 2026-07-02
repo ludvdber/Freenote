@@ -222,6 +222,16 @@ public class AdminController {
         return ResponseEntity.ok(userService.adminUnverifyUser(id));
     }
 
+    @PutMapping("/users/{id}/trust")
+    public ResponseEntity<UserResponse> trustUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetTrusted(id, true));
+    }
+
+    @PutMapping("/users/{id}/untrust")
+    public ResponseEntity<UserResponse> untrustUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetTrusted(id, false));
+    }
+
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @RequestParam String role,
                                                        Authentication authentication) {

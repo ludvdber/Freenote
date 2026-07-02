@@ -5,6 +5,7 @@ public record UserResponse(
         String username,
         String role,
         boolean verified,
+        boolean trusted,
         int xp,
         String bio,
         String website,

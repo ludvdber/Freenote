@@ -13,6 +13,11 @@ i18n
       en: { translation: en },
     },
     fallbackLng: 'fr',
+    // Normalise la langue détectée : un navigateur en "fr-FR"/"fr-BE" doit donner
+    // i18n.language === 'fr', sinon toutes les comparaisons strictes (formatDate,
+    // legalContent, surlignage FR/EN de la navbar) basculent silencieusement en anglais.
+    supportedLngs: ['fr', 'en'],
+    load: 'languageOnly',
     interpolation: {
       escapeValue: false,
     },

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, type ChangeEvent, type DragEvent } from 'react';
+import { useState, useRef, useMemo, useEffect, type ChangeEvent, type DragEvent } from 'react';
 import {
   Typography,
   TextField,
@@ -22,7 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { uploadDocument, getSections, getCourses, getProfessors, getSuggestedProfessors } from '@/api/endpoints';
+import { uploadDocument, getSections, getCourses, getProfessors, getSuggestedProfessors, checkDocumentTitle } from '@/api/endpoints';
 import { CATEGORIES, MAX_FILE_SIZE, MAX_IMAGES, IMAGE_MAX_SIZE, MAX_TOTAL_UPLOAD, ACCEPTED_IMAGE_TYPES, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -50,6 +50,7 @@ export default function Upload() {
   const [error, setError] = useState('');
   const [professorTouched, setProfessorTouched] = useState(false);
   const [warning, setWarning] = useState('');
+  const [titleDup, setTitleDup] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +226,24 @@ export default function Upload() {
 
   const hasFile = Boolean(file) || images.length > 0;
   const yearValid = year === '' || /^20\d{2}$/.test(year);
+  // Non-blocking duplicate-title signal: warn if a same-titled doc already exists in this course.
+  // All setState is inside the (deferred) timeout so nothing runs synchronously during the effect.
+  useEffect(() => {
+    const trimmed = title.trim();
+    const handle = setTimeout(async () => {
+      if (!trimmed || !courseId) {
+        setTitleDup(false);
+        return;
+      }
+      try {
+        setTitleDup(await checkDocumentTitle(trimmed, courseId as number));
+      } catch {
+        setTitleDup(false);
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [title, courseId]);
+
   const canSubmit = title && courseId && category && hasFile && yearValid;
 
   return (
@@ -249,6 +268,9 @@ export default function Upload() {
           slotProps={{ htmlInput: { maxLength: TITLE_MAX } }}
           helperText={t('upload.titleCounter', { count: title.length, max: TITLE_MAX })}
         />
+        {titleDup && (
+          <Alert severity="warning" sx={{ mt: -1 }}>{t('upload.titleDupWarning')}</Alert>
+        )}
 
         <FormControl required>
           <InputLabel>{t('document.section')}</InputLabel>

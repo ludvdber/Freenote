@@ -5,6 +5,8 @@ export interface User {
   username: string;
   role: string | null;
   verified: boolean;
+  /** Trusted uploader — bypasses upload rate limits (admin-granted). */
+  trusted?: boolean;
   xp: number;
   bio: string | null;
   website: string | null;
@@ -272,10 +274,18 @@ export interface FlashcardDeckResponse extends FlashcardDeckSummary {
 
 // --- Shared quizzes ---
 export interface QuizQuestionDto {
+  type: 'mcq' | 'open';
   question: string;
+  /** MCQ choices. */
   choices: string[];
-  /** 0-based index of the correct choice. */
+  /** MCQ: 0-based index of the correct choice. */
   answer: number;
+  /** Open question: the expected answer. */
+  openAnswer?: string;
+  /** Base64 data URI (published quizzes only). */
+  image?: string | null;
+  code?: string | null;
+  language?: string | null;
 }
 
 export interface CreateQuizRequest {
@@ -286,8 +296,8 @@ export interface CreateQuizRequest {
 }
 
 export interface SubmitAttemptRequest {
-  /** Chosen choice index per question; null = skipped. */
-  answers: (number | null)[];
+  /** Player's answer per question as a string (MCQ chosen index, or open text); null = skipped. */
+  answers: (string | null)[];
   durationMs: number;
 }
 
@@ -303,10 +313,14 @@ export interface QuizSummary {
   createdAt: string;
 }
 
-/** A question served for playing — WITHOUT the answer index (server grades on submit). */
+/** A question served for playing — WITHOUT the graded answer (server grades on submit). */
 export interface QuizPlayQuestion {
+  type: 'mcq' | 'open';
   question: string;
   choices: string[];
+  image?: string | null;
+  code?: string | null;
+  language?: string | null;
 }
 
 export interface QuizPlayResponse {
@@ -320,8 +334,10 @@ export interface AttemptResultResponse {
   score: number;
   total: number;
   durationMs: number;
-  /** Correct choice index per question — revealed only after submitting, for review. */
-  correctAnswers: number[];
+  /** Per-question right/wrong — revealed only after submitting, for review. */
+  correct: boolean[];
+  /** Per-question display text of the correct answer. */
+  correctAnswers: string[];
   rank: number;
 }
 
@@ -333,5 +349,80 @@ export interface QuizLeaderboardEntry {
   total: number;
   durationMs: number;
   achievedAt: string;
+}
+
+// --- Guides (admin-authored tutorials, public) ---
+export interface GuideSummary {
+  id: number;
+  slug: string;
+  title: string;
+  summary: string | null;
+  category: string | null;
+  authorName: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GuideResponse extends GuideSummary {
+  /** Raw Markdown — rendered + sanitised on the client. */
+  content: string;
+}
+
+export interface CreateGuideRequest {
+  title: string;
+  summary: string;
+  content: string;
+  category: string;
+  published: boolean;
+}
+
+// --- Gantt charts (saved + shared, verified-only) ---
+export interface GanttTaskDto {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  progress: number;
+  dependencies: string;
+}
+
+export interface SaveGanttRequest {
+  title: string;
+  tasks: GanttTaskDto[];
+  shared: boolean;
+}
+
+export interface GanttSummary {
+  id: number;
+  title: string;
+  taskCount: number;
+  shared: boolean;
+  ownerName: string;
+  updatedAt: string;
+}
+
+export interface GanttResponse {
+  id: number;
+  title: string;
+  tasks: GanttTaskDto[];
+  shared: boolean;
+  ownerName: string;
+  owned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Public catalogue teaser (anonymous, Notes/Divers only, no author/file) ---
+export interface PublicDocumentSummary {
+  id: number;
+  title: string;
+  courseName: string | null;
+  sectionName: string | null;
+  category: string;
+  year: string | null;
+  averageRating: number;
+  ratingCount: number;
+  createdAt: string;
 }
 

@@ -25,7 +25,8 @@ public final class QuizMapper {
 
     public static QuizPlayResponse toPlay(Quiz q) {
         List<QuizPlayQuestion> questions = q.getQuestions().stream()
-                .map(qq -> new QuizPlayQuestion(qq.question(), qq.choices()))
+                .map(qq -> new QuizPlayQuestion(
+                        qq.type(), qq.question(), qq.choices(), qq.image(), qq.code(), qq.language()))
                 .toList();
         return new QuizPlayResponse(q.getId(), q.getTitle(), q.getDescription(), questions);
     }

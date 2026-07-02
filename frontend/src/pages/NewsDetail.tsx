@@ -7,10 +7,8 @@ import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify';
 import { getNews } from '@/api/endpoints';
 import { STALE_15M } from '@/lib/constants';
-import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
-import AdSlot from '@/components/ui/AdSlot';
 import * as s from './NewsDetail.styles';
 
 const stripHtml = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -18,7 +16,6 @@ const stripHtml = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g
 export default function NewsDetail() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
   const { data: news } = useQuery({ queryKey: ['news'], queryFn: getNews, staleTime: STALE_15M });
   const item = news?.find((n) => n.id === id);
 
@@ -35,8 +32,6 @@ export default function NewsDetail() {
         year: 'numeric',
       })
     : '';
-
-  const showAd = !user?.supporter;
 
   return (
     <PageWrapper>
@@ -84,7 +79,10 @@ export default function NewsDetail() {
               <Box sx={s.accentBar} />
             </Box>
 
-            <Box sx={s.grid(showAd)}>
+            {/* Pas de pub ici : le contenu est du HTML tiers (blog de l'école) — placer une
+                annonce sur du contenu non original viole les policies AdSense. Les AdSlot
+                restent sur /guides et /ressources (contenu original). */}
+            <Box sx={s.grid(false)}>
               <GlassCard sx={s.articleCard}>
                 {cleanHtml ? (
                   // Third-party HTML, sanitized with DOMPurify above before rendering.
@@ -111,12 +109,6 @@ export default function NewsDetail() {
                   </>
                 )}
               </GlassCard>
-
-              {showAd && (
-                <Box component="aside" sx={s.sidebar}>
-                  <AdSlot width={300} height={250} />
-                </Box>
-              )}
             </Box>
           </>
         )}

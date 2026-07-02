@@ -43,8 +43,16 @@ class QuizServiceImplTest {
         return User.builder().id(id).username("user" + id).build();
     }
 
-    private QuizQuestionDto q(String question, int answer, String... choices) {
-        return new QuizQuestionDto(question, List.of(choices), answer);
+    private QuizQuestionDto mcq(String question, int answer, String... choices) {
+        return new QuizQuestionDto("mcq", question, List.of(choices), answer, null, null, null, null);
+    }
+
+    private QuizQuestionDto open(String question, String expected) {
+        return new QuizQuestionDto("open", question, null, -1, expected, null, null, null);
+    }
+
+    private QuizQuestionJson mcqJson(String question, int answer, String... choices) {
+        return new QuizQuestionJson("mcq", question, List.of(choices), answer, "", null, null, null);
     }
 
     private QuizAttempt attempt(Long userId, int score, long durationMs) {
@@ -57,8 +65,8 @@ class QuizServiceImplTest {
         when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var request = new CreateQuizRequest("  Réseaux — OSI  ", "  desc  ", null,
-                List.of(q("  Couche transport ?  ", 1, " UDP ", " TCP "),
-                        q("Couche 3 ?", 0, "IP", "Ethernet")));
+                List.of(mcq("  Couche transport ?  ", 1, " UDP ", " TCP "),
+                        open("Résultat de 2+2 ?", " 4 ")));
 
         QuizSummary res = service.create(1L, request);
 
@@ -70,10 +78,10 @@ class QuizServiceImplTest {
     }
 
     @Test
-    void shouldRejectAnswerIndexOutOfRange() {
+    void shouldRejectMcqAnswerIndexOutOfRange() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         var request = new CreateQuizRequest("Bad", null, null,
-                List.of(q("Q", 5, "A", "B"))); // answer 5 but only 2 choices
+                List.of(mcq("Q", 5, "A", "B"))); // answer 5 but only 2 choices
 
         assertThatThrownBy(() -> service.create(1L, request))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -81,30 +89,62 @@ class QuizServiceImplTest {
     }
 
     @Test
-    void shouldGradeAttemptServerSideAndClampDuration() {
+    void shouldRejectOpenQuestionWithoutExpectedAnswer() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        var request = new CreateQuizRequest("Bad", null, null,
+                List.of(open("Q", "   "))); // blank expected answer
+
+        assertThatThrownBy(() -> service.create(1L, request))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(quizRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldGradeMcqServerSideAndClampDuration() {
         Quiz quiz = Quiz.builder().id(7L).questionCount(3)
                 .questions(List.of(
-                        new QuizQuestionJson("Q1", List.of("a", "b"), 0),
-                        new QuizQuestionJson("Q2", List.of("a", "b"), 1),
-                        new QuizQuestionJson("Q3", List.of("a", "b"), 0)))
+                        mcqJson("Q1", 0, "a", "b"),
+                        mcqJson("Q2", 1, "a", "b"),
+                        mcqJson("Q3", 0, "a", "b")))
                 .build();
         when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         when(attemptRepository.save(any(QuizAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(attemptRepository.findForLeaderboard(eq(7L), any()))
-                .thenReturn(List.of(attempt(1L, 2, 0)));
+        when(attemptRepository.findForLeaderboard(eq(7L), any())).thenReturn(List.of(attempt(1L, 2, 0)));
 
-        // chosen [0,1,1] → Q1 ✓ Q2 ✓ Q3 ✗ = 2/3 ; negative duration clamped to 0
+        // chosen ["0","1","1"] → Q1 ✓ Q2 ✓ Q3 ✗ = 2/3 ; negative duration clamped to 0
         AttemptResultResponse res = service.submit(1L, 7L,
-                new SubmitAttemptRequest(List.of(0, 1, 1), -50));
+                new SubmitAttemptRequest(List.of("0", "1", "1"), -50));
 
         assertThat(res.score()).isEqualTo(2);
         assertThat(res.total()).isEqualTo(3);
         assertThat(res.durationMs()).isZero();
-        assertThat(res.correctAnswers()).containsExactly(0, 1, 0);
+        assertThat(res.correct()).containsExactly(true, true, false);
+        assertThat(res.correctAnswers()).containsExactly("a", "b", "a"); // display text of the right choice
         assertThat(res.rank()).isEqualTo(1);
         verify(attemptRepository).save(any(QuizAttempt.class));
-        verify(quizRepository).incrementAttemptCount(7L); // atomic popularity bump
+        verify(quizRepository).incrementAttemptCount(7L);
+    }
+
+    @Test
+    void shouldGradeOpenAnswerNormalised() {
+        Quiz quiz = Quiz.builder().id(7L).questionCount(2)
+                .questions(List.of(
+                        new QuizQuestionJson("open", "2+2 ?", List.of(), -1, "4", null, null, null),
+                        new QuizQuestionJson("open", "Capitale ?", List.of(), -1, "Bruxelles", null, null, null)))
+                .build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(attemptRepository.save(any(QuizAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(attemptRepository.findForLeaderboard(eq(7L), any())).thenReturn(List.of(attempt(1L, 2, 0)));
+
+        // "  4 " matches "4" ; "BRUXELLES" matches "Bruxelles" (case/space-insensitive)
+        AttemptResultResponse res = service.submit(1L, 7L,
+                new SubmitAttemptRequest(List.of("  4 ", "BRUXELLES"), 1000));
+
+        assertThat(res.score()).isEqualTo(2);
+        assertThat(res.correct()).containsExactly(true, true);
+        assertThat(res.correctAnswers()).containsExactly("4", "Bruxelles");
     }
 
     @Test

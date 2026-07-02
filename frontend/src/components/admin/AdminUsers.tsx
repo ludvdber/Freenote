@@ -13,13 +13,15 @@ import {
   MenuItem,
   Alert,
 } from '@mui/material';
-import { Verified, GppBad, Shield, DeleteForever, Block } from '@mui/icons-material';
+import { Verified, GppBad, Shield, DeleteForever, Block, Bolt } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   adminSearchUsers,
   adminVerifyUser,
   adminUnverifyUser,
+  adminTrustUser,
+  adminUntrustUser,
   adminUpdateUserRole,
   adminDeleteUser,
   adminBanUser,
@@ -58,6 +60,18 @@ export default function AdminUsers() {
 
   const unverifyMut = useMutation({
     mutationFn: adminUnverifyUser,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+
+  const trustMut = useMutation({
+    mutationFn: adminTrustUser,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+
+  const untrustMut = useMutation({
+    mutationFn: adminUntrustUser,
     onSuccess: invalidate,
     onError: (e) => setError(extractApiError(e)),
   });
@@ -150,6 +164,12 @@ export default function AdminUsers() {
             <Chip size="small" color="default" icon={<GppBad />} label={t('admin.users.unverified')} />
           )}
 
+          {u.trusted && (
+            <Tooltip title={t('admin.users.trustedHint')}>
+              <Chip size="small" color="primary" icon={<Bolt />} label={t('admin.users.trustedChip')} sx={{ cursor: 'help' }} />
+            </Tooltip>
+          )}
+
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>{t('admin.users.role')}</InputLabel>
             <Select
@@ -180,6 +200,17 @@ export default function AdminUsers() {
               {t('admin.users.verify')}
             </Button>
           )}
+
+          <Tooltip title={u.trusted ? t('admin.users.untrust') : t('admin.users.trust')}>
+            <IconButton
+              size="small"
+              color={u.trusted ? 'primary' : 'default'}
+              onClick={() => (u.trusted ? untrustMut : trustMut).mutate(u.id)}
+            >
+              <Bolt fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title={t('admin.users.delete')}>
             <IconButton size="small" color="error" onClick={() => setDeleteCandidate(u)}>
               <DeleteForever fontSize="small" />

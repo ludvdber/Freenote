@@ -3,12 +3,15 @@ import { TOOLS, toolBySlug } from '../toolsData';
 
 describe('tools registry', () => {
   it('exposes the tools with unique slugs and i18n keys', () => {
-    expect(TOOLS).toHaveLength(7);
+    expect(TOOLS).toHaveLength(11);
 
     const slugs = TOOLS.map((t) => t.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
     expect(slugs).toEqual(
-      expect.arrayContaining(['flashcards', 'quiz', 'calculateur-moyenne', 'calculateur-ip', 'convertisseur-bases', 'base64', 'jwt']),
+      expect.arrayContaining([
+        'flashcards', 'quiz', 'calculateur-moyenne', 'diagramme-uml', 'gantt', 'calculateur-ip',
+        'calculateur-ipv6', 'table-de-verite', 'convertisseur-bases', 'base64', 'jwt',
+      ]),
     );
 
     const keys = TOOLS.map((t) => t.key);
