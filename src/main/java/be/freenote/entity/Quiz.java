@@ -59,4 +59,14 @@ public class Quiz {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** false = quiz privé enregistré sur le compte (visible du seul propriétaire),
+     *  true = publié dans la bibliothèque partagée (jouable + classement). */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean published = true;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

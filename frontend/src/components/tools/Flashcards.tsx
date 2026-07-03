@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box, Typography, TextField, IconButton, Button, Chip, Stack, Tooltip, Menu, MenuItem,
   LinearProgress, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions,
-  Snackbar, Alert, CircularProgress,
+  Snackbar, Alert, CircularProgress, InputAdornment,
 } from '@mui/material';
 import {
   Add, DeleteOutlined, EditOutlined, Check, MoreVert, FileDownload, FileUpload, Replay, Loop,
-  ArrowBack, Style as StyleIcon, CloudUpload, CloudDone, CloudDownload, KeyboardArrowDown,
+  ArrowBack, Style as StyleIcon, CloudUpload, CloudDone, CloudOff, CloudDownload, KeyboardArrowDown,
+  Search,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { publishDeck, listSharedDecks, getSharedDeck } from '@/api/endpoints';
+import { saveDeck, updateDeck, deleteSharedDeck, listSharedDecks, listMyDecks, getSharedDeck } from '@/api/endpoints';
 import type { FlashcardDeckSummary } from '@/types';
 import {
   type Deck, type Flashcard, type Rating,
@@ -78,6 +79,15 @@ export default function Flashcards() {
   const [nameDialog, setNameDialog] = useState<'new' | 'rename' | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  // « Enregistrés en ligne » : les paquets du compte absents de cet appareil (autre PC, cache vidé).
+  const [online, setOnline] = useState<FlashcardDeckSummary[] | null>(null);
+  const refreshOnline = useCallback(() => {
+    if (!isVerified) return;
+    listMyDecks({ size: 50 }).then((p) => setOnline(p.content)).catch(() => setOnline(null));
+  }, [isVerified]);
+  useEffect(() => { refreshOnline(); }, [refreshOnline]);
 
   const csvInput = useRef<HTMLInputElement>(null);
   const jsonInput = useRef<HTMLInputElement>(null);
@@ -104,8 +114,13 @@ export default function Flashcards() {
     setNameDialog(null);
   };
 
-  const deleteDeck = (deck: Deck) => {
-    if (!window.confirm(t('tools.flashcards.confirmDeleteDeck', { name: deck.name }))) return;
+  const deleteDeck = async (deck: Deck) => {
+    const key = deck.serverId ? 'tools.flashcards.confirmDeleteLinked' : 'tools.flashcards.confirmDeleteDeck';
+    if (!window.confirm(t(key, { name: deck.name }))) return;
+    if (deck.serverId) {
+      try { await deleteSharedDeck(deck.serverId); } catch { /* déjà supprimé côté serveur — on continue */ }
+      refreshOnline();
+    }
     setDecks((ds) => ds.filter((d) => d.id !== deck.id));
     if (openId === deck.id) setOpenId(null);
   };
@@ -172,18 +187,31 @@ export default function Flashcards() {
     e.target.value = '';
   };
 
-  // ── Sharing (palier C) ────────────────────────────────────────
-  const publish = async (deck: Deck) => {
+  // ── Sauvegarde en ligne (privée) / publication (bibliothèque) ──
+  /** Create-or-update the linked server copy. `published` pilots private save vs library. */
+  const saveOnline = async (deck: Deck, published: boolean) => {
     if (deck.cards.length === 0) return;
     if (deck.cards.length > MAX_PUBLISH_CARDS) {
       setFeedback({ msg: t('tools.flashcards.tooManyToPublish', { max: MAX_PUBLISH_CARDS }), severity: 'error' });
       return;
     }
     setPublishingId(deck.id);
+    const body = {
+      title: deck.name,
+      cards: deck.cards.map((c) => ({ front: c.front, back: c.back })),
+      published,
+    };
     try {
-      await publishDeck({ title: deck.name, cards: deck.cards.map((c) => ({ front: c.front, back: c.back })) });
-      patchDeck(deck.id, (d) => ({ ...d, sharedAt: Date.now() }));
-      setFeedback({ msg: t('tools.flashcards.publishOk'), severity: 'success' });
+      const saved = deck.serverId ? await updateDeck(deck.serverId, body) : await saveDeck(body);
+      patchDeck(deck.id, (d) => ({
+        ...d, serverId: saved.id, published: saved.published,
+        sharedAt: saved.published ? Date.now() : d.sharedAt,
+      }));
+      setFeedback({
+        msg: t(published ? 'tools.flashcards.publishOk' : 'tools.flashcards.saveOnlineOk'),
+        severity: 'success',
+      });
+      refreshOnline();
     } catch {
       setFeedback({ msg: t('tools.flashcards.publishError'), severity: 'error' });
     } finally {
@@ -191,13 +219,37 @@ export default function Flashcards() {
     }
   };
 
-  /** Import a shared deck as an independent local copy. Stays on the library so the row can show "Imported". */
+  /** Import a shared deck as an independent local copy (fork). Stays on the library so the row can show "Imported". */
   const importShared = async (summary: FlashcardDeckSummary) => {
     const shared = await getSharedDeck(summary.id);
     const local = newDeck(shared.title);
     local.cards = shared.cards.map((c) => newCard(c.front, c.back));
     setDecks((ds) => [...ds, local]);
     setFeedback({ msg: t('tools.flashcards.importedToMine', { count: shared.cards.length }), severity: 'success' });
+  };
+
+  /** Bring one of MY online decks onto this device, linked (édition = mise à jour en ligne). */
+  const importOwnOnline = async (summary: FlashcardDeckSummary) => {
+    const shared = await getSharedDeck(summary.id);
+    const local = newDeck(shared.title);
+    local.cards = shared.cards.map((c) => newCard(c.front, c.back));
+    local.serverId = shared.id;
+    local.published = shared.published;
+    // Date serveur (pure) plutôt que Date.now() : plus juste pour « Publié le … » et conforme
+    // à la règle react-hooks/purity qui interdit l'horloge dans le corps du composant.
+    if (shared.published) local.sharedAt = new Date(shared.createdAt).getTime();
+    setDecks((ds) => [...ds, local]);
+    setFeedback({ msg: t('tools.flashcards.importedToMine', { count: shared.cards.length }), severity: 'success' });
+  };
+
+  const deleteOnline = async (d: FlashcardDeckSummary) => {
+    if (!window.confirm(t('tools.flashcards.confirmDeleteDeck', { name: d.title }))) return;
+    try {
+      await deleteSharedDeck(d.id);
+      refreshOnline();
+    } catch {
+      setFeedback({ msg: t('tools.flashcards.publishError'), severity: 'error' });
+    }
   };
 
   const startReview = (deck: Deck, cardIds: string[]) => {
@@ -237,11 +289,22 @@ export default function Flashcards() {
       )}
 
       {/* ════════ MINE — overview list ════════ */}
-      {tab === 'mine' && !openDeck && (
-        decks.length === 0 ? (
-          <EmptyDecks onCreate={() => setNameDialog('new')} onImport={() => jsonInput.current?.click()} />
-        ) : (
+      {tab === 'mine' && !openDeck && (() => {
+        const linkedIds = new Set(decks.map((d) => d.serverId).filter(Boolean));
+        const onlineOnly = (online ?? []).filter((d) => !linkedIds.has(d.id));
+        const q = search.trim().toLowerCase();
+        const visible = q ? decks.filter((d) => d.name.toLowerCase().includes(q)) : decks;
+        if (decks.length === 0 && onlineOnly.length === 0) {
+          return (
+            <>
+              {!isVerified && <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{t('tools.flashcards.anonHint')}</Alert>}
+              <EmptyDecks onCreate={() => setNameDialog('new')} onImport={() => jsonInput.current?.click()} />
+            </>
+          );
+        }
+        return (
           <Box>
+            {!isVerified && <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{t('tools.flashcards.anonHint')}</Alert>}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{t('tools.flashcards.tabMine')}</Typography>
@@ -255,10 +318,18 @@ export default function Flashcards() {
               <Button variant="contained" startIcon={<Add />} onClick={() => setNameDialog('new')}>{t('tools.flashcards.newDeck')}</Button>
             </Box>
 
+            {decks.length > 3 && (
+              <TextField
+                fullWidth size="small" value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('tools.flashcards.searchDecks')} sx={{ mt: 1 }}
+                slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> } }}
+              />
+            )}
+
             {importError && <Alert severity="warning" sx={{ my: 2 }} onClose={() => setImportError('')}>{importError}</Alert>}
 
             <Stack spacing={1.25} sx={{ mt: 2 }}>
-              {decks.map((deck) => (
+              {visible.map((deck) => (
                 <DeckRow
                   key={deck.id}
                   deck={deck}
@@ -267,15 +338,50 @@ export default function Flashcards() {
                   onReview={() => startReview(deck, dueCards(deck).map((c) => c.id))}
                   onStudyAll={() => startReview(deck, shuffled(deck.cards.map((c) => c.id)))}
                   onOpen={() => { setOpenId(deck.id); setEditingCardId(null); }}
-                  onPublish={() => publish(deck)}
+                  onSaveOnline={() => saveOnline(deck, deck.published ?? false)}
+                  onPublish={() => saveOnline(deck, true)}
+                  onUnpublish={() => saveOnline(deck, false)}
                   onRename={() => { setOpenId(deck.id); setNameDialog('rename'); }}
                   onDelete={() => deleteDeck(deck)}
                 />
               ))}
+              {q && visible.length === 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                  {t('tools.flashcards.searchNoResult')}
+                </Typography>
+              )}
             </Stack>
+
+            {onlineOnly.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                  {t('tools.flashcards.onlineOnlyTitle')}
+                </Typography>
+                <Stack spacing={1}>
+                  {onlineOnly.map((d) => (
+                    <GlassCard key={d.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <CloudDone fontSize="small" color={d.published ? 'success' : 'info'} aria-hidden="true" />
+                      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                        <Typography sx={{ fontWeight: 600 }} noWrap>{d.title}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t('tools.flashcards.cardsCount', { count: d.cardCount })}
+                          {' · '}{t(d.published ? 'tools.flashcards.publishedChip' : 'tools.flashcards.savedChip')}
+                        </Typography>
+                      </Box>
+                      <Button size="small" variant="contained" startIcon={<CloudDownload />} onClick={() => importOwnOnline(d)}>
+                        {t('tools.flashcards.importToDevice')}
+                      </Button>
+                      <IconButton size="small" onClick={() => deleteOnline(d)} aria-label={t('tools.flashcards.deleteDeck')}>
+                        <DeleteOutlined fontSize="small" />
+                      </IconButton>
+                    </GlassCard>
+                  ))}
+                </Stack>
+              </Box>
+            )}
           </Box>
-        )
-      )}
+        );
+      })()}
 
       {/* ════════ MINE — deck detail ════════ */}
       {tab === 'mine' && openDeck && (
@@ -286,7 +392,9 @@ export default function Flashcards() {
           onBack={() => { setOpenId(null); setEditingCardId(null); setImportError(''); }}
           onReview={() => startReview(openDeck, dueCards(openDeck).map((c) => c.id))}
           onStudyAll={() => startReview(openDeck, shuffled(openDeck.cards.map((c) => c.id)))}
-          onPublish={() => publish(openDeck)}
+          onSaveOnline={() => saveOnline(openDeck, openDeck.published ?? false)}
+          onPublish={() => saveOnline(openDeck, true)}
+          onUnpublish={() => saveOnline(openDeck, false)}
           onRename={() => setNameDialog('rename')}
           onDelete={() => deleteDeck(openDeck)}
           onImportFile={() => csvInput.current?.click()}
@@ -331,11 +439,24 @@ function EmptyDecks({ onCreate, onImport }: { onCreate: () => void; onImport: ()
   );
 }
 
+/** Statut du paquet local vis-à-vis du serveur : Local / Enregistré (privé) / Publié. */
+function DeckStatusChip({ deck }: { deck: Deck }) {
+  const { t } = useTranslation();
+  if (deck.serverId && deck.published) {
+    return <Chip size="small" color="success" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.publishedChip')} sx={{ height: 22 }} />;
+  }
+  if (deck.serverId) {
+    return <Chip size="small" color="info" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.savedChip')} sx={{ height: 22 }} />;
+  }
+  return <Chip size="small" variant="outlined" label={t('tools.flashcards.localChip')} sx={{ height: 22 }} />;
+}
+
 /** One deck in the "Mes paquets" overview: stats + quick study + open + kebab. */
-function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, onPublish, onRename, onDelete }: {
+function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, onSaveOnline, onPublish, onUnpublish, onRename, onDelete }: {
   deck: Deck; isVerified: boolean; publishing: boolean;
   onReview: () => void; onStudyAll: () => void; onOpen: () => void;
-  onPublish: () => void; onRename: () => void; onDelete: () => void;
+  onSaveOnline: () => void; onPublish: () => void; onUnpublish: () => void;
+  onRename: () => void; onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const [menu, setMenu] = useState<Anchor>(null);
@@ -349,11 +470,7 @@ function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, o
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography sx={{ fontWeight: 700 }} noWrap>{deck.name}</Typography>
-            {deck.sharedAt && (
-              <Tooltip title={t('tools.flashcards.sharedAtTooltip', { date: new Date(deck.sharedAt).toLocaleDateString() })}>
-                <Chip size="small" variant="outlined" color="success" icon={<CloudDone />} label={t('tools.flashcards.sharedChip')} sx={{ height: 22, cursor: 'help' }} />
-              </Tooltip>
-            )}
+            <DeckStatusChip deck={deck} />
           </Box>
           <Typography variant="caption" color="text.secondary">
             {t('tools.flashcards.cardsCount', { count: deck.cards.length })} · {t('tools.flashcards.dueCount', { count: due })}
@@ -376,19 +493,38 @@ function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, o
             </span>
           </Tooltip>
           <Button size="small" startIcon={<EditOutlined />} onClick={onOpen}>{t('tools.flashcards.openDeck')}</Button>
-          {isVerified && (
-            <Tooltip title={t('tools.flashcards.publishTooltip')}>
-              <span>
-                <IconButton size="small" color="success" onClick={onPublish} disabled={empty || publishing} aria-label={t('tools.flashcards.publishDeck')}>
-                  {publishing ? <CircularProgress size={16} /> : <CloudUpload fontSize="small" />}
-                </IconButton>
-              </span>
-            </Tooltip>
+          {/* Prochaine étape serveur toujours en bouton texte visible (jamais icône seule). */}
+          {isVerified && !deck.serverId && (
+            <Button variant="outlined" size="small" startIcon={<CloudDone />} onClick={onSaveOnline}
+              disabled={empty || publishing}>
+              {t('tools.flashcards.saveOnline')}
+            </Button>
+          )}
+          {isVerified && deck.serverId && !deck.published && (
+            <Button variant="outlined" color="success" size="small" startIcon={<CloudUpload />} onClick={onPublish}
+              disabled={empty || publishing}>
+              {t('tools.flashcards.publishDeck')}
+            </Button>
           )}
           <IconButton size="small" onClick={(e) => setMenu(e.currentTarget)} aria-label={t('tools.flashcards.deckActions')}>
-            <MoreVert fontSize="small" />
+            {publishing ? <CircularProgress size={16} /> : <MoreVert fontSize="small" />}
           </IconButton>
           <Menu anchorEl={menu} open={Boolean(menu)} onClose={close}>
+            {isVerified && (
+              <MenuItem disabled={empty} onClick={() => { close(); onSaveOnline(); }}>
+                <CloudDone fontSize="small" sx={{ mr: 1 }} /> {t(deck.serverId ? 'tools.flashcards.updateOnline' : 'tools.flashcards.saveOnline')}
+              </MenuItem>
+            )}
+            {isVerified && !deck.published && (
+              <MenuItem disabled={empty} onClick={() => { close(); onPublish(); }}>
+                <CloudUpload fontSize="small" sx={{ mr: 1 }} /> {t('tools.flashcards.publishDeck')}
+              </MenuItem>
+            )}
+            {isVerified && deck.serverId && deck.published && (
+              <MenuItem onClick={() => { close(); onUnpublish(); }}>
+                <CloudOff fontSize="small" sx={{ mr: 1 }} /> {t('tools.flashcards.unpublish')}
+              </MenuItem>
+            )}
             <MenuItem onClick={() => { close(); onRename(); }}><EditOutlined fontSize="small" sx={{ mr: 1 }} /> {t('tools.flashcards.rename')}</MenuItem>
             <MenuItem onClick={() => { close(); onDelete(); }}><DeleteOutlined fontSize="small" sx={{ mr: 1 }} /> {t('tools.flashcards.deleteDeck')}</MenuItem>
           </Menu>
@@ -398,10 +534,11 @@ function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, o
   );
 }
 
-/** Focused detail view for one deck: study, publish (visible), add/edit cards, import/export. */
+/** Focused detail view for one deck: study, save/publish (visible), add/edit cards, import/export. */
 function DeckDetail(props: {
   deck: Deck; isVerified: boolean; publishing: boolean;
-  onBack: () => void; onReview: () => void; onStudyAll: () => void; onPublish: () => void;
+  onBack: () => void; onReview: () => void; onStudyAll: () => void;
+  onSaveOnline: () => void; onPublish: () => void; onUnpublish: () => void;
   onRename: () => void; onDelete: () => void; onImportFile: () => void; onExportAnki: () => void;
   importError: string; clearImportError: () => void;
   front: string; back: string; setFront: (v: string) => void; setBack: (v: string) => void; addCard: () => void;
@@ -450,28 +587,46 @@ function DeckDetail(props: {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Tooltip title={t('tools.flashcards.storageLocalHint')}>
-            <Chip size="small" variant="outlined" label={t('tools.flashcards.storageLocal')} sx={{ cursor: 'help' }} />
-          </Tooltip>
+          <DeckStatusChip deck={deck} />
           <Box sx={{ flexGrow: 1 }} />
-          {/* Publish — clearly visible, not buried in a menu */}
+          {/* Save/publish — clearly visible, not buried in a menu */}
           {isVerified ? (
-            <Tooltip title={t('tools.flashcards.publishTooltip')}>
-              <span>
-                <Button
-                  variant={deck.sharedAt ? 'outlined' : 'contained'} color="success" size="small"
-                  startIcon={publishing ? <CircularProgress size={16} color="inherit" /> : (deck.sharedAt ? <CloudDone /> : <CloudUpload />)}
-                  onClick={props.onPublish} disabled={empty || publishing}
-                >
-                  {deck.sharedAt ? t('tools.flashcards.republish') : t('tools.flashcards.publishDeck')}
+            <>
+              <Tooltip title={t('tools.flashcards.saveOnlineTooltip')}>
+                <span>
+                  <Button
+                    variant="outlined" size="small"
+                    startIcon={publishing ? <CircularProgress size={16} color="inherit" /> : <CloudDone />}
+                    onClick={props.onSaveOnline} disabled={empty || publishing}
+                  >
+                    {t(deck.serverId ? 'tools.flashcards.updateOnline' : 'tools.flashcards.saveOnline')}
+                  </Button>
+                </span>
+              </Tooltip>
+              {deck.serverId && deck.published ? (
+                <Button variant="outlined" color="warning" size="small" startIcon={<CloudOff />}
+                  onClick={props.onUnpublish} disabled={publishing}>
+                  {t('tools.flashcards.unpublish')}
                 </Button>
-              </span>
-            </Tooltip>
+              ) : (
+                <Tooltip title={t('tools.flashcards.publishTooltip')}>
+                  <span>
+                    <Button
+                      variant="contained" color="success" size="small"
+                      startIcon={publishing ? <CircularProgress size={16} color="inherit" /> : <CloudUpload />}
+                      onClick={props.onPublish} disabled={empty || publishing}
+                    >
+                      {t('tools.flashcards.publishDeck')}
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            </>
           ) : (
             <Typography variant="caption" color="text.secondary">{t('tools.flashcards.shareLoginHint')}</Typography>
           )}
         </Box>
-        {deck.sharedAt && (
+        {deck.sharedAt && deck.published && (
           <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
             {t('tools.flashcards.publishedOn', { date: new Date(deck.sharedAt).toLocaleDateString() })}
           </Typography>
@@ -480,7 +635,7 @@ function DeckDetail(props: {
 
       {/* Add card */}
       <GlassCard sx={{ p: 2.5, mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', mb: 0.5 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, flexGrow: 1 }}>{t('tools.flashcards.addCard')}</Typography>
           <Button size="small" startIcon={<FileUpload />} endIcon={<KeyboardArrowDown />} onClick={(e) => setImportMenu(e.currentTarget)}>
             {t('tools.flashcards.import')}
@@ -490,6 +645,9 @@ function DeckDetail(props: {
             <MenuItem onClick={() => { setImportMenu(null); props.onImportFile(); }}>{t('tools.flashcards.importFile')}</MenuItem>
           </Menu>
         </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          {t('tools.flashcards.ankiImportHint')}
+        </Typography>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, alignItems: 'stretch' }}>
           <TextField
             fullWidth size="small" multiline maxRows={4} label={t('tools.flashcards.front')}

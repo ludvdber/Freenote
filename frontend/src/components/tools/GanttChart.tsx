@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Box, Typography, TextField, IconButton, Button, Chip, Stack, Tabs, Tab, Tooltip,
   ToggleButtonGroup, ToggleButton, Select, MenuItem, FormControl, InputLabel,
-  Snackbar, Alert, CircularProgress, OutlinedInput,
+  Snackbar, Alert, CircularProgress, OutlinedInput, InputAdornment,
 } from '@mui/material';
 import {
   Add, DeleteOutlined, FileDownload, FileUpload, Image as ImageIcon, Save, CloudUpload,
-  CloudDownload, Check,
+  CloudDownload, Check, PersonAddAlt1,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -18,11 +18,16 @@ import type { GanttSummary, GanttTaskDto } from '@/types';
 import {
   type GanttProject, type GanttTask,
   newProject, newTask, validateProject, normalizeProject, renderTasks, projectToJson, projectFromJson, toCsv,
+  workerColor, uid,
 } from './gantt/logic';
+import Timeline from './gantt/Timeline';
 
 const STORAGE_KEY = 'freenote.gantt.v1';
-type ViewMode = 'Day' | 'Week' | 'Month';
 type Feedback = { msg: string; severity: 'success' | 'error' };
+
+/** Largeur d'un jour (px) par niveau de zoom. */
+const ZOOM_WIDTHS = { day: 36, week: 18, month: 9 } as const;
+type Zoom = keyof typeof ZOOM_WIDTHS;
 
 function loadDraft(): GanttProject {
   try {
@@ -62,6 +67,17 @@ export default function GanttChart() {
   });
   const removeTask = (id: string) => setProject((prev) => ({ ...prev, tasks: prev.tasks.filter((task) => task.id !== id) }));
 
+  const addWorker = (name: string) => {
+    const clean = name.trim().slice(0, 60);
+    if (!clean) return;
+    setProject((prev) => prev.workers.includes(clean) ? prev : { ...prev, workers: [...prev.workers, clean] });
+  };
+  const removeWorker = (name: string) => setProject((prev) => ({
+    ...prev,
+    workers: prev.workers.filter((w) => w !== name),
+    tasks: prev.tasks.map((task) => (task.assignee === name ? { ...task, assignee: undefined } : task)),
+  }));
+
   const exportJson = () => download(`${project.title || 'gantt'}.json`, projectToJson(project), 'application/json');
   const exportCsv = () => download(`${project.title || 'gantt'}.csv`, toCsv(project), 'text/csv');
   const importJson = async (file: File) => {
@@ -69,7 +85,7 @@ export default function GanttChart() {
     catch { setFeedback({ msg: t('tools.gantt.importError'), severity: 'error' }); }
   };
 
-  const toDto = (task: GanttTask): GanttTaskDto => ({ ...task });
+  const toDto = (task: GanttTask): GanttTaskDto => ({ ...task, assignee: task.assignee ?? null });
   const save = async (share: boolean) => {
     const err = validateProject(project);
     if (err) { setFeedback({ msg: t(`tools.gantt.${err}`), severity: 'error' }); return; }
@@ -87,11 +103,22 @@ export default function GanttChart() {
   const loadFromServer = async (id: number, asCopy: boolean) => {
     try {
       const res = await getGanttChart(id);
+      const tasks: GanttTask[] = res.tasks.map((task) => ({
+        id: task.id || uid(),
+        name: task.name,
+        start: task.start ?? '',
+        end: task.end ?? '',
+        progress: task.progress,
+        dependencies: task.dependencies ?? '',
+        assignee: task.assignee ?? undefined,
+      }));
       setProject({
-        id: crypto.randomUUID?.() ?? String(Date.now()),
+        id: uid(),
         title: asCopy ? `${res.title} (copie)` : res.title,
         createdAt: Date.now(),
-        tasks: res.tasks.map((task) => ({ ...task })),
+        tasks,
+        // Le serveur ne stocke pas la liste des travailleurs : on la reconstitue des assignés.
+        workers: [...new Set(tasks.map((task) => task.assignee).filter((a): a is string => Boolean(a)))],
         serverId: asCopy ? undefined : res.id,
         shared: asCopy ? false : res.shared,
       });
@@ -117,6 +144,7 @@ export default function GanttChart() {
           project={project} isVerified={isVerified}
           onTitle={(title) => patch({ title })}
           onAddTask={addTask} onSetTask={setTask} onRemoveTask={removeTask}
+          onAddWorker={addWorker} onRemoveWorker={removeWorker}
           onExportJson={exportJson} onExportCsv={exportCsv} onImport={() => jsonInput.current?.click()}
           onSave={() => save(false)} onShare={() => save(true)}
         />
@@ -136,51 +164,38 @@ export default function GanttChart() {
   );
 }
 
-function Editor({ project, isVerified, onTitle, onAddTask, onSetTask, onRemoveTask, onExportJson, onExportCsv, onImport, onSave, onShare }: {
+function Editor({ project, isVerified, onTitle, onAddTask, onSetTask, onRemoveTask, onAddWorker, onRemoveWorker, onExportJson, onExportCsv, onImport, onSave, onShare }: {
   project: GanttProject; isVerified: boolean;
   onTitle: (v: string) => void; onAddTask: () => void;
   onSetTask: (id: string, fn: (t: GanttTask) => GanttTask) => void; onRemoveTask: (id: string) => void;
+  onAddWorker: (name: string) => void; onRemoveWorker: (name: string) => void;
   onExportJson: () => void; onExportCsv: () => void; onImport: () => void; onSave: () => void; onShare: () => void;
 }) {
   const { t } = useTranslation();
-  const [view, setView] = useState<ViewMode>('Week');
-  const ganttRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState<Zoom>('week');
+  const [workerDraft, setWorkerDraft] = useState('');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  // Render (debounced) with the lazily-loaded frappe-gantt; readonly = the table is the editor.
-  useEffect(() => {
-    let cancelled = false;
-    const handle = setTimeout(async () => {
-      const tasks = renderTasks(project);
-      const el = ganttRef.current;
-      if (!el) return;
-      if (tasks.length === 0) { el.innerHTML = ''; return; }
-      const Gantt = (await import('frappe-gantt')).default;
-      // Vendored copy of the frappe-gantt stylesheet — the package's `exports` field doesn't expose
-      // the CSS subpath to bundlers, so it lives in-repo (re-copy from dist/ on a frappe-gantt bump).
-      await import('./gantt/frappe-gantt.css');
-      if (cancelled || !ganttRef.current) return;
-      ganttRef.current.innerHTML = '';
-      new Gantt(ganttRef.current, tasks, { view_mode: view, readonly: true, bar_height: 22, column_width: 32 });
-    }, 250);
-    return () => { cancelled = true; clearTimeout(handle); };
-  }, [project, view]);
+  const tasks = renderTasks(project);
 
   const exportPng = () => {
-    const svg = ganttRef.current?.querySelector('svg');
+    const svg = chartRef.current?.querySelector('svg.gantt-svg');
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
+    const scale = 2;
     const data = new XMLSerializer().serializeToString(svg);
     const img = new Image();
     const url = URL.createObjectURL(new Blob([data], { type: 'image/svg+xml' }));
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(rect.width));
-      canvas.height = Math.max(1, Math.round(rect.height));
+      canvas.width = Math.max(1, Math.round(rect.width * scale));
+      canvas.height = Math.max(1, Math.round(rect.height * scale));
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.fillStyle = '#0d1117';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         canvas.toBlob((blob) => { if (blob) triggerBlob(blob, `${project.title || 'gantt'}.png`); });
       }
       URL.revokeObjectURL(url);
@@ -190,6 +205,7 @@ function Editor({ project, isVerified, onTitle, onAddTask, onSetTask, onRemoveTa
   };
 
   const namedTasks = project.tasks.filter((task) => task.name.trim());
+  const submitWorker = () => { onAddWorker(workerDraft); setWorkerDraft(''); };
 
   return (
     <Box>
@@ -198,29 +214,88 @@ function Editor({ project, isVerified, onTitle, onAddTask, onSetTask, onRemoveTa
         onChange={(e) => onTitle(e.target.value)} slotProps={{ htmlInput: { maxLength: 100 } }} sx={{ mb: 2 }}
       />
 
-      <Stack spacing={1.25} sx={{ mb: 2 }}>
+      {/* Travailleurs : la couleur du chip = la couleur des barres assignées. */}
+      <GlassCard sx={{ p: 2, mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25 }}>{t('tools.gantt.workersTitle')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          {t('tools.gantt.workersHint')}
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          {project.workers.map((w) => (
+            <Chip
+              key={w} label={w} size="small" onDelete={() => onRemoveWorker(w)}
+              sx={{
+                borderColor: workerColor(project.workers, w),
+                color: workerColor(project.workers, w),
+                fontWeight: 600,
+              }}
+              variant="outlined"
+            />
+          ))}
+          <TextField
+            size="small" value={workerDraft} placeholder={t('tools.gantt.workerPlaceholder')}
+            onChange={(e) => setWorkerDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitWorker(); } }}
+            sx={{ width: 220 }}
+            slotProps={{
+              htmlInput: { maxLength: 60 },
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={submitWorker} disabled={!workerDraft.trim()}
+                      aria-label={t('tools.gantt.addWorker')}>
+                      <PersonAddAlt1 fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </Box>
+      </GlassCard>
+
+      {/* Le graphique d'abord : c'est LUI l'éditeur principal (drag = déplacer, poignées = durée). */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
+        <Typography variant="caption" color="text.secondary">{t('tools.gantt.dragHint')}</Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        <ToggleButtonGroup size="small" exclusive value={zoom} onChange={(_, v) => v && setZoom(v)}>
+          <ToggleButton value="day">{t('tools.gantt.viewDay')}</ToggleButton>
+          <ToggleButton value="week">{t('tools.gantt.viewWeek')}</ToggleButton>
+          <ToggleButton value="month">{t('tools.gantt.viewMonth')}</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      <GlassCard sx={{ p: 1.5, mb: 2 }}>
+        {tasks.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+            {t('tools.gantt.emptyChart')}
+          </Typography>
+        ) : (
+          <Box ref={chartRef}>
+            <Timeline
+              tasks={tasks}
+              workers={project.workers}
+              dayWidth={ZOOM_WIDTHS[zoom]}
+              onChange={(id, p) => onSetTask(id, (x) => ({ ...x, ...p }))}
+              onSelect={() => tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
+            />
+          </Box>
+        )}
+      </GlassCard>
+
+      {/* La table des tâches : détails précis (dates exactes, %, dépendances, assigné). */}
+      <Stack spacing={1.25} sx={{ mb: 2 }} ref={tableRef}>
         {project.tasks.map((task, i) => (
           <TaskRow
             key={task.id} task={task} index={i} others={namedTasks.filter((o) => o.id !== task.id)}
+            workers={project.workers}
             onChange={(fn) => onSetTask(task.id, fn)} onRemove={() => onRemoveTask(task.id)}
             canRemove={project.tasks.length > 1}
           />
         ))}
       </Stack>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 2 }}>
-        <Button startIcon={<Add />} variant="outlined" onClick={onAddTask}>{t('tools.gantt.addTask')}</Button>
-        <Box sx={{ flexGrow: 1 }} />
-        <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
-          <ToggleButton value="Day">{t('tools.gantt.viewDay')}</ToggleButton>
-          <ToggleButton value="Week">{t('tools.gantt.viewWeek')}</ToggleButton>
-          <ToggleButton value="Month">{t('tools.gantt.viewMonth')}</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      <GlassCard sx={{ p: 1.5, mb: 2, overflow: 'auto' }}>
-        <Box ref={ganttRef} className="gantt-host" sx={{ minHeight: 160 }} />
-      </GlassCard>
+      <Button startIcon={<Add />} variant="outlined" onClick={onAddTask} sx={{ mb: 2 }}>{t('tools.gantt.addTask')}</Button>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
         <Button size="small" startIcon={<FileDownload />} onClick={onExportJson}>JSON</Button>
@@ -241,8 +316,8 @@ function Editor({ project, isVerified, onTitle, onAddTask, onSetTask, onRemoveTa
   );
 }
 
-function TaskRow({ task, index, others, onChange, onRemove, canRemove }: {
-  task: GanttTask; index: number; others: GanttTask[];
+function TaskRow({ task, index, others, workers, onChange, onRemove, canRemove }: {
+  task: GanttTask; index: number; others: GanttTask[]; workers: string[];
   onChange: (fn: (t: GanttTask) => GanttTask) => void; onRemove: () => void; canRemove: boolean;
 }) {
   const { t } = useTranslation();
@@ -253,6 +328,21 @@ function TaskRow({ task, index, others, onChange, onRemove, canRemove }: {
       <TextField size="small" label={t('tools.gantt.taskName')} value={task.name}
         onChange={(e) => onChange((x) => ({ ...x, name: e.target.value }))}
         sx={{ flex: '2 1 160px' }} slotProps={{ htmlInput: { maxLength: 200 } }} />
+      <FormControl size="small" sx={{ width: 150 }}>
+        <InputLabel>{t('tools.gantt.assignee')}</InputLabel>
+        <Select
+          value={task.assignee ?? ''} label={t('tools.gantt.assignee')}
+          onChange={(e) => onChange((x) => ({ ...x, assignee: e.target.value || undefined }))}
+        >
+          <MenuItem value="">{t('tools.gantt.noAssignee')}</MenuItem>
+          {workers.map((w) => (
+            <MenuItem key={w} value={w}>
+              <Box component="span" sx={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', bgcolor: workerColor(workers, w), mr: 1 }} />
+              {w}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <TextField size="small" type="date" label={t('tools.gantt.start')} value={task.start}
         onChange={(e) => onChange((x) => ({ ...x, start: e.target.value }))}
         sx={{ width: 150 }} slotProps={{ inputLabel: { shrink: true } }} />

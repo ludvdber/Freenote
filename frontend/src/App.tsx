@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
+import { useAuthStore } from '@/stores/useAuthStore';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
@@ -22,7 +23,6 @@ const News = lazy(() => import('@/pages/News'));
 const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
 const GuidesIndex = lazy(() => import('@/pages/GuidesIndex'));
 const GuideDetail = lazy(() => import('@/pages/GuideDetail'));
-const ResourcesIndex = lazy(() => import('@/pages/ResourcesIndex'));
 const ResourceDetail = lazy(() => import('@/pages/ResourceDetail'));
 const ToolsIndex = lazy(() => import('@/pages/tools/ToolsIndex'));
 const ToolPage = lazy(() => import('@/pages/tools/ToolPage'));
@@ -60,6 +60,20 @@ function MainLayout() {
   );
 }
 
+/** /documents/:id : le document complet (viewer PDF) pour un connecté, le teaser public
+ *  (métadonnées + invite de connexion, ex-/ressources/:id) pour un anonyme. Même URL pour
+ *  tous : partages et indexation Google pointent au même endroit. */
+function DocumentRoute() {
+  const token = useAuthStore((st) => st.token);
+  return token ? <ProtectedRoute><DocumentView /></ProtectedRoute> : <ResourceDetail />;
+}
+
+/** Redirection paramétrée des anciennes URLs /ressources/:id (liens partagés, index Google). */
+function LegacyResourceRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/documents/${id}`} replace />;
+}
+
 function ToolsLayout() {
   return (
     <>
@@ -93,9 +107,10 @@ export default function App() {
         {/* Main layout with Navbar + Footer */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+          {/* Public : Browse gère lui-même les deux modes (catalogue complet / vitrine anonyme). */}
+          <Route path="/browse" element={<Browse />} />
           <Route path="/courses/:courseId" element={<ProtectedRoute><CoursePage /></ProtectedRoute>} />
-          <Route path="/documents/:id" element={<ProtectedRoute><DocumentView /></ProtectedRoute>} />
+          <Route path="/documents/:id" element={<DocumentRoute />} />
           <Route path="/upload" element={<ProtectedRoute requireVerified><Upload /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/users/:id" element={<ProtectedRoute><UserPublic /></ProtectedRoute>} />
@@ -104,8 +119,9 @@ export default function App() {
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/guides" element={<GuidesIndex />} />
           <Route path="/guides/:slug" element={<GuideDetail />} />
-          <Route path="/ressources" element={<ResourcesIndex />} />
-          <Route path="/ressources/:id" element={<ResourceDetail />} />
+          {/* Anciennes URLs de la page « Ressources » (fusionnée dans /browse le 2026-07-03). */}
+          <Route path="/ressources" element={<Navigate to="/browse" replace />} />
+          <Route path="/ressources/:id" element={<LegacyResourceRedirect />} />
           <Route path="/a-propos" element={<About />} />
           <Route path="/about" element={<Navigate to="/a-propos" replace />} />
           <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />

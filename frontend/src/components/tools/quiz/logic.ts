@@ -22,6 +22,8 @@ export interface QuizQuestion {
   /** Optional code snippet (syntax-highlighted at render) + its language hint. */
   code?: string;
   language?: string;
+  /** Optional author explanation, shown only on the post-grading review screen. */
+  explanation?: string;
 }
 
 export interface Quiz {
@@ -31,6 +33,10 @@ export interface Quiz {
   createdAt: number;
   /** Epoch ms of the last time this quiz was published to the shared catalogue. */
   sharedAt?: number;
+  /** Id of the linked server row (compte connecte) — absent tant que jamais enregistre en ligne. */
+  serverId?: number;
+  /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
+  published?: boolean;
 }
 
 export interface GradeResult {
@@ -40,6 +46,8 @@ export interface GradeResult {
   correct: boolean[];
   /** Per-question display text of the correct answer (for the review screen). */
   correctAnswers: string[];
+  /** Per-question author explanation (null when none) — review screen only. */
+  explanations: (string | null)[];
 }
 
 export const MIN_CHOICES = 2;
@@ -74,6 +82,7 @@ function normalizeText(s: string): string {
 export function gradeQuiz(quiz: Quiz, answers: (string | null)[]): GradeResult {
   const correct: boolean[] = [];
   const correctAnswers: string[] = [];
+  const explanations: (string | null)[] = [];
   let score = 0;
   quiz.questions.forEach((q, i) => {
     const given = answers[i];
@@ -89,8 +98,9 @@ export function gradeQuiz(quiz: Quiz, answers: (string | null)[]): GradeResult {
     if (ok) score++;
     correct.push(ok);
     correctAnswers.push(display);
+    explanations.push(q.explanation?.trim() ? q.explanation.trim() : null);
   });
-  return { score, total: quiz.questions.length, correct, correctAnswers };
+  return { score, total: quiz.questions.length, correct, correctAnswers, explanations };
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
@@ -126,6 +136,7 @@ export function normalizeQuiz(quiz: Quiz): Quiz {
         question: q.question.trim(),
         code: q.code?.trim() ? q.code.trim() : undefined,
         language: q.language?.trim() ? q.language.trim() : undefined,
+        explanation: q.explanation?.trim() ? q.explanation.trim() : undefined,
       };
       if (q.type === 'open') {
         return { ...base, openAnswer: q.openAnswer.trim(), choices: [], answer: 0 };
@@ -162,6 +173,8 @@ function healQuiz(input: unknown, now: number): Quiz {
     title: q.title,
     createdAt: Number.isFinite(q.createdAt) ? (q.createdAt as number) : now,
     sharedAt: Number.isFinite(q.sharedAt) ? (q.sharedAt as number) : undefined,
+    serverId: Number.isFinite(q.serverId) ? (q.serverId as number) : undefined,
+    published: typeof q.published === 'boolean' ? q.published : undefined,
     questions: q.questions.map(healQuestion),
   };
 }
@@ -181,6 +194,7 @@ function healQuestion(input: unknown): QuizQuestion {
     image: typeof q.image === 'string' ? q.image : undefined,
     code: typeof q.code === 'string' ? q.code : undefined,
     language: typeof q.language === 'string' ? q.language : undefined,
+    explanation: typeof q.explanation === 'string' ? q.explanation : undefined,
   };
 }
 
@@ -200,6 +214,8 @@ interface CompactQ {
   o?: string;
   code?: string;
   lang?: string;
+  /** Explication (courte) — voyage dans le lien pour que la review reste utile. */
+  e?: string;
 }
 interface CompactQuiz {
   t: string;
@@ -226,7 +242,10 @@ export function encodeQuiz(quiz: Quiz): string {
   const compact: CompactQuiz = {
     t: n.title,
     q: n.questions.map((q) => {
-      const extra = q.code ? { code: q.code, lang: q.language } : {};
+      const extra = {
+        ...(q.code ? { code: q.code, lang: q.language } : {}),
+        ...(q.explanation ? { e: q.explanation } : {}),
+      };
       return q.type === 'open'
         ? { t: 'open' as const, q: q.question, o: q.openAnswer, ...extra }
         : { t: 'mcq' as const, q: q.question, c: q.choices, a: q.answer, ...extra };
@@ -249,14 +268,15 @@ export function decodeQuiz(encoded: string, now: number = Date.now()): Quiz {
       if (typeof cq.q !== 'string') throw new Error('Invalid shared question');
       const code = typeof cq.code === 'string' ? cq.code : undefined;
       const language = typeof cq.lang === 'string' ? cq.lang : undefined;
+      const explanation = typeof cq.e === 'string' ? cq.e : undefined;
       if (cq.t === 'open') {
         if (typeof cq.o !== 'string') throw new Error('Invalid open question');
-        return { id: uid(), type: 'open', question: cq.q, choices: [], answer: 0, openAnswer: cq.o, code, language };
+        return { id: uid(), type: 'open', question: cq.q, choices: [], answer: 0, openAnswer: cq.o, code, language, explanation };
       }
       if (!Array.isArray(cq.c) || cq.c.length < MIN_CHOICES) throw new Error('Invalid mcq question');
       const choices = cq.c.map((c) => String(c));
       const answer = Number.isInteger(cq.a) && cq.a! >= 0 && cq.a! < choices.length ? cq.a! : 0;
-      return { id: uid(), type: 'mcq', question: cq.q, choices, answer, openAnswer: '', code, language };
+      return { id: uid(), type: 'mcq', question: cq.q, choices, answer, openAnswer: '', code, language, explanation };
     }),
   };
 }

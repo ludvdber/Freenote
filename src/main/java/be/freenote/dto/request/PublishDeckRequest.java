@@ -12,5 +12,7 @@ public record PublishDeckRequest(
         @NotBlank @Size(max = 100) String title,
         @Size(max = 500) String description,
         Long courseId,
-        @NotEmpty @Size(max = 1000) @Valid List<FlashcardCardDto> cards
+        @NotEmpty @Size(max = 1000) @Valid List<FlashcardCardDto> cards,
+        /** true = visible dans la bibliotheque partagee ; false = enregistre prive (compte seul). */
+        Boolean published  // Boolean nullable : absent/null = prive (Jackson 3 refuse null sur un primitif)
 ) {}

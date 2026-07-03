@@ -110,7 +110,8 @@ public class GanttChartServiceImpl implements GanttChartService {
             int progress = Math.max(0, Math.min(100, d.progress()));
             tasks.add(new GanttTaskJson(
                     blankToNull(d.id()), d.name().trim(),
-                    blankToNull(d.start()), blankToNull(d.end()), progress, blankToNull(d.dependencies())));
+                    blankToNull(d.start()), blankToNull(d.end()), progress, blankToNull(d.dependencies()),
+                    blankToNull(d.assignee())));
         }
         if (tasks.isEmpty()) {
             throw new IllegalArgumentException("Le projet ne contient aucune tâche valide.");

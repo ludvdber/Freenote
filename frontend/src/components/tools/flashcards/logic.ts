@@ -27,6 +27,10 @@ export interface Deck {
   createdAt: number;
   /** Epoch ms of the last time a copy was published to the shared catalogue (palier C). */
   sharedAt?: number;
+  /** Id of the linked server row (compte connecte) — absent tant que jamais enregistre en ligne. */
+  serverId?: number;
+  /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
+  published?: boolean;
 }
 
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
@@ -148,6 +152,8 @@ export function decksFromJson(text: string, now: number = Date.now()): Deck[] {
       cards,
       createdAt: Number.isFinite(deck.createdAt) ? (deck.createdAt as number) : now,
       sharedAt: Number.isFinite(deck.sharedAt) ? (deck.sharedAt as number) : undefined,
+      serverId: Number.isFinite(deck.serverId) ? (deck.serverId as number) : undefined,
+      published: typeof deck.published === 'boolean' ? deck.published : undefined,
     };
   });
 }

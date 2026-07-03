@@ -53,11 +53,11 @@ export default function GuideDetail() {
   return (
     <PageWrapper>
       <Helmet>
-        <title>{guide ? `${guide.title} — Freenote` : `${t('guides.title')} — Freenote`}</title>
+        <title>{guide ? `${guide.title} · Freenote` : `${t('guides.title')} · Freenote`}</title>
         {guide?.summary && <meta name="description" content={guide.summary} />}
         {guide && <link rel="canonical" href={`${SITE_URL}/guides/${guide.slug}`} />}
         {guide && <meta property="og:type" content="article" />}
-        {guide && <meta property="og:title" content={`${guide.title} — Freenote`} />}
+        {guide && <meta property="og:title" content={`${guide.title} · Freenote`} />}
         {guide?.summary && <meta property="og:description" content={guide.summary} />}
         {guide && <meta property="og:url" content={`${SITE_URL}/guides/${guide.slug}`} />}
         {guide && <meta property="og:image" content={`${SITE_URL}/og-image.png`} />}

@@ -26,7 +26,9 @@ public class KofiWebhookController {
                 KofiWebhookPayload payload = objectMapper.readValue(data, KofiWebhookPayload.class);
                 kofiService.processWebhook(payload);
             } catch (Exception e) {
-                log.debug("Ko-fi webhook parsing failed: {}", e.getMessage());
+                // WARN, pas DEBUG : en prod (niveau INFO) un webhook réel qui échoue en parsing
+                // serait sinon totalement invisible — un vrai don perdu sans aucune trace.
+                log.warn("Ko-fi webhook parsing failed: {}", e.getMessage());
             }
         }
         // Always return 200 so Ko-fi doesn't retry endlessly

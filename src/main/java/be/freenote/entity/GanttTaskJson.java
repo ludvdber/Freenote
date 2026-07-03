@@ -11,5 +11,6 @@ public record GanttTaskJson(
         String start,
         String end,
         int progress,
-        String dependencies
+        String dependencies,
+        String assignee
 ) {}

@@ -84,7 +84,7 @@ export default function Leaderboard() {
 
   return (
     <PageWrapper>
-      <Helmet><title>{t('nav.leaderboard')} — Freenote</title></Helmet>
+      <Helmet><title>{t('nav.leaderboard')} · Freenote</title></Helmet>
       <Typography variant="h4" sx={s.title}>
         {t('leaderboard.title')}
       </Typography>
@@ -112,7 +112,7 @@ export default function Leaderboard() {
                 key={e.userId}
                 role="listitem"
                 tabIndex={0}
-                aria-label={`#${rank} ${e.displayName} — ${e.xp} XP`}
+                aria-label={`#${rank} ${e.displayName}, ${e.xp} XP`}
                 sx={s.podiumCard(rank)}
                 onClick={() => navigate(`/users/${e.userId}`)}
                 onMouseEnter={() => prefetchUser(e.userId)}
@@ -173,7 +173,7 @@ export default function Leaderboard() {
                       tabIndex={0}
                       role="button"
                       aria-rowindex={entry.rank}
-                      aria-label={`#${entry.rank} ${entry.displayName} — ${entry.xp} XP`}
+                      aria-label={`#${entry.rank} ${entry.displayName}, ${entry.xp} XP`}
                       sx={{ cursor: 'pointer', ...(isMe ? s.currentUserRow : {}) }}
                       onClick={() => navigate(`/users/${entry.userId}`)}
                       onMouseEnter={() => prefetchUser(entry.userId)}
@@ -272,7 +272,7 @@ function LeaderboardMobileCard({ entry, isMe, onSelect, onPrefetch, t }: MobileC
     <GlassCard
       role="button"
       tabIndex={0}
-      aria-label={`#${entry.rank} ${entry.displayName} — ${entry.xp} XP`}
+      aria-label={`#${entry.rank} ${entry.displayName}, ${entry.xp} XP`}
       sx={{
         p: 2,
         display: 'flex',

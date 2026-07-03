@@ -28,6 +28,7 @@ import {
   Visibility,
   AccountCircle,
   Badge as BadgeIcon,
+  School as SchoolIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -87,6 +88,9 @@ export default function Profile() {
   const [lastName, setLastName] = useState('');
   const [displayRealName, setDisplayRealName] = useState(false);
   const [sectionId, setSectionId] = useState<number | ''>('');
+  const [studyStartYear, setStudyStartYear] = useState('');
+  const [studyEndYear, setStudyEndYear] = useState('');
+  const [graduated, setGraduated] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -109,6 +113,9 @@ export default function Profile() {
     setLastName(user.lastName ?? '');
     setDisplayRealName(user.displayRealName);
     setSectionId(user.sectionId ?? '');
+    setStudyStartYear(user.studyStartYear?.toString() ?? '');
+    setStudyEndYear(user.studyEndYear?.toString() ?? '');
+    setGraduated(user.graduated);
   }
 
   const isDirty = !!user && (
@@ -123,7 +130,10 @@ export default function Profile() {
     firstName !== (user.firstName ?? '') ||
     lastName !== (user.lastName ?? '') ||
     displayRealName !== user.displayRealName ||
-    (sectionId === '' ? null : sectionId) !== (user.sectionId ?? null)
+    (sectionId === '' ? null : sectionId) !== (user.sectionId ?? null) ||
+    studyStartYear !== (user.studyStartYear?.toString() ?? '') ||
+    studyEndYear !== (user.studyEndYear?.toString() ?? '') ||
+    graduated !== user.graduated
   );
 
   const syncDiscordMutation = useMutation({ mutationFn: syncDiscordRole });
@@ -142,6 +152,9 @@ export default function Profile() {
         firstName,
         lastName,
         displayRealName,
+        studyStartYear: studyStartYear === '' ? null : Number(studyStartYear),
+        studyEndYear: studyEndYear === '' ? null : Number(studyEndYear),
+        graduated,
       });
       const norm = sectionId === '' ? null : sectionId;
       // Section lives behind a dedicated endpoint; only call it when it actually changed.
@@ -188,7 +201,7 @@ export default function Profile() {
   return (
     <PageWrapper maxWidth="lg">
       <Helmet>
-        <title>{t('profile.title')} — Freenote</title>
+        <title>{t('profile.title')} · Freenote</title>
       </Helmet>
 
       {/* HEADER STRIP */}
@@ -227,6 +240,15 @@ export default function Profile() {
                 label={t('profile.supporter')}
                 variant="outlined"
                 color="warning"
+              />
+            )}
+            {graduated && studyEndYear && (
+              <Chip
+                size="small"
+                icon={<SchoolIcon sx={{ fontSize: 14 }} />}
+                label={t('profile.journey.promoBadge', { year: studyEndYear })}
+                variant="outlined"
+                color="secondary"
               />
             )}
           </Box>
@@ -338,6 +360,49 @@ export default function Profile() {
 
           <GlassCard sx={s.sectionCard}>
             <Typography variant="subtitle1" sx={s.sectionTitle}>
+              <SchoolIcon fontSize="small" /> {t('profile.journey.title')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {t('profile.journey.help')}
+            </Typography>
+            <Box sx={s.formStack}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField
+                  label={t('profile.journey.startYear')}
+                  value={studyStartYear}
+                  onChange={(e) => setStudyStartYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  sx={{ flex: 1, minWidth: 160 }}
+                  placeholder="2024"
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                />
+                <TextField
+                  label={t('profile.journey.endYear')}
+                  value={studyEndYear}
+                  onChange={(e) => setStudyEndYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  sx={{ flex: 1, minWidth: 160 }}
+                  placeholder="2026"
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                  helperText={t('profile.journey.endYearHelp')}
+                />
+              </Box>
+              <Box sx={s.switchRow}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Switch checked={graduated} onChange={(e) => setGraduated(e.target.checked)} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {t('profile.journey.graduated')}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={s.switchHelp}>
+                  {graduated && studyEndYear
+                    ? t('profile.journey.promoPreview', { year: studyEndYear })
+                    : t('profile.journey.graduatedHelp')}
+                </Typography>
+              </Box>
+            </Box>
+          </GlassCard>
+
+          <GlassCard sx={s.sectionCard}>
+            <Typography variant="subtitle1" sx={s.sectionTitle}>
               <AccountCircle fontSize="small" /> {t('profile.avatar.title')}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
@@ -407,34 +472,41 @@ export default function Profile() {
             <Typography variant="subtitle1" sx={s.sectionTitle}>
               <LinkIcon fontSize="small" /> {t('profile.linksSection')}
             </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {t('profile.linksHelp')}
+            </Typography>
             <Box sx={s.formStack}>
               <TextField
                 label={t('profile.website')}
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
                 fullWidth
-                placeholder="https://…"
+                placeholder="https://monsite.be"
+                helperText={t('profile.websiteHelp')}
               />
               <TextField
                 label={t('profile.socialGithub')}
                 value={github}
                 onChange={(e) => setGithub(e.target.value)}
                 fullWidth
-                placeholder="https://github.com/…"
+                placeholder="ludvdber"
+                helperText={t('profile.socialGithubHelp')}
               />
               <TextField
                 label={t('profile.socialLinkedin')}
                 value={linkedin}
                 onChange={(e) => setLinkedin(e.target.value)}
                 fullWidth
-                placeholder="https://linkedin.com/in/…"
+                placeholder="jean-dupont"
+                helperText={t('profile.socialLinkedinHelp')}
               />
               <TextField
                 label={t('profile.socialDiscord')}
                 value={discord}
                 onChange={(e) => setDiscord(e.target.value)}
                 fullWidth
-                placeholder="username"
+                placeholder="ludo01"
+                helperText={t('profile.socialDiscordHelp')}
               />
             </Box>
           </GlassCard>

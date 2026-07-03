@@ -13,6 +13,7 @@ import jakarta.mail.internet.MimeMessage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -51,7 +52,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     @Test
     void shouldCompleteVerificationFlow() throws Exception {
         // Step 1: Request verification code
-        mockMvc.perform(post("/api/auth/request-verification")
+        mockMvc.perform(post("/api/auth/request-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -67,7 +68,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
         assertThat(code).hasSize(6);
 
         // Step 2: Confirm with the correct code — returns 204 No Content and refreshes JWT cookie
-        mockMvc.perform(post("/api/auth/confirm-verification")
+        mockMvc.perform(post("/api/auth/confirm-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -88,7 +89,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     @Test
     void shouldBlockBruteForceAfterFiveAttempts() throws Exception {
         // First, request a verification code
-        mockMvc.perform(post("/api/auth/request-verification")
+        mockMvc.perform(post("/api/auth/request-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -99,7 +100,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
         // Submit 5 wrong codes — a bad code is a 400 (bad request), not a 401 (the user is
         // authenticated). 401 would trip the SPA's axios interceptor into logging them out.
         for (int i = 0; i < 5; i++) {
-            mockMvc.perform(post("/api/auth/confirm-verification")
+            mockMvc.perform(post("/api/auth/confirm-verification").with(csrf())
                             .header("Authorization", "Bearer " + jwt)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -109,7 +110,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
         }
 
         // 6th attempt should trigger rate limit (429)
-        mockMvc.perform(post("/api/auth/confirm-verification")
+        mockMvc.perform(post("/api/auth/confirm-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -120,7 +121,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRejectNonIsfceEmail() throws Exception {
-        mockMvc.perform(post("/api/auth/request-verification")
+        mockMvc.perform(post("/api/auth/request-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -139,7 +140,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
         userRepository.save(existing);
 
         // Anti-enumeration: return 202 silently instead of 409, no code stored, no mail sent
-        mockMvc.perform(post("/api/auth/request-verification")
+        mockMvc.perform(post("/api/auth/request-verification").with(csrf())
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

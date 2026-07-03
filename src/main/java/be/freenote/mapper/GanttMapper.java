@@ -19,7 +19,7 @@ public final class GanttMapper {
 
     public static GanttResponse toResponse(GanttChart g, boolean owned) {
         List<GanttTaskDto> tasks = g.getTasks().stream()
-                .map(t -> new GanttTaskDto(t.id(), t.name(), t.start(), t.end(), t.progress(), t.dependencies()))
+                .map(t -> new GanttTaskDto(t.id(), t.name(), t.start(), t.end(), t.progress(), t.dependencies(), t.assignee()))
                 .toList();
         return new GanttResponse(g.getId(), g.getTitle(), tasks, g.isShared(), ownerName(g), owned,
                 g.getCreatedAt(), g.getUpdatedAt());

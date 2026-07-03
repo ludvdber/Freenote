@@ -21,7 +21,7 @@
   "hero": {
     "title": "Learn faster",
     "titleHighlight": "together.",
-    "subtitle": "Summaries, exercises, course notes — every shared document helps the next class succeed.",
+    "subtitle": "Summaries, exercises, course notes: every shared document helps the next class succeed.",
     "cta": "Browse courses",
     "ctaSecondary": "Share a doc",
     "scrollDown": "Scroll down",
@@ -38,7 +38,7 @@
   "popular": {
     "title": "Popular documents",
     "viewAll": "View all",
-    "empty": "Be the first to drop a doc — your class will thank you."
+    "empty": "Be the first to drop a doc, your class will thank you."
   },
   "leaderboard": {
     "title": "Top contributors",
@@ -63,8 +63,9 @@
   },
   "news": {
     "title": "What's new at ISFCE",
+    "metaDescription": "ISFCE news: term starts, enrolment, events and school announcements, relayed for students.",
     "readMore": "Read more",
-    "empty": "Nothing new right now — check back soon.",
+    "empty": "Nothing new right now, check back soon.",
     "back": "Back to news",
     "source": "Read on the ISFCE blog",
     "notFound": "News item not found.",
@@ -72,9 +73,9 @@
   },
   "guides": {
     "title": "Guides",
-    "intro": "Clear tutorials on programming, networking and tools — written for ISFCE students and open to everyone.",
+    "intro": "Clear tutorials on programming, networking and tools, written for ISFCE students and open to everyone.",
     "metaDescription": "Free guides and tutorials: Java programming, networking, IT tools. Step-by-step explanations for ISFCE students.",
-    "empty": "No guide published yet — check back soon.",
+    "empty": "No guide published yet, check back soon.",
     "read": "Read the guide",
     "readTime": "{{count}} min read",
     "backToList": "Back to guides",
@@ -84,7 +85,7 @@
     "title": "Public resources",
     "intro": "A preview of the notes and miscellaneous documents shared by ISFCE students. The full content (PDF) stays reserved for verified accounts.",
     "metaDescription": "Preview of course notes and documents shared by ISFCE students. Sign in with a verified @isfce.be address to access the full documents.",
-    "metaDescriptionDoc": "{{title}} — {{category}}. Public preview of a document shared by the ISFCE student community; sign in to read it in full.",
+    "metaDescriptionDoc": "{{title}} ({{category}}). Public preview of a document shared by the ISFCE student community; sign in to read it in full.",
     "previewNotice": "You are viewing a public preview. Sign in with your @isfce.be address to access the full documents.",
     "loginCta": "Sign in",
     "empty": "No public resource yet.",
@@ -111,7 +112,7 @@
     "discordRolesShort": "Discord roles linked to your XP"
   },
   "ad": {
-    "disclaimer": "Ad — support Freenote to hide these.",
+    "disclaimer": "Ad. Support Freenote to hide these.",
     "loginHint": "Log in so your donation disables ads."
   },
   "links": {
@@ -151,9 +152,9 @@
     "nextPage": "Next page",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "pdfPageAria": "{{title}} — page {{page}}",
+    "pdfPageAria": "{{title}}, page {{page}}",
     "report": "Report",
-    "noResults": "No documents found — try different keywords.",
+    "noResults": "No documents found. Try different keywords.",
     "favorite": "Favorite",
     "addFavorite": "Add to favorites",
     "removeFavorite": "Remove from favorites",
@@ -178,7 +179,8 @@
       "users": "Users",
       "donations": "Donations",
       "activity": "Logs",
-      "guides": "Guides"
+      "guides": "Guides",
+      "tools": "Tools"
     },
     "guides": {
       "title": "Guides",
@@ -207,7 +209,9 @@
       "view": "View document",
       "all": "All documents",
       "edit": "Edit",
-      "deleteConfirm": "Permanently delete this document and its file? This cannot be undone."
+      "deleteConfirm": "Permanently delete this document and its file? This cannot be undone.",
+      "duplicates": "Duplicates detected ({{count}} groups)",
+      "duplicatesHint": "These documents have strictly identical PDF content (same SHA-256 fingerprint). Keep the best copy and delete the others."
     },
     "sections": {
       "title": "Sections",
@@ -343,13 +347,23 @@
         "DOC_DELETE": "Deletion",
         "USER_BAN": "Ban"
       }
+    },
+    "toolsPanel": {
+      "hint": "Content shared through the study tools (quizzes, flashcard decks, Gantt projects). Delete anything inappropriate: the author keeps their local copy.",
+      "quizzes": "Published quizzes",
+      "decks": "Published decks",
+      "gantt": "Shared Gantt",
+      "empty": "Nothing to moderate here.",
+      "open": "Open the tool",
+      "delete": "Delete",
+      "deleteConfirm": "Delete “{{name}}” from the shared library?"
     }
   },
   "upload": {
     "title": "Share a document",
     "dragDrop": "Drag & drop a PDF or photos here, or click to pick",
-    "dropHint": "PDF (7 MB max) or up to 8 JPG/PNG photos — merged into a single PDF.",
-    "invalidFileType": "Unsupported format — PDF, JPG or PNG only.",
+    "dropHint": "PDF (7 MB max) or up to 8 JPG/PNG photos, merged into a single PDF.",
+    "invalidFileType": "Unsupported format: PDF, JPG or PNG only.",
     "imageTooLarge": "Each image must be under 8 MB.",
     "maxImages": "8 images maximum per document.",
     "imagesCount": "{{count}}/{{max}} photos selected",
@@ -362,14 +376,14 @@
     "tooLarge": "File too large. Reduce the size or number of images.",
     "maxSize": "Max size: 7 MB",
     "yearHelp": "Year between 2000 and 2099",
-    "compressSuggestion": "Your PDF is larger than 5 MB — consider compressing it (e.g. ilovepdf.com/compress_pdf) before uploading to save bandwidth.",
+    "compressSuggestion": "Your PDF is larger than 5 MB: consider compressing it (e.g. ilovepdf.com/compress_pdf) before uploading to save bandwidth.",
     "submit": "Share",
-    "success": "Doc shared — thanks for your class!",
+    "success": "Doc shared, thanks for your class!",
     "successMessage": "Your document is live! It will be reviewed by a moderator within 24-48h. You'll earn XP after approval.",
-    "pdfOnly": "PDFs only for now — convert and try again.",
+    "pdfOnly": "PDFs only for now: convert and try again.",
     "titleCounter": "{{count}}/{{max}}",
     "titleDupWarning": "A document with the same title already exists in this course (you can still upload it).",
-    "anonymousHelp": "Hide your username on the document page — other students will see \"Anonymous\" as the author. You still earn XP and contributions on your profile.",
+    "anonymousHelp": "Hide your username on the document page: other students will see \"Anonymous\" as the author. You still earn XP and contributions on your profile.",
     "aiGeneratedHelp": "Check if the content was written or heavily generated by an AI (ChatGPT, Claude, etc.). An \"AI\" badge will be shown on the document.",
     "rateLimited": "Upload limit reached (5 documents per hour). Try again in {{time}}.",
     "rateLimitedNoTime": "Upload limit reached (5 documents per hour). Try again a bit later.",
@@ -380,10 +394,27 @@
     "title": "My profile",
     "bio": "Bio",
     "website": "Website",
+    "websiteHelp": "Your site's full address, with https://",
     "social": "Socials",
     "socialGithub": "GitHub",
+    "socialGithubHelp": "Your GitHub username only, not the full URL",
     "socialLinkedin": "LinkedIn",
+    "socialLinkedinHelp": "The identifier after linkedin.com/in/ in your profile URL",
     "socialDiscord": "Discord",
+    "socialDiscordHelp": "Your Discord username (shown as-is, no link)",
+    "linksHelp": "Just enter your username or handle, we build the link for you.",
+    "journey": {
+      "title": "Journey at ISFCE",
+      "help": "Shown on your public profile if you fill the fields. Leave empty to show nothing.",
+      "startYear": "Started in",
+      "endYear": "Finished (or expected) in",
+      "endYearHelp": "Your graduation year if you are done",
+      "graduated": "I finished my studies at ISFCE",
+      "graduatedHelp": "With an end year, your profile will show a Class badge.",
+      "promoPreview": "Your profile will show the \"Class of {{year}}\" badge 🎓",
+      "promoBadge": "Class of {{year}}",
+      "sinceYear": "At ISFCE since {{year}}"
+    },
     "documents": "My documents",
     "settings": "Settings",
     "theme": "Theme",
@@ -416,7 +447,7 @@
     "noFavorites": "You haven't favorited any document yet.",
     "avatar": {
       "title": "Avatar",
-      "help": "Pick how your avatar is shown. No upload — your username letter, a generated avatar, or your Discord picture.",
+      "help": "Pick how your avatar is shown. No upload: your username letter, a generated avatar, or your Discord picture.",
       "source": {
         "AUTO": "Automatic",
         "LETTER": "Letter",
@@ -468,7 +499,7 @@
   },
   "common": {
     "loading": "Loading...",
-    "error": "Something went wrong — try again in a moment.",
+    "error": "Something went wrong, try again in a moment.",
     "errorTitle": "Oops",
     "errorRetry": "Back to home",
     "cancel": "Cancel",
@@ -525,7 +556,7 @@
   },
   "tools": {
     "title": "Tools",
-    "subtitle": "A free toolbox for students: grade averages, networking, conversions and more. No account needed — everything runs in your browser.",
+    "subtitle": "A free toolbox for students: grade averages, networking, conversions and more. No account needed: everything runs in your browser.",
     "metaDescription": "Free tools for students: weighted grade calculator, IPv4 subnet calculator, base converter, Base64 encoder and JWT decoder. No account, runs in your browser.",
     "openTool": "Open tool",
     "allTools": "All tools",
@@ -571,17 +602,26 @@
         "172.16.5.10 /30 → network 172.16.5.8, only 2 usable hosts (point-to-point link)."
       ],
       "faq": [
-        { "q": "What is the difference between /24 and 255.255.255.0?", "a": "They are the same thing written differently: /24 means 24 network bits, which equals the decimal mask 255.255.255.0. The tool converts between both notations automatically." },
-        { "q": "Why is the host count 2 less than the block size?", "a": "In a classic subnet the first address is the network address and the last one is the broadcast: neither can be assigned to a machine, hence the minus two." },
-        { "q": "What is the wildcard mask?", "a": "It is the binary inverse of the network mask (0s become 1s). It is mostly used in Cisco access control lists (ACLs)." }
+        {
+          "q": "What is the difference between /24 and 255.255.255.0?",
+          "a": "They are the same thing written differently: /24 means 24 network bits, which equals the decimal mask 255.255.255.0. The tool converts between both notations automatically."
+        },
+        {
+          "q": "Why is the host count 2 less than the block size?",
+          "a": "In a classic subnet the first address is the network address and the last one is the broadcast: neither can be assigned to a machine, hence the minus two."
+        },
+        {
+          "q": "What is the wildcard mask?",
+          "a": "It is the binary inverse of the network mask (0s become 1s). It is mostly used in Cisco access control lists (ACLs)."
+        }
       ]
     },
     "mermaid": {
       "tab": "UML diagrams (Mermaid)",
       "name": "Online UML diagram editor (Mermaid)",
       "short": "Create class, sequence, flowchart, ER or Gantt diagrams from text, then export to SVG/PNG.",
-      "lead": "Describe your diagram in Mermaid text on the left and see it render live on the right. Class (UML), sequence, flowchart, entity-relationship, state and Gantt diagrams — exportable to SVG or PNG.",
-      "seoTitle": "Online UML diagram editor (Mermaid) — free",
+      "lead": "Describe your diagram in Mermaid text on the left and see it render live on the right. Class (UML), sequence, flowchart, entity-relationship, state and Gantt diagrams, exportable to SVG or PNG.",
+      "seoTitle": "Free online UML diagram editor (Mermaid)",
       "seoDescription": "Create UML diagrams (class, sequence, flowchart, entity-relationship, state, Gantt) online from text, free and without signing up. Live preview and SVG/PNG export.",
       "codeLabel": "Mermaid code",
       "previewEmpty": "The diagram will appear here.",
@@ -597,8 +637,43 @@
         "state": "State",
         "gantt": "Gantt"
       },
+      "tryIt": "Try this example",
+      "guideTitle": "How to write Mermaid?",
+      "guideIntro": "The essentials of the syntax, diagram type by diagram type. Click \"Try this example\" to load the snippet into the editor.",
+      "guide": [
+        {
+          "title": "The first line picks the diagram type",
+          "text": "Every diagram starts with a keyword: flowchart TD (top-down flowchart, LR for left-right), classDiagram (UML classes), sequenceDiagram, erDiagram (entity-relationship), stateDiagram-v2 or gantt. Everything after it describes the content.",
+          "code": "flowchart LR\n    A[Start] --> B[End]"
+        },
+        {
+          "title": "Flowchart: boxes, shapes and arrows",
+          "text": "Each node has an identifier and a label: A[rectangle], B(rounded), C{decision diamond}, D((circle)). Arrows are written -->, with a label: A -- Yes --> B. Reusing the same identifier points to the same node.",
+          "code": "flowchart TD\n    A[Read n] --> B{n even?}\n    B -- Yes --> C[Print even]\n    B -- No --> D[Print odd]\n    C --> E((End))\n    D --> E"
+        },
+        {
+          "title": "Class diagram (UML)",
+          "text": "Declare a class with class Name { … }: + public, - private, # protected; methods end with (). Relations: A <|-- B (B inherits from A), A --> B (association), A *-- B (composition), A o-- B (aggregation), with cardinalities in quotes.",
+          "code": "classDiagram\n    class Account {\n        -double balance\n        +deposit(amount)\n        +withdraw(amount)\n    }\n    class Savings {\n        +double rate\n    }\n    Account <|-- Savings\n    Client \"1\" --> \"*\" Account : owns"
+        },
+        {
+          "title": "Sequence diagram",
+          "text": "Declare the actors with participant, then the messages: A->>B: message for a call (solid arrow), B-->>A: reply for a return (dashed arrow). alt/else and loop cover conditional scenarios and loops.",
+          "code": "sequenceDiagram\n    participant U as User\n    participant S as Server\n    U->>S: POST /login\n    alt valid credentials\n        S-->>U: 200 + cookie\n    else invalid\n        S-->>U: 401\n    end"
+        },
+        {
+          "title": "Entity-relationship (database)",
+          "text": "Cardinalities read on both sides of the line: || exactly one, o| zero or one, }| one or more, }o zero or more. CLIENT ||--o{ ORDER : places reads \"one client places zero or more orders\". Attributes are listed between braces.",
+          "code": "erDiagram\n    CLIENT ||--o{ ORDER : places\n    ORDER }|--|{ PRODUCT : contains\n    CLIENT {\n        int id PK\n        string name\n        string email\n    }"
+        },
+        {
+          "title": "Useful tips",
+          "text": "%% starts a comment ignored at render time. <br/> forces a line break inside a node. For a label with spaces or special characters in a flowchart, wrap it in quotes: A[\"Text (with brackets)\"]. On a syntax error, the preview keeps the last valid render and the error message points at the offending line.",
+          "code": "flowchart TD\n    %% This is a comment\n    A[\"Step 1<br/>(setup)\"] --> B[Step 2]"
+        }
+      ],
       "about": [
-        "Mermaid is a text syntax that turns a few lines into a clean diagram — no mouse or heavy software needed. It is ideal for documenting a project, revising UML modelling or illustrating an algorithm in a report or thesis.",
+        "Mermaid is a text syntax that turns a few lines into a clean diagram, no mouse or heavy software needed. It is ideal for documenting a project, revising UML modelling or illustrating an algorithm in a report or thesis.",
         "This editor runs entirely in your browser: your diagram is never sent to a server. Write the code on the left, the preview updates on the right, then export to SVG (vector, perfect for printing) or PNG (an image to paste into a document)."
       ],
       "examples": [
@@ -608,9 +683,18 @@
         "Entity-relationship (ER) diagram to model a database."
       ],
       "faq": [
-        { "q": "What is Mermaid?", "a": "Mermaid is a diagram description language: you write structured text (e.g. \"classDiagram\") and the tool draws the matching diagram. It is widely used to document code and databases." },
-        { "q": "Are my diagrams sent over the Internet?", "a": "No. All rendering happens locally in your browser, nothing is transmitted to a server. You can export the result as SVG or PNG to your computer." },
-        { "q": "Can you do full UML?", "a": "Mermaid covers class, sequence, state and entity-relationship diagrams, the ones most used in class. For very specific UML diagrams a dedicated tool may still be needed." }
+        {
+          "q": "What is Mermaid?",
+          "a": "Mermaid is a diagram description language: you write structured text (e.g. \"classDiagram\") and the tool draws the matching diagram. It is widely used to document code and databases."
+        },
+        {
+          "q": "Are my diagrams sent over the Internet?",
+          "a": "No. All rendering happens locally in your browser, nothing is transmitted to a server. You can export the result as SVG or PNG to your computer."
+        },
+        {
+          "q": "Can you do full UML?",
+          "a": "Mermaid covers class, sequence, state and entity-relationship diagrams, the ones most used in class. For very specific UML diagrams a dedicated tool may still be needed."
+        }
       ]
     },
     "ipv6": {
@@ -634,7 +718,7 @@
       "scopes": {
         "global": "Global unicast (2000::/3)",
         "linkLocal": "Link-local (fe80::/10)",
-        "uniqueLocal": "Unique local — ULA (fc00::/7)",
+        "uniqueLocal": "Unique local / ULA (fc00::/7)",
         "loopback": "Loopback (::1)",
         "unspecified": "Unspecified (::)",
         "multicast": "Multicast (ff00::/8)",
@@ -650,9 +734,18 @@
         "::1 → loopback address (the IPv6 equivalent of 127.0.0.1)."
       ],
       "faq": [
-        { "q": "What does \"::\" mean in an IPv6 address?", "a": "The double colon replaces the longest run of all-zero groups to shorten the notation. It can appear only once in an address." },
-        { "q": "Why is /64 so common?", "a": "In IPv6, /64 is the standard subnet size: the first 64 bits identify the network, the last 64 the interface. A single /64 already holds 2^64 addresses." },
-        { "q": "What is a ULA address?", "a": "A \"unique local\" address (fc00::/7) is the IPv6 equivalent of private addresses: usable internally but not routable on the public Internet." }
+        {
+          "q": "What does \"::\" mean in an IPv6 address?",
+          "a": "The double colon replaces the longest run of all-zero groups to shorten the notation. It can appear only once in an address."
+        },
+        {
+          "q": "Why is /64 so common?",
+          "a": "In IPv6, /64 is the standard subnet size: the first 64 bits identify the network, the last 64 the interface. A single /64 already holds 2^64 addresses."
+        },
+        {
+          "q": "What is a ULA address?",
+          "a": "A \"unique local\" address (fc00::/7) is the IPv6 equivalent of private addresses: usable internally but not routable on the public Internet."
+        }
       ]
     },
     "truth": {
@@ -672,7 +765,7 @@
       "minimized": "Simplified",
       "about": [
         "A truth table lists every possible combination of the variables of a logic expression and gives the result for each. For n variables there are 2^n rows. It is the basic tool of logic, digital electronics and algorithmics courses.",
-        "Beyond the table, this tool gives the canonical sum-of-products form (one term per true row) and a simplified form obtained with the Quine-McCluskey algorithm — the algorithmic equivalent of Karnaugh maps — to reduce the expression to the fewest terms."
+        "Beyond the table, this tool gives the canonical sum-of-products form (one term per true row) and a simplified form obtained with the Quine-McCluskey algorithm (the algorithmic equivalent of Karnaugh maps) to reduce the expression to the fewest terms."
       ],
       "examples": [
         "A and B → true only when A and B are 1.",
@@ -681,17 +774,26 @@
         "A xor B → ¬A·B + A·¬B (exclusive or)."
       ],
       "faq": [
-        { "q": "Which operators are accepted?", "a": "AND (&, ., and), OR (|, +, or), NOT (!, ~, not) and XOR (^, xor), with parentheses. Variables are single letters such as A, B, C." },
-        { "q": "What is a minterm?", "a": "A minterm is a row of the table where the result is 1, written as a product of all variables (negated when they are 0). The sum of minterms gives the canonical form." },
-        { "q": "How is the expression simplified?", "a": "With the Quine-McCluskey algorithm: it groups minterms that differ by a single bit to drop redundant variables, then picks the essential prime implicants. It is the systematic equivalent of Karnaugh maps." }
+        {
+          "q": "Which operators are accepted?",
+          "a": "AND (&, ., and), OR (|, +, or), NOT (!, ~, not) and XOR (^, xor), with parentheses. Variables are single letters such as A, B, C."
+        },
+        {
+          "q": "What is a minterm?",
+          "a": "A minterm is a row of the table where the result is 1, written as a product of all variables (negated when they are 0). The sum of minterms gives the canonical form."
+        },
+        {
+          "q": "How is the expression simplified?",
+          "a": "With the Quine-McCluskey algorithm: it groups minterms that differ by a single bit to drop redundant variables, then picks the essential prime implicants. It is the systematic equivalent of Karnaugh maps."
+        }
       ]
     },
     "gantt": {
       "tab": "Gantt chart",
       "name": "Online Gantt chart maker",
       "short": "Plan a project: tasks, dates, dependencies and progress, with export and sharing.",
-      "lead": "Add your tasks with their dates, progress and dependencies: the Gantt chart draws itself. Export to JSON, CSV or PNG; sign in to save and share your projects.",
-      "seoTitle": "Online Gantt chart maker — free",
+      "lead": "Plan your project with the mouse: drag the bars to move tasks, pull their edges to adjust durations, assign each task to a worker (one colour per person). Export to JSON, CSV or PNG; sign in to save and share your projects.",
+      "seoTitle": "Free online Gantt chart maker",
       "seoDescription": "Create a Gantt chart online for free: tasks, dates, dependencies and progress, with JSON/CSV/PNG export. Save and share for verified ISFCE students.",
       "tabEditor": "Editor",
       "tabMine": "My projects",
@@ -706,6 +808,15 @@
       "viewDay": "Day",
       "viewWeek": "Week",
       "viewMonth": "Month",
+      "workersTitle": "Workers",
+      "workersHint": "Add your group members: each worker gets a colour, visible on the bars of the tasks assigned to them.",
+      "workerPlaceholder": "Worker name…",
+      "addWorker": "Add the worker",
+      "assignee": "Assigned to",
+      "noAssignee": "Nobody",
+      "dragHint": "Drag a bar to move the task, pull its edges to change the dates. Click a bar to edit the details below.",
+      "emptyChart": "Add a named task to see the chart.",
+      "taskColumn": "Tasks",
       "import": "Import (JSON)",
       "importError": "Invalid file.",
       "save": "Save",
@@ -738,9 +849,18 @@
         "Track an internship week by week."
       ],
       "faq": [
-        { "q": "What is a Gantt chart?", "a": "It is a visual representation of a schedule: each task is a bar positioned by its start and end dates. Bars can be linked to show dependencies between tasks." },
-        { "q": "Are my projects private?", "a": "Yes. A saved project is visible only to you, unless you explicitly choose to \"Share\" it, in which case it joins the verified-students library. Without an account, everything stays local in your browser." },
-        { "q": "Can I export the schedule?", "a": "Yes: as PNG (an image for a report), CSV (for Excel or Google Sheets) and JSON (a reimportable backup). Export works even without an account." }
+        {
+          "q": "What is a Gantt chart?",
+          "a": "It is a visual representation of a schedule: each task is a bar positioned by its start and end dates. Bars can be linked to show dependencies between tasks."
+        },
+        {
+          "q": "Are my projects private?",
+          "a": "Yes. A saved project is visible only to you, unless you explicitly choose to \"Share\" it, in which case it joins the verified-students library. Without an account, everything stays local in your browser."
+        },
+        {
+          "q": "Can I export the schedule?",
+          "a": "Yes: as PNG (an image for a report), CSV (for Excel or Google Sheets) and JSON (a reimportable backup). Export works even without an account."
+        }
       ]
     },
     "base": {
@@ -774,8 +894,14 @@
         "The character 'A' has decimal code 65, that is 0x41 in hexadecimal."
       ],
       "faq": [
-        { "q": "What is hexadecimal used for in computing?", "a": "Hexadecimal is compact: two hex digits represent exactly one byte (8 bits). You find it in web colours (#FF8800), memory addresses and error codes." },
-        { "q": "Why is my input rejected?", "a": "Each base only accepts certain symbols: binary only 0 and 1, octal 0 to 7, hexadecimal 0 to 9 and A to F. A character outside that set is flagged as invalid." }
+        {
+          "q": "What is hexadecimal used for in computing?",
+          "a": "Hexadecimal is compact: two hex digits represent exactly one byte (8 bits). You find it in web colours (#FF8800), memory addresses and error codes."
+        },
+        {
+          "q": "Why is my input rejected?",
+          "a": "Each base only accepts certain symbols: binary only 0 and 1, octal 0 to 7, hexadecimal 0 to 9 and A to F. A character outside that set is flagged as invalid."
+        }
       ]
     },
     "base64": {
@@ -801,8 +927,14 @@
         "An image can be embedded in a page via a data:image/png;base64,… URL."
       ],
       "faq": [
-        { "q": "Does Base64 protect my data?", "a": "No. Base64 is reversible encoding, not encryption. Anyone can decode the string. To protect data you need real encryption." },
-        { "q": "Is my data sent anywhere?", "a": "No, encoding and decoding happen entirely in your browser. Nothing is transmitted to the server." }
+        {
+          "q": "Does Base64 protect my data?",
+          "a": "No. Base64 is reversible encoding, not encryption. Anyone can decode the string. To protect data you need real encryption."
+        },
+        {
+          "q": "Is my data sent anywhere?",
+          "a": "No, encoding and decoding happen entirely in your browser. Nothing is transmitted to the server."
+        }
       ]
     },
     "jwt": {
@@ -811,8 +943,8 @@
       "short": "Decode a JWT's header and payload. 100% local, nothing is sent to the server.",
       "lead": "Paste a JSON Web Token to read its header, payload (claims) and check its issued and expiry dates. Decoding is entirely local.",
       "seoTitle": "Online JWT decoder (100% local)",
-      "seoDescription": "Decode a JSON Web Token (JWT): header, payload, issued and expiry dates. A 100% local tool — the token is never sent to a server.",
-      "help": "Paste a JSON Web Token below. Everything stays in your browser — the token is never sent to the server.",
+      "seoDescription": "Decode a JSON Web Token (JWT): header, payload, issued and expiry dates. A 100% local tool: the token is never sent to a server.",
+      "help": "Paste a JSON Web Token below. Everything stays in your browser: the token is never sent to the server.",
       "tokenLabel": "JWT token",
       "header": "Header",
       "payload": "Payload",
@@ -825,7 +957,7 @@
       "issuedAt": "Issued at",
       "expiresAt": "Expires at",
       "about": [
-        "A JSON Web Token (JWT) is a string made of three parts separated by dots: a header, a payload (the claims) and a signature. The first two parts are simply Base64URL-encoded — so anyone can read them, this is not encryption.",
+        "A JSON Web Token (JWT) is a string made of three parts separated by dots: a header, a payload (the claims) and a signature. The first two parts are simply Base64URL-encoded, so anyone can read them, this is not encryption.",
         "This tool decodes the header and payload, and interprets the standard date fields (iat for issued-at, exp for expiry) to tell you whether the token is still valid. The signature itself guarantees integrity on the server side and cannot be verified without the issuer's key."
       ],
       "examples": [
@@ -834,15 +966,21 @@
         "The header segment reveals the signing algorithm, for example HS256 or RS256."
       ],
       "faq": [
-        { "q": "Does decoding a JWT reveal secret information?", "a": "A JWT's payload is only encoded, not encrypted: it is readable by anyone holding the token. So you should never put a password or sensitive data in it." },
-        { "q": "Why is the signature not verified?", "a": "Verifying the signature requires the issuer's secret key (HS256) or public key (RS256). This tool stays 100% local and has neither, so it decodes without validating the signature." }
+        {
+          "q": "Does decoding a JWT reveal secret information?",
+          "a": "A JWT's payload is only encoded, not encrypted: it is readable by anyone holding the token. So you should never put a password or sensitive data in it."
+        },
+        {
+          "q": "Why is the signature not verified?",
+          "a": "Verifying the signature requires the issuer's secret key (HS256) or public key (RS256). This tool stays 100% local and has neither, so it decodes without validating the signature."
+        }
       ]
     },
     "grade": {
       "tab": "Weighted average",
       "name": "Weighted grade calculator",
       "short": "Compute your course average with coefficients, and the final diploma grade (TFE included).",
-      "lead": "Enter your grades and their weights to get your weighted average — with a diploma mode where the final project (TFE) counts for two thirds of the final grade.",
+      "lead": "Enter your grades and their weights to get your weighted average, with a diploma mode where the final project (TFE) counts for two thirds of the final grade.",
       "seoTitle": "Weighted grade calculator (out of 20)",
       "seoDescription": "Compute your weighted grade average with coefficients and your final diploma grade (TFE = 2/3) for free. Online tool for students, out of 20 or 100.",
       "courseName": "Course",
@@ -878,7 +1016,7 @@
       "mentionHighestDistinction": "Highest distinction",
       "about": [
         "A weighted average takes each course's weight into account: a course with a coefficient of 3 counts three times as much as one with coefficient 1. The calculation sums each grade times its coefficient, then divides by the sum of coefficients. Leave every coefficient at 1 for a simple average.",
-        "Diploma mode combines the average of the retained courses and the final project (TFE) grade. You choose the TFE percentage (two thirds by default, as at ISFCE) and tick the courses that count — because not every course of a bachelor necessarily enters the diploma average.",
+        "Diploma mode combines the average of the retained courses and the final project (TFE) grade. You choose the TFE percentage (two thirds by default, as at ISFCE) and tick the courses that count, because not every course of a bachelor necessarily enters the diploma average.",
         "The result also shows the distinction earned on the Belgian higher-education scale: pass with merit from 50 to 60%, satisfactory from 60 to 70%, distinction from 70 to 80%, high distinction from 80 to 90% and highest distinction from 90%. The pass threshold is 50% (i.e. 10/20)."
       ],
       "examples": [
@@ -887,28 +1025,41 @@
         "Set the TFE share to 50%: the final grade becomes the plain average of your retained courses and your TFE."
       ],
       "faq": [
-        { "q": "How does the TFE weighting work?", "a": "The TFE (final integrated project) carries a lot of weight in a bachelor. By default the tool gives it two thirds of the final grade and one third to the retained courses average, but you can change this percentage to match your programme or school." },
-        { "q": "Why tick the courses?", "a": "Not every course of a bachelor necessarily enters the average that determines the diploma. In diploma mode, tick only the retained courses: only those are averaged before being combined with the TFE." },
-        { "q": "How are distinctions computed?", "a": "The tool follows the Belgian higher-education scale (ISFCE): below 50% = fail, 50 to 60% = pass with merit, 60 to 70% = satisfactory, 70 to 80% = distinction, 80 to 90% = high distinction, 90% and above = highest distinction." },
-        { "q": "What should I put as a coefficient?", "a": "Use each course's relative weight. If you do not know the official coefficients, leave them all at 1: you get a classic arithmetic average." }
+        {
+          "q": "How does the TFE weighting work?",
+          "a": "The TFE (final integrated project) carries a lot of weight in a bachelor. By default the tool gives it two thirds of the final grade and one third to the retained courses average, but you can change this percentage to match your programme or school."
+        },
+        {
+          "q": "Why tick the courses?",
+          "a": "Not every course of a bachelor necessarily enters the average that determines the diploma. In diploma mode, tick only the retained courses: only those are averaged before being combined with the TFE."
+        },
+        {
+          "q": "How are distinctions computed?",
+          "a": "The tool follows the Belgian higher-education scale (ISFCE): below 50% = fail, 50 to 60% = pass with merit, 60 to 70% = satisfactory, 70 to 80% = distinction, 80 to 90% = high distinction, 90% and above = highest distinction."
+        },
+        {
+          "q": "What should I put as a coefficient?",
+          "a": "Use each course's relative weight. If you do not know the official coefficients, leave them all at 1: you get a classic arithmetic average."
+        }
       ]
     },
     "flashcards": {
       "tab": "Flashcards",
-      "name": "Flashcards — revision cards",
+      "name": "Flashcards and revision cards",
       "short": "Create your revision cards, study them with spaced repetition, and export them to Anki.",
-      "lead": "Create double-sided card decks, review them with spaced repetition, and export them in an Anki-compatible format. Everything stays in your browser — nothing is sent to a server.",
-      "seoTitle": "Online flashcards — revision cards (Anki-compatible)",
+      "lead": "Create double-sided card decks, review them with spaced repetition, and export them in an Anki-compatible format. Everything stays in your browser: nothing is sent to a server.",
+      "seoTitle": "Online flashcards: revision cards (Anki-compatible)",
       "seoDescription": "Create and review your revision cards with spaced repetition for free. Anki-compatible import/export, 100% in your browser, no sign-up.",
       "deck": "Deck",
       "newDeck": "New deck",
       "deckName": "Deck name",
-      "deckNamePlaceholder": "e.g. Accounting — VAT",
+      "deckNamePlaceholder": "e.g. Accounting VAT",
       "createDeck": "Create deck",
       "deleteDeck": "Delete deck",
       "confirmDeleteDeck": "Delete the deck \"{{name}}\" and all its cards?",
       "emptyTitle": "No deck yet",
-      "emptyHint": "Create your first card deck to start revising.",
+      "emptyHint": "Create your first card deck to start revising. Already using Anki? Open a deck and import your .apkg file directly.",
+      "ankiImportHint": "Anki-compatible: the Import button accepts an .apkg deck exported from Anki, or a CSV/TSV file (front ; back).",
       "cardsCount": "{{count}} cards",
       "dueCount": "{{count}} due",
       "addCard": "Add a card",
@@ -923,7 +1074,7 @@
       "importEmpty": "No card found in the file.",
       "importApkgRecent": "This deck uses the recent (compressed) Anki format. In Anki, re-export it with \"Support older Anki versions\" ticked, or import a CSV file.",
       "noCards": "This deck is empty. Add a card or import a file.",
-      "scheduled": "Scheduled — comes back to review later",
+      "scheduled": "Scheduled: comes back to review later",
       "dayShort": "d",
       "deleteCard": "Delete card",
       "review": "Review",
@@ -954,7 +1105,7 @@
       "exportAnki": "To Anki (.tsv)",
       "exportBackup": "Backup (JSON)",
       "storageLocal": "Saved in this browser",
-      "storageLocalHint": "Your decks are stored locally (in this browser). Nothing is sent to a server — unless you click \"Publish\". Export a JSON backup before clearing your cache or switching devices.",
+      "storageLocalHint": "Your decks are stored locally (in this browser). Nothing is sent to a server, unless you click \"Publish\". Export a JSON backup before clearing your cache or switching devices.",
       "sharedChip": "Shared",
       "sharedAtTooltip": "A copy was published on {{date}} and appears in \"Shared decks\". Publishing again creates a new copy.",
       "shareTooltip": "Publishes a copy to the server, visible to verified students. Your decks are never sent automatically.",
@@ -966,9 +1117,9 @@
       "studyAll": "Review all",
       "studyAllTooltip": "Review every card now, regardless of its due date.",
       "reviewTooltip": "Review the cards due today (spaced repetition).",
-      "nothingDue": "Nothing due right now — click \"Review all\" to practise.",
+      "nothingDue": "Nothing due right now. Click \"Review all\" to practise.",
       "noCardsYet": "Add cards to start reviewing.",
-      "libraryIntro": "Decks shared by other verified students. Import one into \"My decks\" to review it — it's an editable copy, independent of the original.",
+      "libraryIntro": "Decks shared by other verified students. Import one into \"My decks\" to review it: it's an editable copy, independent of the original.",
       "importToMine": "Import to my decks",
       "myDecksHint": "Your decks, saved in this browser.",
       "openDeck": "Open",
@@ -977,7 +1128,7 @@
       "republish": "Re-publish",
       "publishedOn": "Published on {{date}} to the library.",
       "backToDecks": "Back to decks",
-      "importedToMine": "{{count}} cards imported — available in \"My decks\".",
+      "importedToMine": "{{count}} cards imported, available in \"My decks\".",
       "imported": "Imported",
       "importedHint": "Added to \"My decks\". Open the My decks tab to review it.",
       "rating": {
@@ -987,28 +1138,54 @@
         "easy": "Easy"
       },
       "about": [
-        "Flashcards are one of the most effective ways to memorise: a question on the front, the answer on the back, and you self-test. Spaced repetition goes further — each card comes back to review just before you would forget it, anchoring the information in long-term memory with minimal effort.",
-        "This tool runs entirely in your browser: your cards are stored locally, nothing is sent to a server and no account is required. You can create several decks — one per course or chapter — and review only the cards due today.",
+        "Flashcards are one of the most effective ways to memorise: a question on the front, the answer on the back, and you self-test. Spaced repetition goes further: each card comes back to review just before you would forget it, anchoring the information in long-term memory with minimal effort.",
+        "This tool runs entirely in your browser: your cards are stored locally, nothing is sent to a server and no account is required. You can create several decks (one per course or chapter) and review only the cards due today.",
         "On each card you rate your answer (Again, Hard, Good, Easy): the spaced-repetition algorithm then computes the next review, from a few minutes to several days away. You can also import a CSV/TSV file or export your cards in an Anki-compatible format to review on mobile."
       ],
       "examples": [
-        "Create a \"Networking — Subnetting\" deck, add a card (front: \"/26 mask?\" → back: \"255.255.255.192\"), then start the review.",
+        "Create a \"Networking / Subnetting\" deck, add a card (front: \"/26 mask?\" → back: \"255.255.255.192\"), then start the review.",
         "Import a file where each line holds the front, a tab, then the back: all cards are added at once.",
         "Export your deck as .tsv and import it into Anki on your phone to revise on the go."
       ],
       "faq": [
-        { "q": "Are my cards sent to a server?", "a": "No. Everything is stored in your browser (localStorage). If you switch computers or clear your cache, export a JSON backup beforehand." },
-        { "q": "Is it really Anki-compatible?", "a": "Yes, both ways. You can import an Anki deck (.apkg) directly to recover its basic cards. For export, the tool produces a tab-separated text file (TSV) that Anki imports natively: in Anki, choose File → Import, pick the file and map the first field to the front, the second to the back." },
-        { "q": "How does spaced repetition work?", "a": "Each card has an interval that grows with every correct answer (1 day, then a few days, then longer). If you answer \"Again\", the card becomes due immediately. This is the principle of the SM-2 algorithm used by Anki." },
-        { "q": "Can I create several decks?", "a": "Yes, as many as you like — one per course, chapter or exam. The selector at the top lets you switch between them." }
-      ]
+        {
+          "q": "Are my cards sent to a server?",
+          "a": "No. Everything is stored in your browser (localStorage). If you switch computers or clear your cache, export a JSON backup beforehand."
+        },
+        {
+          "q": "Is it really Anki-compatible?",
+          "a": "Yes, both ways. You can import an Anki deck (.apkg) directly to recover its basic cards. For export, the tool produces a tab-separated text file (TSV) that Anki imports natively: in Anki, choose File → Import, pick the file and map the first field to the front, the second to the back."
+        },
+        {
+          "q": "How does spaced repetition work?",
+          "a": "Each card has an interval that grows with every correct answer (1 day, then a few days, then longer). If you answer \"Again\", the card becomes due immediately. This is the principle of the SM-2 algorithm used by Anki."
+        },
+        {
+          "q": "Can I create several decks?",
+          "a": "Yes, as many as you like: one per course, chapter or exam. The selector at the top lets you switch between them."
+        }
+      ],
+      "localChip": "Local",
+      "savedChip": "Saved",
+      "publishedChip": "Published",
+      "saveOnline": "Save online",
+      "updateOnline": "Update online",
+      "saveOnlineOk": "Deck saved to your account (private) ✓",
+      "saveOnlineTooltip": "Private backup on your account: get it back from any device.",
+      "unpublish": "Unpublish",
+      "confirmDeleteLinked": "Delete “{{name}}”? Its online copy will also be deleted.",
+      "onlineOnlyTitle": "Saved online (not on this device)",
+      "importToDevice": "Get on this device",
+      "anonHint": "Everything here stays on this device (export regularly!). Sign in with your ISFCE account to save your decks online and publish them to the library.",
+      "searchDecks": "Search a deck…",
+      "searchNoResult": "No deck matches your search."
     },
     "quiz": {
       "tab": "Quiz",
-      "name": "Interactive quiz — build and share your MCQs",
+      "name": "Interactive quiz: build and share your MCQs",
       "short": "Build MCQs, play, share by link and climb the leaderboard.",
-      "lead": "Build multiple-choice quizzes, practise, share them with classmates via a link and compare your scores on the leaderboard. Your quizzes stay in your browser — you decide when to publish them.",
-      "seoTitle": "Online quiz & MCQ maker — create, share and play for free",
+      "lead": "Build multiple-choice quizzes, practise, share them with classmates via a link and compare your scores on the leaderboard. Your quizzes stay in your browser: you decide when to publish them.",
+      "seoTitle": "Online quiz and MCQ maker: create, share and play for free",
       "seoDescription": "Create your revision MCQs for free, share them by link and challenge your classmates on the leaderboard (score + speed). 100% in your browser, no sign-up to play.",
       "tabMine": "My quizzes",
       "tabLibrary": "Library",
@@ -1023,11 +1200,15 @@
       "typeOpen": "Open answer",
       "addImage": "Add an image",
       "removeImage": "Remove image",
-      "imageHint": "Shown only in published quizzes — not in the share link.",
+      "imageHint": "Shown only in published quizzes, not in the share link.",
       "addCode": "Add code",
       "removeCode": "Remove code",
       "codePlaceholder": "Paste your code snippet here…",
       "languagePlaceholder": "Language (java, python…)",
+      "languageLabel": "Language",
+      "languageNone": "None (plain text)",
+      "languageOther": "Other…",
+      "languageCustom": "Custom language",
       "expectedAnswer": "Expected answer",
       "openHint": "Case- and space-insensitive comparison.",
       "yourAnswer": "Your answer",
@@ -1072,7 +1253,7 @@
       "libraryError": "Couldn't load shared quizzes.",
       "libraryEmpty": "No shared quiz yet. Be the first to publish one!",
       "leaderboard": "Leaderboard",
-      "leaderboardIntro": "Best score per player — on a tie, the fastest wins.",
+      "leaderboardIntro": "Best score per player; on a tie, the fastest wins.",
       "leaderboardEmpty": "No one has played yet. Give it a go!",
       "you": "You",
       "quit": "Quit",
@@ -1087,7 +1268,7 @@
       "retry": "Play again",
       "backToList": "Back",
       "shareTitle": "Share this quiz",
-      "shareHint": "Anyone can open this link and play, even without an account. The quiz is fully contained in the link — nothing is stored on the server, and it doesn't appear on the leaderboard.",
+      "shareHint": "Anyone can open this link and play, even without an account. The quiz is fully contained in the link: nothing is stored on the server, and it doesn't appear on the leaderboard.",
       "copy": "Copy",
       "close": "Close",
       "about": [
@@ -1096,16 +1277,46 @@
         "Every published quiz has its own leaderboard: the best score per player is kept, and on a tie, speed decides. Perfect for revising an exam as a group in a friendly-challenge spirit."
       ],
       "examples": [
-        "Build a \"Networking — OSI layers\" quiz with 10 questions, play it to self-assess, then share the link with your study group.",
+        "Build a \"Networking: OSI layers\" quiz with 10 questions, play it to self-assess, then share the link with your study group.",
         "Publish your quiz to the library: your verified classmates play it and you compare your times on the leaderboard.",
         "Generate a share link: even a classmate without an account can open the quiz and play it right away, with nothing to install."
       ],
       "faq": [
-        { "q": "Do I need an account to play?", "a": "To play a quiz shared by link, no — anyone can open it and answer. To publish a quiz to the shared library or record your score on the leaderboard, you need a verified ISFCE account." },
-        { "q": "Where are my quizzes stored?", "a": "In your browser (localStorage). Nothing is sent to the server until you click \"Publish\". Export a JSON backup before clearing your cache or switching devices." },
-        { "q": "How does the leaderboard work?", "a": "Only your best score on each quiz is kept. On a tie, the faster player ranks higher. The score is computed on the server at submission, so the leaderboard stays reliable." },
-        { "q": "Does the share link reveal the answers?", "a": "A quiz shared by link is fully contained in the address: a curious user could technically decode it. That's harmless for a practice quiz, but for a reliable leaderboard, prefer publishing the quiz to the library (the answers then stay on the server)." }
-      ]
+        {
+          "q": "Do I need an account to play?",
+          "a": "To play a quiz shared by link, no: anyone can open it and answer. To publish a quiz to the shared library or record your score on the leaderboard, you need a verified ISFCE account."
+        },
+        {
+          "q": "Where are my quizzes stored?",
+          "a": "In your browser (localStorage). Nothing is sent to the server until you click \"Publish\". Export a JSON backup before clearing your cache or switching devices."
+        },
+        {
+          "q": "How does the leaderboard work?",
+          "a": "Only your best score on each quiz is kept. On a tie, the faster player ranks higher. The score is computed on the server at submission, so the leaderboard stays reliable."
+        },
+        {
+          "q": "Does the share link reveal the answers?",
+          "a": "A quiz shared by link is fully contained in the address: a curious user could technically decode it. That's harmless for a practice quiz, but for a reliable leaderboard, prefer publishing the quiz to the library (the answers then stay on the server)."
+        }
+      ],
+      "localChip": "Local",
+      "savedChip": "Saved",
+      "publishedChip": "Published",
+      "saveOnline": "Save online",
+      "updateOnline": "Update online",
+      "saveOnlineOk": "Quiz saved to your account (private) ✓",
+      "unpublish": "Unpublish",
+      "confirmDeleteLinked": "Delete “{{name}}”? Its online copy will also be deleted.",
+      "onlineOnlyTitle": "Saved online (not on this device)",
+      "importToDevice": "Get on this device",
+      "importFromLibrary": "Import & edit",
+      "importedChip": "Imported ✓",
+      "importedOk": "Imported into “My quizzes”, you can edit it ✓",
+      "explanationLabel": "Explanation (optional, shown after grading)",
+      "addExplanation": "Add an explanation",
+      "removeExplanation": "Remove the explanation",
+      "anonHint": "Everything here stays on this device and can be shared by link. Sign in with your ISFCE account to save your quizzes online, publish them to the library and enter the leaderboard.",
+      "editorAnonHint": "Sign in to save online and publish."
     }
   },
   "about": {
@@ -1121,21 +1332,48 @@
     ],
     "problemsTitle": "The two problems Freenote solves",
     "problems": [
-      { "title": "Verifying students, simply", "desc": "To protect the exchanges, only students with a verified @isfce.be address can access the documents. Verification is automatic: a code by email and you're done — no manual steps, no proof to show." },
-      { "title": "Never lose anything again", "desc": "Notes, summaries, exercises and final projects are organised by section and course, and stay available year after year — instead of vanishing into old conversations." }
+      {
+        "title": "Verifying students, simply",
+        "desc": "To protect the exchanges, only students with a verified @isfce.be address can access the documents. Verification is automatic: a code by email and you're done: no manual steps, no proof to show."
+      },
+      {
+        "title": "Never lose anything again",
+        "desc": "Notes, summaries, exercises and final projects are organised by section and course, and stay available year after year, instead of vanishing into old conversations."
+      }
     ],
     "howTitle": "How it works",
     "how": [
-      { "title": "Sign in", "desc": "Create your account in one click via Discord, then choose your username and section." },
-      { "title": "Verify your ISFCE address", "desc": "Get a code on your @isfce.be address to unlock full access — and, as a bonus, the 'verified' role on the student Discord." },
-      { "title": "Explore and share", "desc": "Browse documents by course, open them right in the browser, and share your own to help your cohort and earn XP." }
+      {
+        "title": "Sign in",
+        "desc": "Create your account in one click via Discord, then choose your username and section."
+      },
+      {
+        "title": "Verify your ISFCE address",
+        "desc": "Get a code on your @isfce.be address to unlock full access and, as a bonus, the 'verified' role on the student Discord."
+      },
+      {
+        "title": "Explore and share",
+        "desc": "Browse documents by course, open them right in the browser, and share your own to help your cohort and earn XP."
+      }
     ],
     "featuresTitle": "What you'll find on Freenote",
     "features": [
-      { "title": "Documents by section and course", "desc": "Summaries, notes, exercises and final projects clearly sorted, with instant search." },
-      { "title": "In-browser reading", "desc": "PDFs open directly on the site, with no forced download and no sign-up to a third-party service." },
-      { "title": "Leaderboard and XP", "desc": "Every shared document earns points: a leaderboard highlights the most generous students." },
-      { "title": "Free tools", "desc": "A weighted grade calculator, an IPv4 calculator, a base converter and other handy tools, no account needed." }
+      {
+        "title": "Documents by section and course",
+        "desc": "Summaries, notes, exercises and final projects clearly sorted, with instant search."
+      },
+      {
+        "title": "In-browser reading",
+        "desc": "PDFs open directly on the site, with no forced download and no sign-up to a third-party service."
+      },
+      {
+        "title": "Leaderboard and XP",
+        "desc": "Every shared document earns points: a leaderboard highlights the most generous students."
+      },
+      {
+        "title": "Free tools",
+        "desc": "A weighted grade calculator, an IPv4 calculator, a base converter and other handy tools, no account needed."
+      }
     ],
     "privacyTitle": "Privacy",
     "privacy": [
@@ -1145,10 +1383,22 @@
     "privacyLink": "Read the privacy policy",
     "faqTitle": "Frequently asked questions",
     "faq": [
-      { "q": "Is Freenote free?", "a": "Yes, entirely. Discreet advertising and optional donations (Ko-fi) fund the hosting; a donation removes the ads for 30 days." },
-      { "q": "Who can access the documents?", "a": "Students with a verified @isfce.be address. The public pages (home, tools, news, legal notices) stay open to everyone." },
-      { "q": "Is Freenote official or affiliated with ISFCE?", "a": "No. It is an independent student initiative, with no official link to the school." },
-      { "q": "How do I share a document?", "a": "Once your address is verified, click 'Share': pick the section, course and category, then drop a PDF or photos (they are merged into a single PDF)." }
+      {
+        "q": "Is Freenote free?",
+        "a": "Yes, entirely. Discreet advertising and optional donations (Ko-fi) fund the hosting; a donation removes the ads for 30 days."
+      },
+      {
+        "q": "Who can access the documents?",
+        "a": "Students with a verified @isfce.be address. The public pages (home, tools, news, legal notices) stay open to everyone."
+      },
+      {
+        "q": "Is Freenote official or affiliated with ISFCE?",
+        "a": "No. It is an independent student initiative, with no official link to the school."
+      },
+      {
+        "q": "How do I share a document?",
+        "a": "Once your address is verified, click 'Share': pick the section, course and category, then drop a PDF or photos (they are merged into a single PDF)."
+      }
     ],
     "ctaTitle": "Ready to dive in?",
     "ctaText": "Join the ISFCE students who revise better thanks to shared resources.",

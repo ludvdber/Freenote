@@ -22,7 +22,9 @@ public interface DocumentService {
     DocumentResponse rename(Long documentId, Long userId, String newTitle);
     void adminDelete(Long documentId);
     List<DocumentResponse> getPopular(Long sectionId);
-    List<DocumentResponse> getUnverified();
+    PageResponse<DocumentResponse> getUnverified(Pageable pageable);
+    /** Groupes de documents au contenu PDF identique (même hash) — vue admin de fusion/suppression. */
+    List<List<DocumentResponse>> getDuplicateGroups();
     DocumentResponse verify(Long documentId);
     byte[] download(Long documentId, Long userId);
     PageResponse<DocumentResponse> getByUser(Long userId, Pageable pageable);

@@ -39,11 +39,12 @@ class AdminControllerTest {
 
     @Test
     void pendingDocuments_shouldCallService() throws Exception {
-        when(documentService.getUnverified()).thenReturn(List.of());
+        when(documentService.getUnverified(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new be.freenote.dto.response.PageResponse<>(List.of(), 0, 20, 0, 0));
 
         mockMvc.perform(get("/api/admin/documents/pending"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test

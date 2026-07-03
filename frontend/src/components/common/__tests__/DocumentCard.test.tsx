@@ -38,7 +38,7 @@ describe('DocumentCard', () => {
   it('renders title, course/author and view count', () => {
     renderCard(makeDoc());
     expect(screen.getByText('Algo notes')).toBeInTheDocument();
-    expect(screen.getByText('Algo — Sophie')).toBeInTheDocument();
+    expect(screen.getByText('Algo · Sophie')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 

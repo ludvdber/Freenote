@@ -163,7 +163,7 @@ export default function DocumentView() {
 
   return (
     <PageWrapper maxWidth="lg">
-      <Helmet><title>{doc ? `${doc.title} — Freenote` : 'Freenote'}</title></Helmet>
+      <Helmet><title>{doc ? `${doc.title} · Freenote` : 'Freenote'}</title></Helmet>
       <Box sx={s.header}>
         <Box sx={s.chipsRow}>
           <Chip
@@ -195,8 +195,8 @@ export default function DocumentView() {
           {doc.title}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={s.subtitle}>
-          {doc.courseName} — {doc.sectionName}
-          {!doc.authorId && ` — ${doc.authorName}`}
+          {doc.courseName} · {doc.sectionName}
+          {!doc.authorId && ` · ${doc.authorName}`}
         </Typography>
       </Box>
 

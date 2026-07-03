@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify';
 import { getNews } from '@/api/endpoints';
-import { STALE_15M } from '@/lib/constants';
+import { SITE_URL, STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import * as s from './NewsDetail.styles';
@@ -36,8 +36,9 @@ export default function NewsDetail() {
   return (
     <PageWrapper>
       <Helmet>
-        <title>{item ? `${item.title} — Freenote` : `${t('nav.news')} — Freenote`}</title>
+        <title>{item ? `${item.title} · Freenote` : `${t('nav.news')} · Freenote`}</title>
         {excerpt && <meta name="description" content={excerpt} />}
+        {item && <link rel="canonical" href={`${SITE_URL}/news/${item.id}`} />}
       </Helmet>
 
       <Box sx={s.article}>

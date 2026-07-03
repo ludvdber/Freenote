@@ -52,7 +52,17 @@ public class FlashcardDeck {
     @JoinColumn(name = "course_id")
     private Course course;
 
+    /** false = paquet privé enregistré sur le compte (visible du seul propriétaire),
+     *  true = publié dans la bibliothèque partagée. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean published = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

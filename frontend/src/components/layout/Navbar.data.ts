@@ -8,10 +8,9 @@ export interface NavLink {
 
 export const NAV_LINKS: NavLink[] = [
   { key: 'home',        to: '/' },
-  { key: 'browse',      to: '/browse',      protected: true },
+  { key: 'browse',      to: '/browse' },                     // Public : vitrine anonyme intégrée
   { key: 'leaderboard', to: '/leaderboard', protected: true },
-  { key: 'news',        to: '/news' },                       // Flux RSS école — public
-  { key: 'guides',      to: '/guides' },                     // Tutoriels admin — public
-  { key: 'resources',   to: '/ressources' },                 // Extraits catalogue — public
+  { key: 'news',        to: '/news' },                       // Flux RSS école, public
+  { key: 'guides',      to: '/guides' },                     // Tutoriels admin, public
   { key: 'tools',       to: '/outils' },
 ];

@@ -77,6 +77,8 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
  * One real AdSense display unit. The wrapping AdSlot already reserves `minHeight` so the push causes
  * no layout shift. The push is guarded against React Strict-Mode double-invoke; a failure (script
  * blocked / not ready) leaves the reserved space empty rather than throwing.
+ * Responsive: `width` is a MAX width — on a 390 px phone the unit shrinks to the viewport instead of
+ * overflowing (a fixed 728 px <ins> would force a horizontal scroll on mobile).
  */
 function AdsenseUnit({ width, height }: { width: number; height: number }) {
   const pushed = useRef(false);
@@ -94,9 +96,10 @@ function AdsenseUnit({ width, height }: { width: number; height: number }) {
   return (
     <ins
       className="adsbygoogle"
-      style={{ display: 'inline-block', width, height }}
+      style={{ display: 'block', width: '100%', maxWidth: width, height, marginLeft: 'auto', marginRight: 'auto' }}
       data-ad-client={ADSENSE_CLIENT}
       data-ad-slot={ADSENSE_SLOT}
+      data-full-width-responsive="true"
     />
   );
 }

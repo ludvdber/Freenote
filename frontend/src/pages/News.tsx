@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link as RouterLink } from 'react-router-dom';
 import { getNews } from '@/api/endpoints';
 import { formatDate } from '@/lib/utils';
-import { STALE_15M } from '@/lib/constants';
+import { SITE_URL, STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
@@ -16,7 +16,11 @@ export default function News() {
 
   return (
     <PageWrapper>
-      <Helmet><title>{t('nav.news')} — Freenote</title></Helmet>
+      <Helmet>
+        <title>{`${t('nav.news')} · Freenote`}</title>
+        <meta name="description" content={t('news.metaDescription')} />
+        <link rel="canonical" href={`${SITE_URL}/news`} />
+      </Helmet>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>{t('news.title')}</Typography>
       <GlassCard>
         <List>

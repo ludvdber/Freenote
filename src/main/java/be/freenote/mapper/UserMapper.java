@@ -46,7 +46,10 @@ public abstract class UserMapper {
                 p != null && p.getSection() != null ? p.getSection().getId() : null,
                 p != null && p.getSection() != null ? p.getSection().getName() : null,
                 user.isUsernameChosen(),
-                p != null ? p.getDiscordAvatarUrl() : null
+                p != null ? p.getDiscordAvatarUrl() : null,
+                p != null ? p.getStudyStartYear() : null,
+                p != null ? p.getStudyEndYear() : null,
+                p != null && p.isGraduated()
         );
     }
 
@@ -78,7 +81,10 @@ public abstract class UserMapper {
                 p != null && p.getSection() != null ? p.getSection().getId() : null,
                 p != null && p.getSection() != null ? p.getSection().getName() : null,
                 false,
-                null
+                null,
+                null,
+                null,
+                false
         );
     }
 
@@ -94,7 +100,8 @@ public abstract class UserMapper {
                 r.termsAccepted(), r.avatarUrl(), r.avatarSource(), r.displayName(),
                 r.firstName(), r.lastName(), r.displayRealName(),
                 r.sectionId(), r.sectionName(), r.usernameChosen(),
-                null
+                null,
+                r.studyStartYear(), r.studyEndYear(), r.graduated()
         );
     }
 
@@ -133,9 +140,16 @@ public abstract class UserMapper {
     }
 
     public static String resolveDisplayName(UserProfile p, String username) {
-        if (p == null || !p.isDisplayRealName()) return username;
-        String first = p.getFirstName() == null ? "" : p.getFirstName().trim();
-        String last = p.getLastName() == null ? "" : p.getLastName().trim();
+        return resolveDisplayName(p != null && p.isDisplayRealName(),
+                p == null ? null : p.getFirstName(), p == null ? null : p.getLastName(), username);
+    }
+
+    /** Variante « champs bruts » pour les projections JPQL (QuizListRow/DeckListRow) qui ne chargent
+     *  pas l'entité UserProfile. Même logique que la variante entité — garder les deux synchronisées. */
+    public static String resolveDisplayName(Boolean displayRealName, String firstName, String lastName, String username) {
+        if (!Boolean.TRUE.equals(displayRealName)) return username;
+        String first = firstName == null ? "" : firstName.trim();
+        String last = lastName == null ? "" : lastName.trim();
         if (first.isEmpty() && last.isEmpty()) return username;
         String full = (first + " " + last).trim();
         return full.isEmpty() ? username : full;

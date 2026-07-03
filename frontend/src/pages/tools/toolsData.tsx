@@ -24,6 +24,8 @@ export interface ToolDef {
   key: string;
   icon: ReactNode;
   Component: ComponentType;
+  /** Page large (Container xl) — pour les outils à timeline/canvas qui étouffent en md. */
+  wide?: boolean;
 }
 
 /** Single source of truth for the tools collection — drives routes, the index grid and SEO. */
@@ -32,7 +34,7 @@ export const TOOLS: ToolDef[] = [
   { slug: 'quiz', key: 'quiz', icon: <QuizIcon />, Component: Quiz },
   { slug: 'calculateur-moyenne', key: 'grade', icon: <Calculate />, Component: GradeCalculator },
   { slug: 'diagramme-uml', key: 'mermaid', icon: <Schema />, Component: MermaidEditor },
-  { slug: 'gantt', key: 'gantt', icon: <Timeline />, Component: GanttChart },
+  { slug: 'gantt', key: 'gantt', icon: <Timeline />, Component: GanttChart, wide: true },
   { slug: 'calculateur-ip', key: 'ipv4', icon: <Lan />, Component: IPv4Calculator },
   { slug: 'calculateur-ipv6', key: 'ipv6', icon: <Hub />, Component: IPv6Calculator },
   { slug: 'table-de-verite', key: 'truth', icon: <GridOn />, Component: TruthTable },

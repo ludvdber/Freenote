@@ -40,14 +40,11 @@ export default function ToolsIndex() {
     <Container maxWidth="lg" sx={s.container}>
       <Helmet>
         <html lang={i18n.language} />
-        <title>{`${t('tools.title')} — Freenote`}</title>
+        <title>{`${t('tools.title')} · Freenote`}</title>
         <meta name="description" content={t('tools.metaDescription')} />
         <link rel="canonical" href={canonical} />
-        <link rel="alternate" hrefLang="fr" href={canonical} />
-        <link rel="alternate" hrefLang="en" href={canonical} />
-        <link rel="alternate" hrefLang="x-default" href={canonical} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={`${t('tools.title')} — Freenote`} />
+        <meta property="og:title" content={`${t('tools.title')} · Freenote`} />
         <meta property="og:description" content={t('tools.metaDescription')} />
         <meta property="og:url" content={canonical} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

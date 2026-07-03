@@ -100,7 +100,7 @@ public class DiscordAnnounceService {
             }
             String line = "• [" + escapeMd(d.getTitle()) + "](" + frontendUrl + "/documents/" + d.getId() + ")";
             if (d.getCourse() != null && d.getCourse().getName() != null) {
-                line += " — " + escapeMd(d.getCourse().getName());
+                line += " · " + escapeMd(d.getCourse().getName());
             }
             description.append(line).append('\n');
             shown++;

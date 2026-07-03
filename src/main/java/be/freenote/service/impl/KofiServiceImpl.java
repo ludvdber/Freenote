@@ -51,6 +51,12 @@ public class KofiServiceImpl implements KofiService {
             return;
         }
 
+        // Null-guard séparé : new BigDecimal(null) lève un NPE (pas un NumberFormatException),
+        // qui serait avalé silencieusement par le catch générique du controller.
+        if (payload.getAmount() == null) {
+            log.warn("Ko-fi webhook: missing amount (type={})", type);
+            return;
+        }
         BigDecimal amount;
         try {
             amount = new BigDecimal(payload.getAmount());

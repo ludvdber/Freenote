@@ -25,7 +25,7 @@ export default function CoursePage() {
 
   return (
     <PageWrapper>
-      <Helmet><title>{courseName ? `${courseName} — Freenote` : 'Freenote'}</title></Helmet>
+      <Helmet><title>{courseName ? `${courseName} · Freenote` : 'Freenote'}</title></Helmet>
       <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 2 }}>
         <Box component={Link} to="/browse" sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
           {t('nav.browse')}

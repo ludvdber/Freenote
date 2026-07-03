@@ -10,7 +10,7 @@ export default function NotFound() {
 
   return (
     <PageWrapper maxWidth="sm">
-      <Helmet><title>{t('notFound.title')} — Freenote</title></Helmet>
+      <Helmet><title>{t('notFound.title')} · Freenote</title></Helmet>
       <Box sx={{ textAlign: 'center', py: { xs: 6, md: 12 } }}>
         <Typography
           variant="h1"

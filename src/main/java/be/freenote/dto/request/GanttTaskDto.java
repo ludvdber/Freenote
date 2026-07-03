@@ -10,5 +10,6 @@ public record GanttTaskDto(
         @Size(max = 10) String start,
         @Size(max = 10) String end,
         int progress,
-        @Size(max = 500) String dependencies
+        @Size(max = 500) String dependencies,
+        @Size(max = 60) String assignee
 ) {}

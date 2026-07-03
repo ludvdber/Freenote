@@ -6,12 +6,11 @@
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="canonical" href="https://freenote.be/" />
-    <link rel="alternate" hreflang="fr" href="https://freenote.be/" />
-    <link rel="alternate" hreflang="en" href="https://freenote.be/" />
-    <link rel="alternate" hreflang="x-default" href="https://freenote.be/" />
-    <meta name="description" content="Hub des documents des étudiants ISFCE — synthèses, exercices, notes de cours. Éclaire ta promo." />
-    <meta property="og:title" content="Freenote — Hub des documents ISFCE" />
-    <meta property="og:description" content="Synthèses, exercices, notes de cours — chaque document partagé aide la prochaine promo à réussir." />
+    <!-- Pas de hreflang : la langue est un choix client sur la MÊME URL ; des alternates
+         identiques fr/en sont invalides pour Google (chaque langue doit avoir sa propre URL). -->
+    <meta name="description" content="Hub des documents des étudiants ISFCE : synthèses, exercices, notes de cours. Éclaire ta promo." />
+    <meta property="og:title" content="Freenote, le hub des documents ISFCE" />
+    <meta property="og:description" content="Synthèses, exercices, notes de cours : chaque document partagé aide la prochaine promo à réussir." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://freenote.be/" />
     <meta property="og:site_name" content="Freenote" />
@@ -19,10 +18,10 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Freenote — Hub des documents ISFCE" />
-    <meta name="twitter:description" content="Synthèses, exercices, notes de cours — chaque document partagé aide la prochaine promo à réussir." />
+    <meta name="twitter:title" content="Freenote, le hub des documents ISFCE" />
+    <meta name="twitter:description" content="Synthèses, exercices, notes de cours : chaque document partagé aide la prochaine promo à réussir." />
     <meta name="twitter:image" content="https://freenote.be/og-image.png" />
-    <title>Freenote — Éclaire ta promo</title>
+    <title>Freenote : éclaire ta promo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- AdSense origin: open the connection early (Lighthouse-recommended, ~80 ms LCP). -->
@@ -41,23 +40,20 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <h1>FreeNote — Réussis plus vite, à plusieurs.</h1>
-      <p>Hub des documents des étudiants ISFCE — synthèses, exercices, notes de cours. Réservé aux étudiants de l'ISFCE.</p>
+      <h1>Freenote : réussis plus vite, à plusieurs.</h1>
+      <p>Hub des documents des étudiants ISFCE : synthèses, exercices, notes de cours. Réservé aux étudiants de l'ISFCE.</p>
       <p>Ce site nécessite JavaScript pour fonctionner.</p>
     </noscript>
+    <!-- Pas de SearchAction : la recherche du catalogue exige un compte vérifié, Google ne peut
+         pas l'exécuter — déclarer une action inaccessible ferait plus de mal que de bien. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "FreeNote",
+      "name": "Freenote",
       "url": "https://freenote.be/",
-      "description": "Hub des documents des étudiants ISFCE — synthèses, exercices, notes de cours.",
-      "inLanguage": ["fr", "en"],
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://freenote.be/browse?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
+      "description": "Hub des documents des étudiants ISFCE : synthèses, exercices, notes de cours.",
+      "inLanguage": ["fr", "en"]
     }
     </script>
     <script type="application/ld+json">

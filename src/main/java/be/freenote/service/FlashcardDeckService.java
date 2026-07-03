@@ -8,12 +8,21 @@ import org.springframework.data.domain.Pageable;
 
 public interface FlashcardDeckService {
 
-    FlashcardDeckResponse publish(Long userId, PublishDeckRequest request);
+    /** Enregistre un paquet sur le compte (privé) ou le publie, selon {@code published}. */
+    FlashcardDeckResponse save(Long userId, PublishDeckRequest request);
 
-    PageResponse<FlashcardDeckSummary> list(Long courseId, Pageable pageable);
+    /** Met à jour un paquet possédé (titre, cartes, cours, statut publié). Admin : modération. */
+    FlashcardDeckResponse update(Long userId, boolean isAdmin, Long id, PublishDeckRequest request);
 
-    FlashcardDeckResponse get(Long id);
+    /** Bibliothèque : paquets publiés uniquement. {@code callerId} sert à marquer {@code owned}. */
+    PageResponse<FlashcardDeckSummary> list(Long courseId, Pageable pageable, Long callerId);
 
-    /** Delete a shared deck — allowed for its owner or an admin (moderation). */
+    /** « Mes paquets » : tous les paquets du compte (privés + publiés), dernier modifié d'abord. */
+    PageResponse<FlashcardDeckSummary> mine(Long userId, Pageable pageable);
+
+    /** Paquet complet (cartes incluses) — un paquet privé n'est visible que de son propriétaire/admin. */
+    FlashcardDeckResponse get(Long id, Long callerId, boolean isAdmin);
+
+    /** Delete a deck — allowed for its owner or an admin (moderation). */
     void delete(Long userId, boolean isAdmin, Long id);
 }

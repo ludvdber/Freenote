@@ -62,14 +62,11 @@ export default function About() {
     <Container maxWidth="md" sx={s.container}>
       <Helmet>
         <html lang={i18n.language} />
-        <title>{`${t('about.metaTitle')} — Freenote`}</title>
+        <title>{`${t('about.metaTitle')} · Freenote`}</title>
         <meta name="description" content={t('about.metaDescription')} />
         <link rel="canonical" href={canonical} />
-        <link rel="alternate" hrefLang="fr" href={canonical} />
-        <link rel="alternate" hrefLang="en" href={canonical} />
-        <link rel="alternate" hrefLang="x-default" href={canonical} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={`${t('about.metaTitle')} — Freenote`} />
+        <meta property="og:title" content={`${t('about.metaTitle')} · Freenote`} />
         <meta property="og:description" content={t('about.metaDescription')} />
         <meta property="og:url" content={canonical} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

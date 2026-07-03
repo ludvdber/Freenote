@@ -1,5 +1,6 @@
 package be.freenote.repository;
 
+import be.freenote.dto.response.QuizListRow;
 import be.freenote.entity.Quiz;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,19 +21,28 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     void incrementAttemptCount(@Param("id") Long id);
 
     /**
-     * Newest-first listing with owner (+ profile, for the display name) and course fetch-joined in a
-     * single query — avoids N+1 over the page. ManyToOne fetch joins are pagination-safe. The ORDER BY
-     * lives in the query so callers pass an unsorted {@link Pageable}.
+     * Bibliothèque : quiz PUBLIÉS, plus récents d'abord, en PROJECTION (sans la colonne JSONB
+     * {@code questions} — un quiz peut peser plusieurs Mo d'images base64, charger l'entité entière
+     * pour une liste ferait exploser la heap). LEFT JOIN owner/profile/course : un seul SELECT.
      */
-    @Query(value = "SELECT q FROM Quiz q "
-            + "LEFT JOIN FETCH q.owner o LEFT JOIN FETCH o.profile LEFT JOIN FETCH q.course "
-            + "ORDER BY q.createdAt DESC",
-            countQuery = "SELECT COUNT(q) FROM Quiz q")
-    Page<Quiz> findAllForListing(Pageable pageable);
+    @Query("""
+        SELECT new be.freenote.dto.response.QuizListRow(
+            q.id, q.title, q.description, q.questionCount, q.attemptCount, q.published, q.createdAt,
+            o.id, o.username, p.displayRealName, p.firstName, p.lastName, c.id, c.name)
+        FROM Quiz q LEFT JOIN q.owner o LEFT JOIN o.profile p LEFT JOIN q.course c
+        WHERE q.published = true AND (:courseId IS NULL OR c.id = :courseId)
+        ORDER BY q.createdAt DESC
+        """)
+    Page<QuizListRow> findPublishedRows(@Param("courseId") Long courseId, Pageable pageable);
 
-    @Query(value = "SELECT q FROM Quiz q "
-            + "LEFT JOIN FETCH q.owner o LEFT JOIN FETCH o.profile LEFT JOIN FETCH q.course c "
-            + "WHERE c.id = :courseId ORDER BY q.createdAt DESC",
-            countQuery = "SELECT COUNT(q) FROM Quiz q WHERE q.course.id = :courseId")
-    Page<Quiz> findByCourseForListing(@Param("courseId") Long courseId, Pageable pageable);
+    /** « Mes quiz » : tous les quiz du propriétaire (privés + publiés), dernier modifié d'abord. */
+    @Query("""
+        SELECT new be.freenote.dto.response.QuizListRow(
+            q.id, q.title, q.description, q.questionCount, q.attemptCount, q.published, q.createdAt,
+            o.id, o.username, p.displayRealName, p.firstName, p.lastName, c.id, c.name)
+        FROM Quiz q JOIN q.owner o LEFT JOIN o.profile p LEFT JOIN q.course c
+        WHERE o.id = :ownerId
+        ORDER BY q.updatedAt DESC
+        """)
+    Page<QuizListRow> findMineRows(@Param("ownerId") Long ownerId, Pageable pageable);
 }

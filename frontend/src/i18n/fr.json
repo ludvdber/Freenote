@@ -21,7 +21,7 @@
   "hero": {
     "title": "Réussis plus vite",
     "titleHighlight": "à plusieurs.",
-    "subtitle": "Synthèses, exercices, notes de cours — chaque document partagé aide la prochaine promo à réussir.",
+    "subtitle": "Synthèses, exercices, notes de cours : chaque document partagé aide la prochaine promo à réussir.",
     "cta": "Explorer les cours",
     "ctaSecondary": "Partager un doc",
     "scrollDown": "Faire défiler",
@@ -38,7 +38,7 @@
   "popular": {
     "title": "Documents populaires",
     "viewAll": "Voir tout",
-    "empty": "Sois le premier à partager un doc — ta promo te dira merci."
+    "empty": "Sois le premier à partager un doc, ta promo te dira merci."
   },
   "leaderboard": {
     "title": "Top contributeurs",
@@ -63,8 +63,9 @@
   },
   "news": {
     "title": "Quoi de neuf à l'ISFCE",
+    "metaDescription": "Les actualités de l'ISFCE : rentrées, inscriptions, événements et annonces de l'école, relayées pour les étudiants.",
     "readMore": "Lire la suite",
-    "empty": "Rien de neuf pour l'instant — reviens bientôt.",
+    "empty": "Rien de neuf pour l'instant, reviens bientôt.",
     "back": "Retour aux actualités",
     "source": "Lire sur le blog de l'ISFCE",
     "notFound": "Actualité introuvable.",
@@ -72,9 +73,9 @@
   },
   "guides": {
     "title": "Guides",
-    "intro": "Des tutoriels clairs sur la programmation, les réseaux et les outils — rédigés pour les étudiants de l'ISFCE et ouverts à tous.",
+    "intro": "Des tutoriels clairs sur la programmation, les réseaux et les outils, rédigés pour les étudiants de l'ISFCE et ouverts à tous.",
     "metaDescription": "Guides et tutoriels gratuits : programmation Java, réseaux, outils informatiques. Des explications pas à pas pour les étudiants de l'ISFCE.",
-    "empty": "Aucun guide publié pour l'instant — reviens bientôt.",
+    "empty": "Aucun guide publié pour l'instant, reviens bientôt.",
     "read": "Lire le guide",
     "readTime": "{{count}} min de lecture",
     "backToList": "Retour aux guides",
@@ -84,7 +85,7 @@
     "title": "Ressources publiques",
     "intro": "Un aperçu des notes et documents divers partagés par les étudiants de l'ISFCE. Le contenu complet (PDF) reste réservé aux comptes vérifiés.",
     "metaDescription": "Aperçu des notes de cours et documents partagés par les étudiants de l'ISFCE. Connecte-toi avec une adresse @isfce.be vérifiée pour accéder aux documents complets.",
-    "metaDescriptionDoc": "{{title}} — {{category}}. Aperçu public d'un document partagé par la communauté étudiante ISFCE ; connecte-toi pour le consulter en entier.",
+    "metaDescriptionDoc": "{{title}} ({{category}}). Aperçu public d'un document partagé par la communauté étudiante ISFCE ; connecte-toi pour le consulter en entier.",
     "previewNotice": "Tu consultes un aperçu public. Connecte-toi avec ton adresse @isfce.be pour accéder aux documents complets.",
     "loginCta": "Se connecter",
     "empty": "Aucune ressource publique pour l'instant.",
@@ -111,7 +112,7 @@
     "discordRolesShort": "Rôles Discord liés à ton XP"
   },
   "ad": {
-    "disclaimer": "Pub — soutiens Freenote pour la cacher.",
+    "disclaimer": "Pub. Soutiens Freenote pour la cacher.",
     "loginHint": "Connecte-toi pour que ton don désactive les pubs."
   },
   "links": {
@@ -151,9 +152,9 @@
     "nextPage": "Page suivante",
     "zoomIn": "Agrandir",
     "zoomOut": "Réduire",
-    "pdfPageAria": "{{title}} — page {{page}}",
+    "pdfPageAria": "{{title}}, page {{page}}",
     "report": "Signaler",
-    "noResults": "Aucun document trouvé — essaie avec d'autres mots-clés.",
+    "noResults": "Aucun document trouvé. Essaie avec d'autres mots-clés.",
     "favorite": "Favori",
     "addFavorite": "Ajouter aux favoris",
     "removeFavorite": "Retirer des favoris",
@@ -178,7 +179,8 @@
       "users": "Utilisateurs",
       "donations": "Dons",
       "activity": "Logs",
-      "guides": "Guides"
+      "guides": "Guides",
+      "tools": "Outils"
     },
     "guides": {
       "title": "Guides",
@@ -207,7 +209,9 @@
       "view": "Voir le document",
       "all": "Tous les documents",
       "edit": "Modifier",
-      "deleteConfirm": "Supprimer définitivement ce document et son fichier ? Cette action est irréversible."
+      "deleteConfirm": "Supprimer définitivement ce document et son fichier ? Cette action est irréversible.",
+      "duplicates": "Doublons détectés ({{count}} groupes)",
+      "duplicatesHint": "Ces documents ont un contenu PDF strictement identique (même empreinte SHA-256). Garde le meilleur exemplaire et supprime les autres."
     },
     "sections": {
       "title": "Sections",
@@ -343,13 +347,23 @@
         "DOC_DELETE": "Suppression",
         "USER_BAN": "Bannissement"
       }
+    },
+    "toolsPanel": {
+      "hint": "Contenus partagés via les outils d'étude (quiz, paquets de cartes, projets Gantt). Supprime ce qui est inapproprié : l'auteur garde sa copie locale.",
+      "quizzes": "Quiz publiés",
+      "decks": "Paquets publiés",
+      "gantt": "Gantt partagés",
+      "empty": "Rien à modérer ici.",
+      "open": "Ouvrir l'outil",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer « {{name}} » de la bibliothèque partagée ?"
     }
   },
   "upload": {
     "title": "Partager un document",
     "dragDrop": "Glisse-dépose un PDF ou des photos ici, ou clique pour choisir",
-    "dropHint": "PDF (7 Mo max) ou jusqu'à 8 photos JPG/PNG — assemblées en un seul PDF.",
-    "invalidFileType": "Format non supporté — PDF, JPG ou PNG uniquement.",
+    "dropHint": "PDF (7 Mo max) ou jusqu'à 8 photos JPG/PNG, assemblées en un seul PDF.",
+    "invalidFileType": "Format non supporté : PDF, JPG ou PNG uniquement.",
     "imageTooLarge": "Chaque image doit faire moins de 8 Mo.",
     "maxImages": "8 images maximum par document.",
     "imagesCount": "{{count}}/{{max}} photos sélectionnées",
@@ -362,14 +376,14 @@
     "tooLarge": "Fichier trop volumineux. Réduis la taille ou le nombre d'images.",
     "maxSize": "Taille maximale : 7 Mo",
     "yearHelp": "Année entre 2000 et 2099",
-    "compressSuggestion": "Ton PDF fait plus de 5 Mo — pense à le compresser (ex : ilovepdf.com/compress_pdf) avant l'upload pour économiser de la bande passante.",
+    "compressSuggestion": "Ton PDF fait plus de 5 Mo : pense à le compresser (ex : ilovepdf.com/compress_pdf) avant l'upload pour économiser de la bande passante.",
     "submit": "Partager",
-    "success": "Doc partagé — merci pour ta promo !",
+    "success": "Doc partagé, merci pour ta promo !",
     "successMessage": "Ton document est en ligne ! Il sera vérifié par un modérateur sous 24-48h. Tu recevras tes XP après validation.",
-    "pdfOnly": "PDF uniquement pour l'instant — convertis ton fichier et réessaie.",
+    "pdfOnly": "PDF uniquement pour l'instant : convertis ton fichier et réessaie.",
     "titleCounter": "{{count}}/{{max}}",
     "titleDupWarning": "Un document du même titre existe déjà dans ce cours (tu peux quand même l'envoyer).",
-    "anonymousHelp": "Masque ton pseudo sur la page du document — les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même tes XP et tes contributions sur ton profil.",
+    "anonymousHelp": "Masque ton pseudo sur la page du document : les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même tes XP et tes contributions sur ton profil.",
     "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document.",
     "rateLimited": "Limite d'envoi atteinte (5 documents par heure). Réessaie dans {{time}}.",
     "rateLimitedNoTime": "Limite d'envoi atteinte (5 documents par heure). Réessaie un peu plus tard.",
@@ -380,10 +394,27 @@
     "title": "Mon profil",
     "bio": "Bio",
     "website": "Site web",
+    "websiteHelp": "L'adresse complète de ton site, avec https://",
     "social": "Réseaux",
     "socialGithub": "GitHub",
+    "socialGithubHelp": "Ton pseudo GitHub uniquement, pas l'adresse complète",
     "socialLinkedin": "LinkedIn",
+    "socialLinkedinHelp": "L'identifiant qui suit linkedin.com/in/ dans l'adresse de ton profil",
     "socialDiscord": "Discord",
+    "socialDiscordHelp": "Ton pseudo Discord (affiché tel quel, sans lien)",
+    "linksHelp": "Entre juste ton pseudo ou identifiant, on construit le lien pour toi.",
+    "journey": {
+      "title": "Parcours à l'ISFCE",
+      "help": "Affiché sur ton profil public si tu remplis les champs. Laisse vide pour ne rien montrer.",
+      "startYear": "Arrivé(e) en",
+      "endYear": "Fin (ou prévue) en",
+      "endYearHelp": "L'année de ton diplôme si tu as terminé",
+      "graduated": "J'ai terminé mes études à l'ISFCE",
+      "graduatedHelp": "Avec une année de fin, ton profil affichera un badge Promo.",
+      "promoPreview": "Ton profil affichera le badge « Promo {{year}} » 🎓",
+      "promoBadge": "Promo {{year}}",
+      "sinceYear": "À l'ISFCE depuis {{year}}"
+    },
     "documents": "Mes documents",
     "settings": "Paramètres",
     "theme": "Thème",
@@ -416,7 +447,7 @@
     "noFavorites": "Tu n'as pas encore de favoris.",
     "avatar": {
       "title": "Avatar",
-      "help": "Choisis comment ton avatar est affiché. Pas d'upload — la lettre de ton pseudo, un avatar généré, ou ta photo Discord.",
+      "help": "Choisis comment ton avatar est affiché. Pas d'upload : la lettre de ton pseudo, un avatar généré, ou ta photo Discord.",
       "source": {
         "AUTO": "Automatique",
         "LETTER": "Lettre",
@@ -468,7 +499,7 @@
   },
   "common": {
     "loading": "Chargement...",
-    "error": "Une erreur est survenue — réessaie dans un instant.",
+    "error": "Une erreur est survenue, réessaie dans un instant.",
     "errorTitle": "Oups",
     "errorRetry": "Retour à l'accueil",
     "cancel": "Annuler",
@@ -571,17 +602,26 @@
         "172.16.5.10 /30 → réseau 172.16.5.8, 2 hôtes utilisables seulement (liaison point-à-point)."
       ],
       "faq": [
-        { "q": "Quelle différence entre /24 et 255.255.255.0 ?", "a": "C'est la même chose écrite différemment : /24 signifie 24 bits réseau, ce qui correspond au masque décimal 255.255.255.0. L'outil convertit automatiquement entre les deux notations." },
-        { "q": "Pourquoi le nombre d'hôtes est inférieur de 2 à la taille du bloc ?", "a": "Dans un sous-réseau classique, la première adresse est l'adresse réseau et la dernière est le broadcast : elles ne sont pas attribuables à des machines, d'où le « -2 »." },
-        { "q": "Qu'est-ce que le masque wildcard ?", "a": "C'est l'inverse binaire du masque réseau (les 0 deviennent des 1). On l'utilise surtout dans les listes de contrôle d'accès (ACL) Cisco." }
+        {
+          "q": "Quelle différence entre /24 et 255.255.255.0 ?",
+          "a": "C'est la même chose écrite différemment : /24 signifie 24 bits réseau, ce qui correspond au masque décimal 255.255.255.0. L'outil convertit automatiquement entre les deux notations."
+        },
+        {
+          "q": "Pourquoi le nombre d'hôtes est inférieur de 2 à la taille du bloc ?",
+          "a": "Dans un sous-réseau classique, la première adresse est l'adresse réseau et la dernière est le broadcast : elles ne sont pas attribuables à des machines, d'où le « -2 »."
+        },
+        {
+          "q": "Qu'est-ce que le masque wildcard ?",
+          "a": "C'est l'inverse binaire du masque réseau (les 0 deviennent des 1). On l'utilise surtout dans les listes de contrôle d'accès (ACL) Cisco."
+        }
       ]
     },
     "mermaid": {
       "tab": "Diagrammes UML (Mermaid)",
       "name": "Éditeur de diagrammes UML en ligne (Mermaid)",
       "short": "Crée des diagrammes de classe, séquence, flux, ER ou Gantt à partir de texte, puis exporte en SVG/PNG.",
-      "lead": "Décris ton diagramme en texte Mermaid à gauche, vois le rendu à droite en temps réel. Diagrammes de classe (UML), séquence, flux, entité-association, états et Gantt — exportables en SVG ou PNG.",
-      "seoTitle": "Éditeur de diagrammes UML en ligne (Mermaid) — gratuit",
+      "lead": "Décris ton diagramme en texte Mermaid à gauche, vois le rendu à droite en temps réel. Diagrammes de classe (UML), séquence, flux, entité-association, états et Gantt, exportables en SVG ou PNG.",
+      "seoTitle": "Éditeur de diagrammes UML en ligne (Mermaid) gratuit",
       "seoDescription": "Crée des diagrammes UML (classe, séquence, flux, entité-association, états, Gantt) en ligne à partir de texte, gratuitement et sans inscription. Aperçu en direct et export SVG/PNG.",
       "codeLabel": "Code Mermaid",
       "previewEmpty": "Le diagramme s'affichera ici.",
@@ -597,8 +637,43 @@
         "state": "États",
         "gantt": "Gantt"
       },
+      "tryIt": "Essayer cet exemple",
+      "guideTitle": "Comment écrire en Mermaid ?",
+      "guideIntro": "L'essentiel de la syntaxe, type de diagramme par type de diagramme. Clique sur « Essayer cet exemple » pour charger l'extrait dans l'éditeur.",
+      "guide": [
+        {
+          "title": "La première ligne choisit le type de diagramme",
+          "text": "Chaque diagramme commence par un mot-clé : flowchart TD (organigramme de haut en bas, LR pour gauche-droite), classDiagram (classes UML), sequenceDiagram (séquence), erDiagram (entité-association), stateDiagram-v2 (états) ou gantt. Tout ce qui suit décrit le contenu.",
+          "code": "flowchart LR\n    A[Départ] --> B[Arrivée]"
+        },
+        {
+          "title": "Organigramme : boîtes, formes et flèches",
+          "text": "Chaque nœud a un identifiant et un texte : A[rectangle], B(coins arrondis), C{losange de décision}, D((cercle)). Les flèches se notent -->, avec une étiquette : A -- Oui --> B. Le même identifiant réutilisé pointe vers le même nœud.",
+          "code": "flowchart TD\n    A[Lire n] --> B{n pair ?}\n    B -- Oui --> C[Afficher pair]\n    B -- Non --> D[Afficher impair]\n    C --> E((Fin))\n    D --> E"
+        },
+        {
+          "title": "Diagramme de classes (UML)",
+          "text": "Déclare une classe avec class Nom { … } : + public, - privé, # protégé ; les méthodes finissent par (). Les relations : A <|-- B (B hérite de A), A --> B (association), A *-- B (composition), A o-- B (agrégation), avec cardinalités entre guillemets.",
+          "code": "classDiagram\n    class Compte {\n        -double solde\n        +deposer(montant)\n        +retirer(montant)\n    }\n    class Epargne {\n        +double taux\n    }\n    Compte <|-- Epargne\n    Client \"1\" --> \"*\" Compte : possède"
+        },
+        {
+          "title": "Diagramme de séquence",
+          "text": "Déclare les acteurs avec participant, puis les messages : A->>B: message pour un appel (flèche pleine), B-->>A: réponse pour un retour (flèche pointillée). alt/else et loop permettent les scénarios conditionnels et les boucles.",
+          "code": "sequenceDiagram\n    participant U as Utilisateur\n    participant S as Serveur\n    U->>S: POST /login\n    alt identifiants valides\n        S-->>U: 200 + cookie\n    else invalides\n        S-->>U: 401\n    end"
+        },
+        {
+          "title": "Entité-association (base de données)",
+          "text": "Les cardinalités se lisent des deux côtés du trait : || exactement un, o| zéro ou un, }| un ou plusieurs, }o zéro ou plusieurs. CLIENT ||--o{ COMMANDE : passe se lit « un client passe zéro ou plusieurs commandes ». Les attributs se listent entre accolades.",
+          "code": "erDiagram\n    CLIENT ||--o{ COMMANDE : passe\n    COMMANDE }|--|{ PRODUIT : contient\n    CLIENT {\n        int id PK\n        string nom\n        string email\n    }"
+        },
+        {
+          "title": "Astuces utiles",
+          "text": "%% commence un commentaire ignoré au rendu. <br/> force un retour à la ligne dans un nœud. Pour un texte avec espaces ou caractères spéciaux dans un flowchart, mets-le entre guillemets : A[\"Texte (avec parenthèses)\"]. En cas d'erreur de syntaxe, l'aperçu garde le dernier rendu valide et le message d'erreur indique la ligne fautive.",
+          "code": "flowchart TD\n    %% Ceci est un commentaire\n    A[\"Étape 1<br/>(initialisation)\"] --> B[Étape 2]"
+        }
+      ],
       "about": [
-        "Mermaid est une syntaxe textuelle qui transforme quelques lignes en un diagramme propre — pas besoin de souris ni de logiciel lourd. C'est idéal pour documenter un projet, réviser la modélisation UML ou illustrer un algorithme dans un rapport ou un TFE.",
+        "Mermaid est une syntaxe textuelle qui transforme quelques lignes en un diagramme propre, sans souris ni logiciel lourd. C'est idéal pour documenter un projet, réviser la modélisation UML ou illustrer un algorithme dans un rapport ou un TFE.",
         "Cet éditeur fonctionne entièrement dans ton navigateur : ton diagramme n'est jamais envoyé à un serveur. Écris le code à gauche, l'aperçu se met à jour à droite, puis exporte en SVG (vectoriel, parfait pour l'impression) ou en PNG (image à coller dans un document)."
       ],
       "examples": [
@@ -608,9 +683,18 @@
         "Diagramme entité-association (ER) pour modéliser une base de données."
       ],
       "faq": [
-        { "q": "Qu'est-ce que Mermaid ?", "a": "Mermaid est un langage de description de diagrammes : tu écris du texte structuré (par exemple « classDiagram ») et l'outil dessine le diagramme correspondant. C'est très utilisé pour documenter du code et des bases de données." },
-        { "q": "Mes diagrammes sont-ils envoyés sur Internet ?", "a": "Non. Tout le rendu se fait localement dans ton navigateur, rien n'est transmis à un serveur. Tu peux exporter le résultat en SVG ou PNG sur ton ordinateur." },
-        { "q": "Peut-on faire de l'UML complet ?", "a": "Mermaid couvre les diagrammes de classe, de séquence, d'états et entité-association, les plus utilisés en cours. Pour des diagrammes UML très spécifiques, un outil dédié peut rester nécessaire." }
+        {
+          "q": "Qu'est-ce que Mermaid ?",
+          "a": "Mermaid est un langage de description de diagrammes : tu écris du texte structuré (par exemple « classDiagram ») et l'outil dessine le diagramme correspondant. C'est très utilisé pour documenter du code et des bases de données."
+        },
+        {
+          "q": "Mes diagrammes sont-ils envoyés sur Internet ?",
+          "a": "Non. Tout le rendu se fait localement dans ton navigateur, rien n'est transmis à un serveur. Tu peux exporter le résultat en SVG ou PNG sur ton ordinateur."
+        },
+        {
+          "q": "Peut-on faire de l'UML complet ?",
+          "a": "Mermaid couvre les diagrammes de classe, de séquence, d'états et entité-association, les plus utilisés en cours. Pour des diagrammes UML très spécifiques, un outil dédié peut rester nécessaire."
+        }
       ]
     },
     "ipv6": {
@@ -634,7 +718,7 @@
       "scopes": {
         "global": "Unicast globale (2000::/3)",
         "linkLocal": "Lien-local (fe80::/10)",
-        "uniqueLocal": "Unique local — ULA (fc00::/7)",
+        "uniqueLocal": "Unique local / ULA (fc00::/7)",
         "loopback": "Boucle locale (::1)",
         "unspecified": "Non spécifiée (::)",
         "multicast": "Multicast (ff00::/8)",
@@ -650,9 +734,18 @@
         "::1 → adresse de boucle locale (équivalent IPv6 de 127.0.0.1)."
       ],
       "faq": [
-        { "q": "Que signifie « :: » dans une adresse IPv6 ?", "a": "Le double deux-points remplace la plus longue suite de groupes nuls, pour raccourcir l'écriture. Il ne peut apparaître qu'une seule fois dans une adresse." },
-        { "q": "Pourquoi un /64 est-il si courant ?", "a": "En IPv6, /64 est la taille standard d'un sous-réseau : les 64 premiers bits identifient le réseau, les 64 derniers l'interface. Un seul /64 contient déjà 2^64 adresses." },
-        { "q": "Qu'est-ce qu'une adresse ULA ?", "a": "Une adresse « unique local » (fc00::/7) est l'équivalent IPv6 des adresses privées : utilisable en interne mais non routable sur l'Internet public." }
+        {
+          "q": "Que signifie « :: » dans une adresse IPv6 ?",
+          "a": "Le double deux-points remplace la plus longue suite de groupes nuls, pour raccourcir l'écriture. Il ne peut apparaître qu'une seule fois dans une adresse."
+        },
+        {
+          "q": "Pourquoi un /64 est-il si courant ?",
+          "a": "En IPv6, /64 est la taille standard d'un sous-réseau : les 64 premiers bits identifient le réseau, les 64 derniers l'interface. Un seul /64 contient déjà 2^64 adresses."
+        },
+        {
+          "q": "Qu'est-ce qu'une adresse ULA ?",
+          "a": "Une adresse « unique local » (fc00::/7) est l'équivalent IPv6 des adresses privées : utilisable en interne mais non routable sur l'Internet public."
+        }
       ]
     },
     "truth": {
@@ -672,7 +765,7 @@
       "minimized": "Simplifiée",
       "about": [
         "Une table de vérité énumère toutes les combinaisons possibles des variables d'une expression logique et donne le résultat pour chacune. Pour n variables, il y a 2^n lignes. C'est l'outil de base des cours de logique, d'électronique numérique et d'algorithmique.",
-        "Au-delà de la table, cet outil donne la forme canonique en somme de produits (un terme par ligne vraie) puis une forme simplifiée obtenue par l'algorithme de Quine-McCluskey — l'équivalent algorithmique des tableaux de Karnaugh — pour réduire l'expression au minimum de termes."
+        "Au-delà de la table, cet outil donne la forme canonique en somme de produits (un terme par ligne vraie) puis une forme simplifiée obtenue par l'algorithme de Quine-McCluskey (l'équivalent algorithmique des tableaux de Karnaugh) pour réduire l'expression au minimum de termes."
       ],
       "examples": [
         "A and B → vrai uniquement quand A et B valent 1.",
@@ -681,17 +774,26 @@
         "A xor B → ¬A·B + A·¬B (ou exclusif)."
       ],
       "faq": [
-        { "q": "Quels opérateurs sont acceptés ?", "a": "ET (&, ., and), OU (|, +, or), NON (!, ~, not) et OU exclusif (^, xor), avec des parenthèses. Les variables sont des lettres seules comme A, B, C." },
-        { "q": "Qu'est-ce qu'un minterm ?", "a": "Un minterm est une ligne de la table où le résultat vaut 1, écrite comme un produit de toutes les variables (niées si elles valent 0). La somme des minterms donne la forme canonique." },
-        { "q": "Comment l'expression est-elle simplifiée ?", "a": "Par l'algorithme de Quine-McCluskey : il regroupe les minterms qui ne diffèrent que d'un bit pour éliminer les variables redondantes, puis choisit les impliquants premiers essentiels. C'est l'équivalent systématique des tableaux de Karnaugh." }
+        {
+          "q": "Quels opérateurs sont acceptés ?",
+          "a": "ET (&, ., and), OU (|, +, or), NON (!, ~, not) et OU exclusif (^, xor), avec des parenthèses. Les variables sont des lettres seules comme A, B, C."
+        },
+        {
+          "q": "Qu'est-ce qu'un minterm ?",
+          "a": "Un minterm est une ligne de la table où le résultat vaut 1, écrite comme un produit de toutes les variables (niées si elles valent 0). La somme des minterms donne la forme canonique."
+        },
+        {
+          "q": "Comment l'expression est-elle simplifiée ?",
+          "a": "Par l'algorithme de Quine-McCluskey : il regroupe les minterms qui ne diffèrent que d'un bit pour éliminer les variables redondantes, puis choisit les impliquants premiers essentiels. C'est l'équivalent systématique des tableaux de Karnaugh."
+        }
       ]
     },
     "gantt": {
       "tab": "Diagramme de Gantt",
       "name": "Diagramme de Gantt en ligne",
       "short": "Planifie un projet : tâches, dates, dépendances et avancement, avec export et partage.",
-      "lead": "Ajoute tes tâches avec leurs dates, leur avancement et leurs dépendances : le diagramme de Gantt se dessine automatiquement. Exporte en JSON, CSV ou PNG ; connecte-toi pour sauvegarder et partager tes projets.",
-      "seoTitle": "Diagramme de Gantt en ligne — gratuit",
+      "lead": "Planifie ton projet à la souris : glisse les barres pour déplacer les tâches, tire leurs bords pour ajuster les durées, assigne chaque tâche à un travailleur (une couleur par personne). Exporte en JSON, CSV ou PNG ; connecte-toi pour sauvegarder et partager tes projets.",
+      "seoTitle": "Diagramme de Gantt en ligne gratuit",
       "seoDescription": "Crée un diagramme de Gantt en ligne gratuitement : tâches, dates, dépendances et avancement, avec export JSON/CSV/PNG. Sauvegarde et partage pour les étudiants ISFCE vérifiés.",
       "tabEditor": "Éditeur",
       "tabMine": "Mes projets",
@@ -706,6 +808,15 @@
       "viewDay": "Jour",
       "viewWeek": "Semaine",
       "viewMonth": "Mois",
+      "workersTitle": "Travailleurs",
+      "workersHint": "Ajoute les membres de ton groupe : chaque travailleur a sa couleur, visible sur les barres des tâches qu'on lui assigne.",
+      "workerPlaceholder": "Nom du travailleur…",
+      "addWorker": "Ajouter le travailleur",
+      "assignee": "Assigné à",
+      "noAssignee": "Personne",
+      "dragHint": "Glisse une barre pour déplacer la tâche, tire ses bords pour changer les dates. Clique sur une barre pour éditer les détails en dessous.",
+      "emptyChart": "Ajoute une tâche avec un nom pour voir le diagramme.",
+      "taskColumn": "Tâches",
       "import": "Importer (JSON)",
       "importError": "Fichier invalide.",
       "save": "Enregistrer",
@@ -738,9 +849,18 @@
         "Suivre l'avancement d'un stage semaine par semaine."
       ],
       "faq": [
-        { "q": "Qu'est-ce qu'un diagramme de Gantt ?", "a": "C'est une représentation visuelle d'un planning : chaque tâche est une barre positionnée selon ses dates de début et de fin. Les barres peuvent être reliées pour montrer les dépendances entre tâches." },
-        { "q": "Mes projets sont-ils privés ?", "a": "Oui. Un projet enregistré n'est visible que par toi, sauf si tu choisis explicitement de le « Partager » : il rejoint alors la bibliothèque des étudiants vérifiés. Sans compte, tout reste local dans ton navigateur." },
-        { "q": "Peut-on exporter le planning ?", "a": "Oui : en PNG (image pour un rapport), en CSV (pour Excel ou Google Sheets) et en JSON (sauvegarde réimportable). L'export fonctionne même sans compte." }
+        {
+          "q": "Qu'est-ce qu'un diagramme de Gantt ?",
+          "a": "C'est une représentation visuelle d'un planning : chaque tâche est une barre positionnée selon ses dates de début et de fin. Les barres peuvent être reliées pour montrer les dépendances entre tâches."
+        },
+        {
+          "q": "Mes projets sont-ils privés ?",
+          "a": "Oui. Un projet enregistré n'est visible que par toi, sauf si tu choisis explicitement de le « Partager » : il rejoint alors la bibliothèque des étudiants vérifiés. Sans compte, tout reste local dans ton navigateur."
+        },
+        {
+          "q": "Peut-on exporter le planning ?",
+          "a": "Oui : en PNG (image pour un rapport), en CSV (pour Excel ou Google Sheets) et en JSON (sauvegarde réimportable). L'export fonctionne même sans compte."
+        }
       ]
     },
     "base": {
@@ -774,8 +894,14 @@
         "Le caractère « A » a le code décimal 65, soit 0x41 en hexadécimal."
       ],
       "faq": [
-        { "q": "À quoi sert l'hexadécimal en informatique ?", "a": "L'hexadécimal est compact : deux chiffres hex représentent exactement un octet (8 bits). On le retrouve dans les couleurs web (#FF8800), les adresses mémoire et les codes d'erreur." },
-        { "q": "Pourquoi mon entrée est refusée ?", "a": "Chaque base n'accepte que certains symboles : le binaire seulement 0 et 1, l'octal 0 à 7, l'hexadécimal 0 à 9 et A à F. Un caractère hors de cet ensemble est signalé comme invalide." }
+        {
+          "q": "À quoi sert l'hexadécimal en informatique ?",
+          "a": "L'hexadécimal est compact : deux chiffres hex représentent exactement un octet (8 bits). On le retrouve dans les couleurs web (#FF8800), les adresses mémoire et les codes d'erreur."
+        },
+        {
+          "q": "Pourquoi mon entrée est refusée ?",
+          "a": "Chaque base n'accepte que certains symboles : le binaire seulement 0 et 1, l'octal 0 à 7, l'hexadécimal 0 à 9 et A à F. Un caractère hors de cet ensemble est signalé comme invalide."
+        }
       ]
     },
     "base64": {
@@ -801,8 +927,14 @@
         "Une image peut être intégrée dans une page via une URL data:image/png;base64,…"
       ],
       "faq": [
-        { "q": "Le Base64 protège-t-il mes données ?", "a": "Non. Le Base64 est un encodage réversible, pas un chiffrement. Tout le monde peut décoder la chaîne. Pour protéger des données, il faut un vrai chiffrement." },
-        { "q": "Mes données sont-elles envoyées quelque part ?", "a": "Non, l'encodage et le décodage se font entièrement dans ton navigateur. Rien n'est transmis au serveur." }
+        {
+          "q": "Le Base64 protège-t-il mes données ?",
+          "a": "Non. Le Base64 est un encodage réversible, pas un chiffrement. Tout le monde peut décoder la chaîne. Pour protéger des données, il faut un vrai chiffrement."
+        },
+        {
+          "q": "Mes données sont-elles envoyées quelque part ?",
+          "a": "Non, l'encodage et le décodage se font entièrement dans ton navigateur. Rien n'est transmis au serveur."
+        }
       ]
     },
     "jwt": {
@@ -811,8 +943,8 @@
       "short": "Décode l'en-tête et le contenu d'un JWT. 100 % local, rien n'est envoyé au serveur.",
       "lead": "Colle un JSON Web Token pour lire son en-tête, son contenu (claims) et vérifier ses dates d'émission et d'expiration. Le décodage est entièrement local.",
       "seoTitle": "Décodeur JWT en ligne (100 % local)",
-      "seoDescription": "Décode un JSON Web Token (JWT) : en-tête, payload, dates d'émission et d'expiration. Outil 100 % local — le token n'est jamais envoyé à un serveur.",
-      "help": "Colle un JSON Web Token ci-dessous. Tout reste local — le token n'est jamais envoyé au serveur.",
+      "seoDescription": "Décode un JSON Web Token (JWT) : en-tête, payload, dates d'émission et d'expiration. Outil 100 % local : le token n'est jamais envoyé à un serveur.",
+      "help": "Colle un JSON Web Token ci-dessous. Tout reste local : le token n'est jamais envoyé au serveur.",
       "tokenLabel": "Token JWT",
       "header": "En-tête",
       "payload": "Contenu",
@@ -825,7 +957,7 @@
       "issuedAt": "Émis le",
       "expiresAt": "Expire le",
       "about": [
-        "Un JSON Web Token (JWT) est une chaîne composée de trois parties séparées par des points : un en-tête, un contenu (les « claims ») et une signature. Les deux premières parties sont simplement encodées en Base64URL — elles sont donc lisibles par tout le monde, ce n'est pas du chiffrement.",
+        "Un JSON Web Token (JWT) est une chaîne composée de trois parties séparées par des points : un en-tête, un contenu (les « claims ») et une signature. Les deux premières parties sont simplement encodées en Base64URL : elles sont donc lisibles par tout le monde, ce n'est pas du chiffrement.",
         "Cet outil décode l'en-tête et le contenu, et interprète les champs de dates standards (iat pour l'émission, exp pour l'expiration) afin de te dire si le token est encore valide. La signature, elle, sert à garantir l'intégrité côté serveur et ne peut pas être vérifiée sans la clé de l'émetteur."
       ],
       "examples": [
@@ -834,15 +966,21 @@
         "Le segment d'en-tête révèle l'algorithme de signature, par exemple HS256 ou RS256."
       ],
       "faq": [
-        { "q": "Décoder un JWT révèle-t-il des informations secrètes ?", "a": "Le contenu d'un JWT est seulement encodé, pas chiffré : il est lisible par quiconque possède le token. Il ne faut donc jamais y mettre de mot de passe ou de donnée sensible." },
-        { "q": "Pourquoi la signature n'est-elle pas vérifiée ?", "a": "Vérifier la signature nécessite la clé secrète (HS256) ou la clé publique (RS256) de l'émetteur. Cet outil reste 100 % local et ne dispose pas de ces clés, il décode donc sans valider la signature." }
+        {
+          "q": "Décoder un JWT révèle-t-il des informations secrètes ?",
+          "a": "Le contenu d'un JWT est seulement encodé, pas chiffré : il est lisible par quiconque possède le token. Il ne faut donc jamais y mettre de mot de passe ou de donnée sensible."
+        },
+        {
+          "q": "Pourquoi la signature n'est-elle pas vérifiée ?",
+          "a": "Vérifier la signature nécessite la clé secrète (HS256) ou la clé publique (RS256) de l'émetteur. Cet outil reste 100 % local et ne dispose pas de ces clés, il décode donc sans valider la signature."
+        }
       ]
     },
     "grade": {
       "tab": "Moyenne pondérée",
       "name": "Calculateur de moyenne pondérée",
       "short": "Calcule ta moyenne par cours avec coefficients, et la note finale du diplôme (TFE inclus).",
-      "lead": "Entre tes notes et leurs pondérations pour obtenir ta moyenne pondérée — avec un mode diplôme où le TFE (épreuve intégrée) compte pour deux tiers de la note finale.",
+      "lead": "Entre tes notes et leurs pondérations pour obtenir ta moyenne pondérée, avec un mode diplôme où le TFE (épreuve intégrée) compte pour deux tiers de la note finale.",
       "seoTitle": "Calculateur de moyenne pondérée (sur 20)",
       "seoDescription": "Calcule gratuitement ta moyenne pondérée par coefficients et ta note finale de diplôme (TFE = 2/3). Outil en ligne pour étudiants, sur 20 ou sur 100.",
       "courseName": "Cours",
@@ -878,7 +1016,7 @@
       "mentionHighestDistinction": "La plus grande distinction",
       "about": [
         "La moyenne pondérée tient compte du « poids » de chaque cours : un cours avec un coefficient 3 pèse trois fois plus qu'un cours à coefficient 1. Le calcul additionne chaque note multipliée par son coefficient, puis divise par la somme des coefficients. Laisse tous les coefficients à 1 pour une moyenne simple.",
-        "Le mode diplôme combine la moyenne des cours retenus et la note du TFE (épreuve intégrée). Tu choisis le pourcentage du TFE (deux tiers par défaut, comme à l'ISFCE) et tu coches les cours qui comptent — car tous les cours du bachelier n'entrent pas forcément dans la moyenne du diplôme.",
+        "Le mode diplôme combine la moyenne des cours retenus et la note du TFE (épreuve intégrée). Tu choisis le pourcentage du TFE (deux tiers par défaut, comme à l'ISFCE) et tu coches les cours qui comptent, car tous les cours du bachelier n'entrent pas forcément dans la moyenne du diplôme.",
         "Le résultat affiche aussi la mention obtenue selon le barème de l'enseignement supérieur belge : réussite avec fruit de 50 à 60 %, satisfaction de 60 à 70 %, distinction de 70 à 80 %, grande distinction de 80 à 90 % et la plus grande distinction à partir de 90 %. Le seuil de réussite est fixé à 50 % (soit 10/20)."
       ],
       "examples": [
@@ -887,28 +1025,41 @@
         "Tu règles la part du TFE à 50 % : la note finale devient la moyenne simple entre tes cours retenus et ton TFE."
       ],
       "faq": [
-        { "q": "Comment fonctionne la pondération du TFE ?", "a": "Le TFE (épreuve intégrée) pèse lourd dans un bachelier. Par défaut l'outil lui donne deux tiers de la note finale et un tiers à la moyenne des cours retenus, mais tu peux changer ce pourcentage pour coller aux règles de ta section ou de ton école." },
-        { "q": "Pourquoi cocher les cours ?", "a": "Tous les cours d'un bachelier n'entrent pas forcément dans la moyenne qui détermine le diplôme. En mode diplôme, coche uniquement les cours retenus : seuls ceux-là sont moyennés avant d'être combinés avec le TFE." },
-        { "q": "Comment sont calculées les mentions ?", "a": "L'outil suit le barème belge de l'enseignement supérieur (ISFCE) : moins de 50 % = échec, 50 à 60 % = réussite avec fruit, 60 à 70 % = satisfaction, 70 à 80 % = distinction, 80 à 90 % = grande distinction, 90 % et plus = la plus grande distinction." },
-        { "q": "Que mettre comme coefficient ?", "a": "Mets le poids relatif de chaque cours. Si tu ne connais pas les coefficients officiels, laisse-les tous à 1 : tu obtiens une moyenne arithmétique classique." }
+        {
+          "q": "Comment fonctionne la pondération du TFE ?",
+          "a": "Le TFE (épreuve intégrée) pèse lourd dans un bachelier. Par défaut l'outil lui donne deux tiers de la note finale et un tiers à la moyenne des cours retenus, mais tu peux changer ce pourcentage pour coller aux règles de ta section ou de ton école."
+        },
+        {
+          "q": "Pourquoi cocher les cours ?",
+          "a": "Tous les cours d'un bachelier n'entrent pas forcément dans la moyenne qui détermine le diplôme. En mode diplôme, coche uniquement les cours retenus : seuls ceux-là sont moyennés avant d'être combinés avec le TFE."
+        },
+        {
+          "q": "Comment sont calculées les mentions ?",
+          "a": "L'outil suit le barème belge de l'enseignement supérieur (ISFCE) : moins de 50 % = échec, 50 à 60 % = réussite avec fruit, 60 à 70 % = satisfaction, 70 à 80 % = distinction, 80 à 90 % = grande distinction, 90 % et plus = la plus grande distinction."
+        },
+        {
+          "q": "Que mettre comme coefficient ?",
+          "a": "Mets le poids relatif de chaque cours. Si tu ne connais pas les coefficients officiels, laisse-les tous à 1 : tu obtiens une moyenne arithmétique classique."
+        }
       ]
     },
     "flashcards": {
       "tab": "Flashcards",
-      "name": "Flashcards — cartes de révision",
+      "name": "Flashcards et cartes de révision",
       "short": "Crée tes cartes de révision, révise en répétition espacée, et exporte-les vers Anki.",
-      "lead": "Crée des paquets de cartes recto-verso, révise-les en répétition espacée et exporte-les au format compatible Anki. Tout reste dans ton navigateur — rien n'est envoyé sur un serveur.",
-      "seoTitle": "Flashcards en ligne — cartes de révision (compatible Anki)",
+      "lead": "Crée des paquets de cartes recto-verso, révise-les en répétition espacée et exporte-les au format compatible Anki. Tout reste dans ton navigateur : rien n'est envoyé sur un serveur.",
+      "seoTitle": "Flashcards en ligne : cartes de révision (compatible Anki)",
       "seoDescription": "Crée et révise gratuitement tes cartes de révision en répétition espacée. Import/export compatible Anki, 100 % dans ton navigateur, sans inscription.",
       "deck": "Paquet",
       "newDeck": "Nouveau paquet",
       "deckName": "Nom du paquet",
-      "deckNamePlaceholder": "Ex. : Comptabilité — TVA",
+      "deckNamePlaceholder": "Ex. : Comptabilité TVA",
       "createDeck": "Créer le paquet",
       "deleteDeck": "Supprimer le paquet",
       "confirmDeleteDeck": "Supprimer le paquet « {{name}} » et toutes ses cartes ?",
       "emptyTitle": "Aucun paquet pour l'instant",
-      "emptyHint": "Crée ton premier paquet de cartes pour commencer à réviser.",
+      "emptyHint": "Crée ton premier paquet de cartes pour commencer à réviser. Tu utilises déjà Anki ? Ouvre un paquet et importe directement ton fichier .apkg.",
+      "ankiImportHint": "Compatible Anki : le bouton Importer accepte un paquet .apkg exporté depuis Anki, ou un fichier CSV/TSV (recto ; verso).",
       "cardsCount": "{{count}} cartes",
       "dueCount": "{{count}} à réviser",
       "addCard": "Ajouter une carte",
@@ -923,7 +1074,7 @@
       "importEmpty": "Aucune carte trouvée dans le fichier.",
       "importApkgRecent": "Ce paquet utilise le format Anki récent (compressé). Dans Anki, ré-exporte-le en cochant « Supporter les anciennes versions d'Anki », ou importe un fichier CSV.",
       "noCards": "Ce paquet est vide. Ajoute une carte ou importe un fichier.",
-      "scheduled": "Programmée — revient à réviser plus tard",
+      "scheduled": "Programmée : revient à réviser plus tard",
       "dayShort": "j",
       "deleteCard": "Supprimer la carte",
       "review": "Réviser",
@@ -954,7 +1105,7 @@
       "exportAnki": "Vers Anki (.tsv)",
       "exportBackup": "Sauvegarde (JSON)",
       "storageLocal": "Enregistré dans ce navigateur",
-      "storageLocalHint": "Tes paquets sont stockés localement (dans ce navigateur). Rien n'est envoyé sur un serveur — sauf si tu cliques sur « Publier ». Exporte une sauvegarde JSON avant de vider ton cache ou de changer d'appareil.",
+      "storageLocalHint": "Tes paquets sont stockés localement (dans ce navigateur). Rien n'est envoyé sur un serveur, sauf si tu cliques sur « Publier ». Exporte une sauvegarde JSON avant de vider ton cache ou de changer d'appareil.",
       "sharedChip": "Partagé",
       "sharedAtTooltip": "Une copie a été publiée le {{date}} et apparaît dans « Paquets partagés ». Re-publier créera une nouvelle copie.",
       "shareTooltip": "Publie une copie sur le serveur, visible des étudiants vérifiés. Tes paquets ne sont jamais envoyés automatiquement.",
@@ -966,9 +1117,9 @@
       "studyAll": "Tout revoir",
       "studyAllTooltip": "Revoir toutes les cartes maintenant, quelle que soit leur échéance.",
       "reviewTooltip": "Révise les cartes dues aujourd'hui (répétition espacée).",
-      "nothingDue": "Rien à réviser pour l'instant — clique sur « Tout revoir » pour t'entraîner.",
+      "nothingDue": "Rien à réviser pour l'instant. Clique sur « Tout revoir » pour t'entraîner.",
       "noCardsYet": "Ajoute des cartes pour commencer à réviser.",
-      "libraryIntro": "Des paquets partagés par d'autres étudiants vérifiés. Importe-en un dans « Mes paquets » pour le réviser — c'est une copie modifiable, indépendante de l'original.",
+      "libraryIntro": "Des paquets partagés par d'autres étudiants vérifiés. Importe-en un dans « Mes paquets » pour le réviser : c'est une copie modifiable, indépendante de l'original.",
       "importToMine": "Importer dans mes paquets",
       "myDecksHint": "Tes paquets, enregistrés dans ce navigateur.",
       "openDeck": "Ouvrir",
@@ -977,7 +1128,7 @@
       "republish": "Republier",
       "publishedOn": "Publié le {{date}} dans la bibliothèque.",
       "backToDecks": "Retour aux paquets",
-      "importedToMine": "{{count}} cartes importées — disponibles dans « Mes paquets ».",
+      "importedToMine": "{{count}} cartes importées, disponibles dans « Mes paquets ».",
       "imported": "Importé",
       "importedHint": "Ajouté à « Mes paquets ». Ouvre l'onglet Mes paquets pour le réviser.",
       "rating": {
@@ -987,28 +1138,54 @@
         "easy": "Facile"
       },
       "about": [
-        "Les flashcards (cartes de révision) sont l'une des méthodes les plus efficaces pour mémoriser : une question au recto, la réponse au verso, et on s'auto-teste. La répétition espacée va plus loin — chaque carte revient à réviser juste avant que tu ne l'oublies, ce qui ancre l'information en mémoire à long terme avec un minimum d'efforts.",
-        "Cet outil fonctionne entièrement dans ton navigateur : tes cartes sont enregistrées localement, rien n'est envoyé sur un serveur et aucun compte n'est requis. Tu peux créer plusieurs paquets — un par cours ou par chapitre — et ne réviser que les cartes dues du jour.",
+        "Les flashcards (cartes de révision) sont l'une des méthodes les plus efficaces pour mémoriser : une question au recto, la réponse au verso, et on s'auto-teste. La répétition espacée va plus loin : chaque carte revient à réviser juste avant que tu ne l'oublies, ce qui ancre l'information en mémoire à long terme avec un minimum d'efforts.",
+        "Cet outil fonctionne entièrement dans ton navigateur : tes cartes sont enregistrées localement, rien n'est envoyé sur un serveur et aucun compte n'est requis. Tu peux créer plusieurs paquets (un par cours ou par chapitre) et ne réviser que les cartes dues du jour.",
         "À chaque carte tu juges ta réponse (À revoir, Difficile, Correct, Facile) : l'algorithme de répétition espacée calcule alors le prochain rappel, de quelques minutes à plusieurs jours. Tu peux aussi importer un fichier CSV/TSV ou exporter tes cartes au format compatible Anki pour les réviser sur mobile."
       ],
       "examples": [
-        "Crée un paquet « Réseaux — Subnetting », ajoute une carte (recto : « Masque /26 ? » → verso : « 255.255.255.192 »), puis lance la révision.",
+        "Crée un paquet « Réseaux / Subnetting », ajoute une carte (recto : « Masque /26 ? » → verso : « 255.255.255.192 »), puis lance la révision.",
         "Importe un fichier où chaque ligne contient le recto, une tabulation, puis le verso : toutes les cartes sont ajoutées d'un coup.",
         "Exporte ton paquet en .tsv et importe-le dans Anki sur ton téléphone pour réviser dans les transports."
       ],
       "faq": [
-        { "q": "Mes cartes sont-elles envoyées sur un serveur ?", "a": "Non. Tout est stocké dans ton navigateur (localStorage). Si tu changes d'ordinateur ou vides le cache, pense à exporter une sauvegarde JSON au préalable." },
-        { "q": "Est-ce vraiment compatible avec Anki ?", "a": "Oui, dans les deux sens. Tu peux importer directement un paquet Anki (.apkg) pour récupérer ses cartes basiques. Pour l'export, l'outil génère un fichier texte tabulé (TSV) qu'Anki importe nativement : dans Anki, choisis Fichier → Importer, sélectionne le fichier et associe le premier champ au recto, le second au verso." },
-        { "q": "Comment fonctionne la répétition espacée ?", "a": "Chaque carte a un intervalle qui s'allonge à chaque bonne réponse (1 jour, puis quelques jours, puis de plus en plus). Si tu réponds « À revoir », la carte redevient immédiatement à réviser. C'est le principe de l'algorithme SM-2, celui utilisé par Anki." },
-        { "q": "Puis-je créer plusieurs paquets ?", "a": "Oui, autant que tu veux — un par cours, par chapitre ou par examen. Le sélecteur en haut permet de basculer de l'un à l'autre." }
-      ]
+        {
+          "q": "Mes cartes sont-elles envoyées sur un serveur ?",
+          "a": "Non. Tout est stocké dans ton navigateur (localStorage). Si tu changes d'ordinateur ou vides le cache, pense à exporter une sauvegarde JSON au préalable."
+        },
+        {
+          "q": "Est-ce vraiment compatible avec Anki ?",
+          "a": "Oui, dans les deux sens. Tu peux importer directement un paquet Anki (.apkg) pour récupérer ses cartes basiques. Pour l'export, l'outil génère un fichier texte tabulé (TSV) qu'Anki importe nativement : dans Anki, choisis Fichier → Importer, sélectionne le fichier et associe le premier champ au recto, le second au verso."
+        },
+        {
+          "q": "Comment fonctionne la répétition espacée ?",
+          "a": "Chaque carte a un intervalle qui s'allonge à chaque bonne réponse (1 jour, puis quelques jours, puis de plus en plus). Si tu réponds « À revoir », la carte redevient immédiatement à réviser. C'est le principe de l'algorithme SM-2, celui utilisé par Anki."
+        },
+        {
+          "q": "Puis-je créer plusieurs paquets ?",
+          "a": "Oui, autant que tu veux : un par cours, par chapitre ou par examen. Le sélecteur en haut permet de basculer de l'un à l'autre."
+        }
+      ],
+      "localChip": "Local",
+      "savedChip": "Enregistré",
+      "publishedChip": "Publié",
+      "saveOnline": "Enregistrer en ligne",
+      "updateOnline": "Mettre à jour en ligne",
+      "saveOnlineOk": "Paquet enregistré sur ton compte (privé) ✓",
+      "saveOnlineTooltip": "Sauvegarde privée sur ton compte : retrouve-le depuis n'importe quel appareil.",
+      "unpublish": "Dépublier",
+      "confirmDeleteLinked": "Supprimer « {{name}} » ? Sa copie en ligne sera aussi supprimée.",
+      "onlineOnlyTitle": "Enregistrés en ligne (pas sur cet appareil)",
+      "importToDevice": "Récupérer sur cet appareil",
+      "anonHint": "Ici, tout reste sur cet appareil (exporte régulièrement !). Connecte-toi avec ton compte ISFCE pour enregistrer tes paquets en ligne et les publier dans la bibliothèque.",
+      "searchDecks": "Rechercher un paquet…",
+      "searchNoResult": "Aucun paquet ne correspond à ta recherche."
     },
     "quiz": {
       "tab": "Quiz",
-      "name": "Quiz interactif — crée et partage tes QCM",
+      "name": "Quiz interactif : crée et partage tes QCM",
       "short": "Crée des QCM, joue, partage par lien et grimpe au classement.",
-      "lead": "Crée des QCM (questions à choix multiples), entraîne-toi, partage-les par lien à tes camarades et comparez vos scores au classement. Tes quiz restent dans ton navigateur — tu décides quand les publier.",
-      "seoTitle": "Quiz & QCM en ligne — crée, partage et joue gratuitement",
+      "lead": "Crée des QCM (questions à choix multiples), entraîne-toi, partage-les par lien à tes camarades et comparez vos scores au classement. Tes quiz restent dans ton navigateur : tu décides quand les publier.",
+      "seoTitle": "Quiz et QCM en ligne : crée, partage et joue gratuitement",
       "seoDescription": "Crée gratuitement tes QCM de révision, partage-les par lien et défie tes camarades au classement (score + rapidité). 100 % dans ton navigateur, sans inscription pour jouer.",
       "tabMine": "Mes quiz",
       "tabLibrary": "Bibliothèque",
@@ -1023,11 +1200,15 @@
       "typeOpen": "Réponse ouverte",
       "addImage": "Ajouter une image",
       "removeImage": "Retirer l'image",
-      "imageHint": "Visible uniquement dans les quiz publiés — pas dans le lien de partage.",
+      "imageHint": "Visible uniquement dans les quiz publiés, pas dans le lien de partage.",
       "addCode": "Ajouter du code",
       "removeCode": "Retirer le code",
       "codePlaceholder": "Colle ton extrait de code ici…",
       "languagePlaceholder": "Langage (java, python…)",
+      "languageLabel": "Langage",
+      "languageNone": "Aucun (texte brut)",
+      "languageOther": "Autre…",
+      "languageCustom": "Langage personnalisé",
       "expectedAnswer": "Réponse attendue",
       "openHint": "Comparaison insensible à la casse et aux espaces.",
       "yourAnswer": "Ta réponse",
@@ -1072,7 +1253,7 @@
       "libraryError": "Impossible de charger les quiz partagés.",
       "libraryEmpty": "Aucun quiz partagé pour le moment. Sois le premier à en publier un !",
       "leaderboard": "Classement",
-      "leaderboardIntro": "Meilleur score par joueur — à score égal, le plus rapide l'emporte.",
+      "leaderboardIntro": "Meilleur score par joueur ; à score égal, le plus rapide l'emporte.",
       "leaderboardEmpty": "Personne n'a encore joué. Lance-toi !",
       "you": "Toi",
       "quit": "Quitter",
@@ -1087,7 +1268,7 @@
       "retry": "Rejouer",
       "backToList": "Retour",
       "shareTitle": "Partager ce quiz",
-      "shareHint": "N'importe qui peut ouvrir ce lien et jouer, même sans compte. Le quiz est entièrement contenu dans le lien — rien n'est stocké sur le serveur, et il n'apparaît pas au classement.",
+      "shareHint": "N'importe qui peut ouvrir ce lien et jouer, même sans compte. Le quiz est entièrement contenu dans le lien : rien n'est stocké sur le serveur, et il n'apparaît pas au classement.",
       "copy": "Copier",
       "close": "Fermer",
       "about": [
@@ -1096,16 +1277,46 @@
         "Chaque quiz publié a son classement : le meilleur score par joueur est retenu, et à score égal, c'est la rapidité qui départage. Idéal pour réviser un examen en groupe dans une ambiance de défi amical."
       ],
       "examples": [
-        "Crée un quiz « Réseaux — couches OSI » avec 10 questions, joue-le pour t'auto-évaluer, puis partage le lien à ton groupe de révision.",
+        "Crée un quiz « Réseaux : couches OSI » avec 10 questions, joue-le pour t'auto-évaluer, puis partage le lien à ton groupe de révision.",
         "Publie ton quiz dans la bibliothèque : tes camarades vérifiés le jouent et vous comparez vos temps au classement.",
         "Génère un lien de partage : même un camarade non inscrit peut ouvrir le quiz et le jouer immédiatement, sans rien installer."
       ],
       "faq": [
-        { "q": "Faut-il un compte pour jouer ?", "a": "Pour jouer un quiz partagé par lien, non — n'importe qui peut l'ouvrir et y répondre. Pour publier un quiz dans la bibliothèque commune ou enregistrer ton score au classement, il faut un compte ISFCE vérifié." },
-        { "q": "Où sont stockés mes quiz ?", "a": "Dans ton navigateur (localStorage). Rien n'est envoyé sur le serveur tant que tu ne cliques pas sur « Publier ». Pense à exporter une sauvegarde JSON avant de vider ton cache ou de changer d'appareil." },
-        { "q": "Comment fonctionne le classement ?", "a": "Seul ton meilleur score sur chaque quiz est retenu. À score égal, le joueur le plus rapide est classé devant. Le score est calculé côté serveur à l'envoi, pour que le classement reste fiable." },
-        { "q": "Le lien de partage révèle-t-il les réponses ?", "a": "Le quiz partagé par lien est entièrement contenu dans l'adresse : un curieux pourrait techniquement la décoder. C'est sans conséquence pour un quiz d'entraînement, mais pour un classement fiable, préfère publier le quiz dans la bibliothèque (les réponses restent alors côté serveur)." }
-      ]
+        {
+          "q": "Faut-il un compte pour jouer ?",
+          "a": "Pour jouer un quiz partagé par lien, non : n'importe qui peut l'ouvrir et y répondre. Pour publier un quiz dans la bibliothèque commune ou enregistrer ton score au classement, il faut un compte ISFCE vérifié."
+        },
+        {
+          "q": "Où sont stockés mes quiz ?",
+          "a": "Dans ton navigateur (localStorage). Rien n'est envoyé sur le serveur tant que tu ne cliques pas sur « Publier ». Pense à exporter une sauvegarde JSON avant de vider ton cache ou de changer d'appareil."
+        },
+        {
+          "q": "Comment fonctionne le classement ?",
+          "a": "Seul ton meilleur score sur chaque quiz est retenu. À score égal, le joueur le plus rapide est classé devant. Le score est calculé côté serveur à l'envoi, pour que le classement reste fiable."
+        },
+        {
+          "q": "Le lien de partage révèle-t-il les réponses ?",
+          "a": "Le quiz partagé par lien est entièrement contenu dans l'adresse : un curieux pourrait techniquement la décoder. C'est sans conséquence pour un quiz d'entraînement, mais pour un classement fiable, préfère publier le quiz dans la bibliothèque (les réponses restent alors côté serveur)."
+        }
+      ],
+      "localChip": "Local",
+      "savedChip": "Enregistré",
+      "publishedChip": "Publié",
+      "saveOnline": "Enregistrer en ligne",
+      "updateOnline": "Mettre à jour en ligne",
+      "saveOnlineOk": "Quiz enregistré sur ton compte (privé) ✓",
+      "unpublish": "Dépublier",
+      "confirmDeleteLinked": "Supprimer « {{name}} » ? Sa copie en ligne sera aussi supprimée.",
+      "onlineOnlyTitle": "Enregistrés en ligne (pas sur cet appareil)",
+      "importToDevice": "Récupérer sur cet appareil",
+      "importFromLibrary": "Importer et modifier",
+      "importedChip": "Importé ✓",
+      "importedOk": "Importé dans « Mes quiz », tu peux le modifier ✓",
+      "explanationLabel": "Explication (facultative, montrée après la correction)",
+      "addExplanation": "Ajouter une explication",
+      "removeExplanation": "Retirer l'explication",
+      "anonHint": "Ici, tout reste sur cet appareil et se partage par lien. Connecte-toi avec ton compte ISFCE pour enregistrer tes quiz en ligne, les publier dans la bibliothèque et apparaître au classement.",
+      "editorAnonHint": "Connecte-toi pour enregistrer en ligne et publier."
     }
   },
   "about": {
@@ -1121,21 +1332,48 @@
     ],
     "problemsTitle": "Les deux problèmes que Freenote résout",
     "problems": [
-      { "title": "Vérifier les étudiants, simplement", "desc": "Pour protéger les échanges, seuls les étudiants disposant d'une adresse @isfce.be vérifiée accèdent aux documents. La vérification est automatique : un code par e-mail, et c'est réglé — sans démarche manuelle ni preuve à montrer." },
-      { "title": "Ne plus rien perdre", "desc": "Notes, synthèses, exercices et TFE sont rangés par section et par cours, et restent accessibles d'une année sur l'autre — au lieu de disparaître au fil des conversations." }
+      {
+        "title": "Vérifier les étudiants, simplement",
+        "desc": "Pour protéger les échanges, seuls les étudiants disposant d'une adresse @isfce.be vérifiée accèdent aux documents. La vérification est automatique : un code par e-mail, et c'est réglé, sans démarche manuelle ni preuve à montrer."
+      },
+      {
+        "title": "Ne plus rien perdre",
+        "desc": "Notes, synthèses, exercices et TFE sont rangés par section et par cours, et restent accessibles d'une année sur l'autre, au lieu de disparaître au fil des conversations."
+      }
     ],
     "howTitle": "Comment ça marche",
     "how": [
-      { "title": "Connecte-toi", "desc": "Crée ton compte en un clic via Discord, puis choisis ton pseudo et ta section." },
-      { "title": "Vérifie ton adresse ISFCE", "desc": "Reçois un code sur ton adresse @isfce.be pour débloquer l'accès complet — et, en bonus, le rôle « vérifié » sur le Discord étudiant." },
-      { "title": "Explore et partage", "desc": "Parcours les documents par cours, ouvre-les directement dans le navigateur, et partage les tiens pour aider ta promo et gagner de l'XP." }
+      {
+        "title": "Connecte-toi",
+        "desc": "Crée ton compte en un clic via Discord, puis choisis ton pseudo et ta section."
+      },
+      {
+        "title": "Vérifie ton adresse ISFCE",
+        "desc": "Reçois un code sur ton adresse @isfce.be pour débloquer l'accès complet et, en bonus, le rôle « vérifié » sur le Discord étudiant."
+      },
+      {
+        "title": "Explore et partage",
+        "desc": "Parcours les documents par cours, ouvre-les directement dans le navigateur, et partage les tiens pour aider ta promo et gagner de l'XP."
+      }
     ],
     "featuresTitle": "Ce que tu trouves sur Freenote",
     "features": [
-      { "title": "Documents par section et par cours", "desc": "Synthèses, notes, exercices et TFE classés clairement, avec une recherche instantanée." },
-      { "title": "Lecture dans le navigateur", "desc": "Les PDF s'ouvrent directement sur le site, sans téléchargement forcé ni inscription à un service tiers." },
-      { "title": "Classement et XP", "desc": "Chaque document partagé rapporte des points : un classement met en avant les étudiants les plus généreux." },
-      { "title": "Des outils gratuits", "desc": "Un calculateur de moyenne pondérée, un calculateur IPv4, un convertisseur de bases et d'autres outils utiles, sans compte." }
+      {
+        "title": "Documents par section et par cours",
+        "desc": "Synthèses, notes, exercices et TFE classés clairement, avec une recherche instantanée."
+      },
+      {
+        "title": "Lecture dans le navigateur",
+        "desc": "Les PDF s'ouvrent directement sur le site, sans téléchargement forcé ni inscription à un service tiers."
+      },
+      {
+        "title": "Classement et XP",
+        "desc": "Chaque document partagé rapporte des points : un classement met en avant les étudiants les plus généreux."
+      },
+      {
+        "title": "Des outils gratuits",
+        "desc": "Un calculateur de moyenne pondérée, un calculateur IPv4, un convertisseur de bases et d'autres outils utiles, sans compte."
+      }
     ],
     "privacyTitle": "Vie privée",
     "privacy": [
@@ -1145,10 +1383,22 @@
     "privacyLink": "Lire la politique de confidentialité",
     "faqTitle": "Questions fréquentes",
     "faq": [
-      { "q": "Freenote est-il gratuit ?", "a": "Oui, totalement. Une publicité discrète et des dons facultatifs (Ko-fi) financent l'hébergement ; un don retire les publicités pendant 30 jours." },
-      { "q": "Qui peut accéder aux documents ?", "a": "Les étudiants disposant d'une adresse @isfce.be vérifiée. Les pages publiques (accueil, outils, actualités, mentions légales) restent accessibles à tous." },
-      { "q": "Freenote est-il officiel ou affilié à l'ISFCE ?", "a": "Non. C'est une initiative étudiante indépendante, sans lien officiel avec l'école." },
-      { "q": "Comment partager un document ?", "a": "Une fois ton adresse vérifiée, clique sur « Partager » : choisis la section, le cours, la catégorie, puis dépose un PDF ou des photos (elles sont assemblées en un seul PDF)." }
+      {
+        "q": "Freenote est-il gratuit ?",
+        "a": "Oui, totalement. Une publicité discrète et des dons facultatifs (Ko-fi) financent l'hébergement ; un don retire les publicités pendant 30 jours."
+      },
+      {
+        "q": "Qui peut accéder aux documents ?",
+        "a": "Les étudiants disposant d'une adresse @isfce.be vérifiée. Les pages publiques (accueil, outils, actualités, mentions légales) restent accessibles à tous."
+      },
+      {
+        "q": "Freenote est-il officiel ou affilié à l'ISFCE ?",
+        "a": "Non. C'est une initiative étudiante indépendante, sans lien officiel avec l'école."
+      },
+      {
+        "q": "Comment partager un document ?",
+        "a": "Une fois ton adresse vérifiée, clique sur « Partager » : choisis la section, le cours, la catégorie, puis dépose un PDF ou des photos (elles sont assemblées en un seul PDF)."
+      }
     ],
     "ctaTitle": "Prêt à t'y mettre ?",
     "ctaText": "Rejoins les étudiants de l'ISFCE qui révisent mieux grâce aux ressources partagées.",

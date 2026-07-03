@@ -36,7 +36,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         Claims claims = StringUtils.hasText(token) ? jwtTokenProvider.parseClaimsOrNull(token) : null;
 
-        if (claims != null && !revocationService.isRevoked(claims.getId())) {
+        // Deux niveaux de révocation : par token (jti — logout/suppression de son propre compte)
+        // et par utilisateur (cutoff sur la date d'émission — ban/wipe admin, où le jti du cookie
+        // encore en circulation n'est pas connu du serveur).
+        if (claims != null && !revocationService.isRevoked(claims.getId())
+                && !revocationService.isUserRevoked(jwtTokenProvider.getUserId(claims), claims.getIssuedAt())) {
             Long userId = jwtTokenProvider.getUserId(claims);
             boolean verified = jwtTokenProvider.isVerified(claims);
             String role = jwtTokenProvider.getRole(claims);

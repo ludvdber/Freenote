@@ -179,10 +179,13 @@ public class AuthServiceImpl implements AuthService {
 
         String emailHash = HashUtil.hashEmail(email, emailHashSalt);
 
-        // Banned ISFCE email: refuse verification. The user is told (it's their own address, so no
-        // enumeration of other accounts) — the only way back is a brand-new @isfce.be address.
+        // Banned ISFCE email: silently no-op (202, comme pour un email déjà réclamé) — un 403
+        // distinct permettrait à n'importe quel compte authentifié de sonder le statut de ban
+        // d'une adresse arbitraire. Le banni ne reçoit simplement jamais de code ; la défense en
+        // profondeur de confirmVerification re-vérifie de toute façon le ban avant de valider.
         if (banRepository.existsByEmailHash(emailHash)) {
-            throw new ForbiddenException("Cette adresse @isfce.be a été bannie");
+            log.info("Verification request for a banned email (userId={}). Silently ignored.", userId);
+            return;
         }
 
         // Silently no-op if this email is already claimed by another account.
@@ -273,7 +276,7 @@ public class AuthServiceImpl implements AuthService {
             // Display name "Freenote" so the inbox shows "Freenote" rather than the raw address.
             helper.setFrom(mailFrom, "Freenote");
             helper.setTo(to);
-            helper.setSubject("Freenote — Ton code de vérification");
+            helper.setSubject("Freenote : ton code de vérification");
             // Email-safe HTML: table layout + inline styles + web-safe font fallbacks, in the
             // Freenote palette (dark navy, violet→cyan gradient). Literal % are doubled (%%) so
             // String.formatted() leaves the CSS gradient stops untouched and only injects the code.

@@ -90,7 +90,9 @@ public class DocumentController {
     public ResponseEntity<List<DocumentResponse>> getPopular(
             @RequestParam(required = false) Long sectionId) {
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                // private : réponse identique pour tous, mais l'endpoint est authentifié par cookie —
+                // un cache partagé (Cloudflare/proxy) ne doit jamais stocker une réponse à cookie.
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePrivate())
                 .body(documentService.getPopular(sectionId));
     }
 

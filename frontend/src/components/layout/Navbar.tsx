@@ -31,7 +31,7 @@ export default function Navbar() {
   return (
     <AppBar position="sticky" component="nav" aria-label="Main navigation" sx={s.appBar}>
       <Toolbar sx={s.toolbar}>
-        <Box component={Link} to="/" sx={s.logo} aria-label="Freenote — accueil">
+        <Box component={Link} to="/" sx={s.logo} aria-label="Freenote, accueil">
           <FreenoteMark size={28} />
           <Typography variant="h6" component="span" sx={{ fontWeight: 800, lineHeight: 1 }}>
             Free<Box component="span" sx={s.logoGradient}>note</Box>

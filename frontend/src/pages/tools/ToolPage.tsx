@@ -73,17 +73,14 @@ export default function ToolPage({ tool }: { tool: ToolDef }) {
   };
 
   return (
-    <Container maxWidth="md" sx={s.container}>
+    <Container maxWidth={tool.wide ? 'xl' : 'md'} sx={s.container}>
       <Helmet>
         <html lang={i18n.language} />
-        <title>{`${seoTitle} — Freenote`}</title>
+        <title>{`${seoTitle} · Freenote`}</title>
         <meta name="description" content={seoDescription} />
         <link rel="canonical" href={canonical} />
-        <link rel="alternate" hrefLang="fr" href={canonical} />
-        <link rel="alternate" hrefLang="en" href={canonical} />
-        <link rel="alternate" hrefLang="x-default" href={canonical} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={`${seoTitle} — Freenote`} />
+        <meta property="og:title" content={`${seoTitle} · Freenote`} />
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={canonical} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

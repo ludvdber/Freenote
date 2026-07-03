@@ -51,18 +51,15 @@ export default function Home() {
 
   return (
     <>
-      <Helmet><title>Freenote — Éclaire ta promo</title></Helmet>
+      <Helmet><title>Freenote : éclaire ta promo</title></Helmet>
       <HeroSection />
       <Container maxWidth="lg">
-        {token && (
-          <>
-            <Suspense fallback={<SectionFallback />}>
-              <StatsSection />
-            </Suspense>
-            <Divider />
-          </>
-        )}
-        {!token && <AdSlot width={728} height={90} sx={{ my: 4 }} />}
+        {/* Stats agrégées visibles aussi des anonymes (GET /api/stats est permitAll) : la home
+            publique montre du contenu réel au lieu d'un grand vide entre le hero et le footer. */}
+        <Suspense fallback={<SectionFallback />}>
+          <StatsSection />
+        </Suspense>
+        <Divider />
         <Suspense fallback={<SectionFallback />}>
           <NewsAndLinks />
         </Suspense>
@@ -82,6 +79,8 @@ export default function Home() {
             </Suspense>
           </>
         )}
+        {/* Pub en bas de page (au-dessus du footer), jamais collée au hero sans contenu autour. */}
+        {!token && <AdSlot width={728} height={90} sx={{ mt: 6, mb: 4 }} />}
       </Container>
     </>
   );

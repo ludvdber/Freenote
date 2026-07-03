@@ -37,34 +37,80 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         """)
     Optional<Document> findPublicExcerptById(@Param("id") Long id, @Param("categories") Collection<Category> categories);
     /** Popular docs for the home page: verified ones first (admin-reviewed), then unverified,
-     *  each group ordered by download count. Both are visible — verification is a visual aid only. */
-    List<Document> findTop10ByOrderByVerifiedDescDownloadCountDesc();
+     *  each group ordered by download count. Both are visible — verification is a visual aid only.
+     *  All mapper associations are fetch-joined (anti-N+1 over the top-10). */
+    @Query("""
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        ORDER BY d.verified DESC, d.downloadCount DESC
+        """)
+    List<Document> findPopularWithAssociations(Pageable pageable);
 
     /** Popular docs with the user's own section floated to the top (without hiding other sections). */
     @Query("""
         SELECT d FROM Document d
-        ORDER BY CASE WHEN d.course.section.id = :sectionId THEN 0 ELSE 1 END,
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section s
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        ORDER BY CASE WHEN s.id = :sectionId THEN 0 ELSE 1 END,
                  d.verified DESC, d.downloadCount DESC
         """)
     List<Document> findPopularPrioritizingSection(@Param("sectionId") Long sectionId, Pageable pageable);
 
     /** Flexible filter: any combination of section / course / category. NULL params mean "no constraint".
      *  Returns BOTH verified and unverified documents (verification is a visual aid, not access control),
-     *  ordered verified-first then newest-first. */
-    @Query("""
+     *  ordered verified-first then newest-first. Mapper associations fetch-joined (anti-N+1: without
+     *  them, a 20-doc page fired up to 80 lazy SELECTs — course, section, uploader profile, professor). */
+    @Query(value = """
         SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section s
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        WHERE (:sectionId IS NULL OR s.id = :sectionId)
+          AND (:courseId IS NULL OR c.id = :courseId)
+          AND (:category IS NULL OR d.category = :category)
+        ORDER BY d.verified DESC, d.createdAt DESC
+        """,
+        countQuery = """
+        SELECT COUNT(d) FROM Document d
         WHERE (:sectionId IS NULL OR d.course.section.id = :sectionId)
           AND (:courseId IS NULL OR d.course.id = :courseId)
           AND (:category IS NULL OR d.category = :category)
-        ORDER BY d.verified DESC, d.createdAt DESC
         """)
     Page<Document> findFiltered(
             @Param("sectionId") Long sectionId,
             @Param("courseId") Long courseId,
             @Param("category") Category category,
             Pageable pageable);
+
+    /** Batch fetch by Meilisearch result ids with all mapper associations joined — the search path
+     *  equivalent of findFiltered's anti-N+1 (order is re-established by the caller from the ids). */
+    @Query("""
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        WHERE d.id IN :ids
+        """)
+    List<Document> findAllByIdWithAssociations(@Param("ids") Collection<Long> ids);
     long countByCreatedAtAfter(LocalDateTime dateTime);
-    List<Document> findByVerifiedFalse();
+
+    /** File d'attente de vérification admin : plus ancien d'abord (file équitable), paginée, avec
+     *  toutes les associations du mapper fetch-joinées (course→section, user→profile, professor)
+     *  pour éviter le N+1 sur la page. */
+    @Query(value = """
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        WHERE d.verified = false
+        ORDER BY d.createdAt ASC
+        """,
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.verified = false")
+    Page<Document> findPendingForReview(Pageable pageable);
+
     long countByUserId(Long userId);
     long countByCourseId(Long courseId);
 
@@ -85,7 +131,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     @Query("SELECT d.user.id, COUNT(d) FROM Document d WHERE d.user.id IN :userIds GROUP BY d.user.id")
     List<Object[]> countByUserIds(@Param("userIds") List<Long> userIds);
 
-    Page<Document> findByUserIdAndVerifiedTrue(Long userId, Pageable pageable);
+    /** Verified docs of a user's public profile, mapper associations fetch-joined (anti-N+1). */
+    @Query(value = """
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        WHERE u.id = :userId AND d.verified = true
+        """,
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.user.id = :userId AND d.verified = true")
+    Page<Document> findByUserIdAndVerifiedTrue(@Param("userId") Long userId, Pageable pageable);
 
     /** Content-based duplicate check: an existing document with the same PDF hash, if any. */
     Optional<Document> findFirstByFileHash(String fileHash);

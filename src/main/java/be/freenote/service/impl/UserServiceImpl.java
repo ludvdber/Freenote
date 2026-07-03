@@ -51,6 +51,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final ActivityLogService activityLogService;
     private final DiscordRoleService discordRoleService;
+    private final be.freenote.security.JwtRevocationService jwtRevocationService;
 
     @Override
     public UserResponse getProfile(Long userId) {
@@ -94,6 +95,13 @@ public class UserServiceImpl implements UserService {
         profile.setFirstName(HtmlSanitizer.escape(request.getFirstName()));
         profile.setLastName(HtmlSanitizer.escape(request.getLastName()));
         profile.setDisplayRealName(request.isDisplayRealName());
+        if (request.getStudyStartYear() != null && request.getStudyEndYear() != null
+                && request.getStudyEndYear() < request.getStudyStartYear()) {
+            throw new IllegalArgumentException("L'année de fin ne peut pas précéder l'année de début.");
+        }
+        profile.setStudyStartYear(request.getStudyStartYear());
+        profile.setStudyEndYear(request.getStudyEndYear());
+        profile.setGraduated(request.isGraduated());
 
         User saved = userRepository.save(user);
         long docCount = documentRepository.countByUserId(userId);
@@ -221,7 +229,9 @@ public class UserServiceImpl implements UserService {
     }
 
     /** Shared account-removal lifecycle: detach reports (kept for moderation), anonymize documents
-     *  (kept as 'Anonyme'), then delete the row (cascades profile + oauth links). */
+     *  (kept as 'Anonyme'), delete the row (cascades profile + oauth links), and revoke every JWT
+     *  the account still holds — without this, a banned/wiped user's cookie stays valid up to 24 h
+     *  and keeps ROLE_VERIFIED read access (the JWT is stateless, the user row is gone). */
     private void anonymizeAndDelete(User user) {
         var reports = reportRepository.findByUserId(user.getId());
         for (var report : reports) {
@@ -230,6 +240,7 @@ public class UserServiceImpl implements UserService {
         reportRepository.saveAll(reports);
         documentRepository.anonymizeByUserId(user.getId());
         userRepository.delete(user);
+        jwtRevocationService.revokeAllForUser(user.getId());
     }
 
     @Override

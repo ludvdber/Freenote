@@ -26,7 +26,7 @@ export default function GuidesIndex() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `${t('guides.title')} — Freenote`,
+    name: `${t('guides.title')} · Freenote`,
     description: t('guides.metaDescription'),
     url: `${SITE_URL}/guides`,
     hasPart: guides.map((g) => ({
@@ -45,11 +45,11 @@ export default function GuidesIndex() {
   return (
     <PageWrapper>
       <Helmet>
-        <title>{t('guides.title')} — Freenote</title>
+        <title>{t('guides.title')} · Freenote</title>
         <meta name="description" content={t('guides.metaDescription')} />
         <link rel="canonical" href={`${SITE_URL}/guides`} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={`${t('guides.title')} — Freenote`} />
+        <meta property="og:title" content={`${t('guides.title')} · Freenote`} />
         <meta property="og:description" content={t('guides.metaDescription')} />
         <meta property="og:url" content={`${SITE_URL}/guides`} />
         <meta property="og:image" content={`${SITE_URL}/og-image.png`} />

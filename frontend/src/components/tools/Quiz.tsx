@@ -1,27 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box, Typography, TextField, IconButton, Button, Chip, Stack, Tooltip, Menu, MenuItem,
   Tabs, Tab, Radio, ToggleButtonGroup, ToggleButton, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, CircularProgress,
 } from '@mui/material';
 import {
-  Add, DeleteOutlined, EditOutlined, MoreVert, Share, CloudUpload, PlayArrow, EmojiEvents,
-  ArrowBack, Check, Close, ContentCopy, Quiz as QuizIcon, FileDownload, FileUpload,
-  Image as ImageIcon, Code as CodeIcon,
+  Add, DeleteOutlined, EditOutlined, MoreVert, Share, CloudUpload, CloudDone, CloudOff, PlayArrow,
+  EmojiEvents, ArrowBack, Check, Close, ContentCopy, Quiz as QuizIcon, FileDownload, FileUpload,
+  Image as ImageIcon, Code as CodeIcon, Download,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/useAuthStore';
 import {
-  createQuiz, listQuizzes, getQuizPlay, submitQuizAttempt, getQuizLeaderboard,
+  createQuiz, updateQuiz, deleteQuiz, listQuizzes, listMyQuizzes, getQuizPlay, getQuizFull,
+  submitQuizAttempt, getQuizLeaderboard,
 } from '@/api/endpoints';
-import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry, QuizQuestionDto } from '@/types';
+import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry, QuizQuestionDto, QuizFullResponse } from '@/types';
 import CodeBlock from './quiz/CodeBlock';
 import { fileToDataUrl } from './quiz/image';
 import {
   type Quiz, type QuizQuestion,
-  newQuiz, newQuestion, gradeQuiz, validateQuiz, normalizeQuiz,
+  newQuiz, newQuestion, uid, gradeQuiz, validateQuiz, normalizeQuiz,
   quizzesToJson, quizzesFromJson, encodeQuiz, decodeQuiz, MIN_CHOICES, MAX_CHOICES,
 } from './quiz/logic';
 
@@ -56,8 +57,35 @@ function download(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Rebuild a local, editable Quiz from the server's full view (édition ou import/fork). */
+function quizFromFull(full: QuizFullResponse, link: boolean): Quiz {
+  return {
+    id: uid(),
+    title: full.title,
+    createdAt: Date.now(),
+    serverId: link ? full.id : undefined,
+    published: link ? full.published : undefined,
+    sharedAt: link && full.published ? Date.now() : undefined,
+    questions: full.questions.map((q) => ({
+      id: uid(),
+      type: q.type,
+      question: q.question,
+      choices: q.choices ?? [],
+      answer: q.answer ?? 0,
+      openAnswer: q.openAnswer ?? '',
+      image: q.image ?? undefined,
+      code: q.code ?? undefined,
+      language: q.language ?? undefined,
+      explanation: q.explanation ?? undefined,
+    })),
+  };
+}
+
 type Feedback = { msg: string; severity: 'success' | 'error' };
-type PlayResult = { score: number; total: number; rank?: number; correct: boolean[]; correctAnswers: string[] };
+type PlayResult = {
+  score: number; total: number; rank?: number;
+  correct: boolean[]; correctAnswers: string[]; explanations?: (string | null)[];
+};
 type GradeFn = (answers: (string | null)[], durationMs: number) => Promise<PlayResult>;
 type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn };
 
@@ -77,6 +105,14 @@ export default function Quiz() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const jsonInput = useRef<HTMLInputElement>(null);
 
+  // « Enregistrés en ligne » : les quiz du compte absents de cet appareil (autre PC, cache vidé).
+  const [online, setOnline] = useState<QuizSummary[] | null>(null);
+  const refreshOnline = useCallback(() => {
+    if (!isVerified) return;
+    listMyQuizzes({ size: 50 }).then((p) => setOnline(p.content)).catch(() => setOnline(null));
+  }, [isVerified]);
+  useEffect(() => { refreshOnline(); }, [refreshOnline]);
+
   // Strip the ephemeral payload from the address bar after capturing it.
   useEffect(() => {
     if (ephemeral) window.history.replaceState(null, '', window.location.pathname);
@@ -89,17 +125,20 @@ export default function Quiz() {
   const upsert = (quiz: Quiz) =>
     setQuizzes((qs) => {
       const existing = qs.find((q) => q.id === quiz.id);
-      // Don't drop a "published" timestamp when saving an edited draft that doesn't carry it
-      // (e.g. publishing from the editor then hitting Save).
-      const merged = existing?.sharedAt && !quiz.sharedAt ? { ...quiz, sharedAt: existing.sharedAt } : quiz;
+      // Don't drop the server link / published state when saving an edited draft that doesn't
+      // carry them (e.g. saving right after publishing from the editor).
+      const merged = existing
+        ? {
+            ...quiz,
+            sharedAt: quiz.sharedAt ?? existing.sharedAt,
+            serverId: quiz.serverId ?? existing.serverId,
+            published: quiz.published ?? existing.published,
+          }
+        : quiz;
       return existing ? qs.map((q) => (q.id === quiz.id ? merged : q)) : [...qs, merged];
     });
 
   const removeQuiz = (id: string) => setQuizzes((qs) => qs.filter((q) => q.id !== id));
-
-  // Date.now() lives inside the updater (deferred) so it isn't an impure call during render.
-  const markShared = (id: string) =>
-    setQuizzes((qs) => qs.map((q) => (q.id === id ? { ...q, sharedAt: Date.now() } : q)));
 
   const playLocal = (quiz: Quiz) => {
     const err = validateQuiz(quiz);
@@ -108,8 +147,8 @@ export default function Quiz() {
     setPlaying({ title: n.title, questions: n.questions, grade: localGrade(n) });
   };
 
-  const playBackend = async (summary: QuizSummary) => {
-    const data = await getQuizPlay(summary.id);
+  const playBackend = async (id: number) => {
+    const data = await getQuizPlay(id);
     setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id) });
   };
 
@@ -124,14 +163,56 @@ export default function Quiz() {
     setShareUrl(url);
   };
 
-  const publish = async (quiz: Quiz) => {
+  /** Create-or-update the linked server copy. `published` pilots private save vs library. */
+  const saveOnline = async (quiz: Quiz, published: boolean) => {
     const err = validateQuiz(quiz);
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const n = normalizeQuiz(quiz);
+    const body = { title: n.title, questions: n.questions.map(toQuestionDto), published };
     try {
-      await createQuiz({ title: n.title, questions: n.questions.map(toQuestionDto) });
-      markShared(quiz.id);
-      setFeedback({ msg: t('tools.quiz.publishOk'), severity: 'success' });
+      const saved = quiz.serverId ? await updateQuiz(quiz.serverId, body) : await createQuiz(body);
+      setQuizzes((qs) => qs.map((q) => (q.id === quiz.id
+        ? { ...q, serverId: saved.id, published: saved.published, sharedAt: saved.published ? Date.now() : q.sharedAt }
+        : q)));
+      setFeedback({
+        msg: t(published ? 'tools.quiz.publishOk' : 'tools.quiz.saveOnlineOk'),
+        severity: 'success',
+      });
+      refreshOnline();
+    } catch {
+      setFeedback({ msg: t('tools.quiz.publishError'), severity: 'error' });
+    }
+  };
+
+  /** Import a published library quiz as a NEW local editable copy (fork — not linked). */
+  const importFromLibrary = async (id: number) => {
+    const full = await getQuizFull(id);
+    setQuizzes((qs) => [...qs, quizFromFull(full, false)]);
+    setFeedback({ msg: t('tools.quiz.importedOk'), severity: 'success' });
+  };
+
+  /** Bring one of MY online quizzes onto this device, linked (édition = mise à jour en ligne). */
+  const importOwnOnline = async (id: number) => {
+    const full = await getQuizFull(id);
+    setQuizzes((qs) => [...qs, quizFromFull(full, true)]);
+    setFeedback({ msg: t('tools.quiz.importedOk'), severity: 'success' });
+  };
+
+  const confirmAndDelete = async (quiz: Quiz) => {
+    const key = quiz.serverId ? 'tools.quiz.confirmDeleteLinked' : 'tools.quiz.confirmDelete';
+    if (!window.confirm(t(key, { name: quiz.title }))) return;
+    if (quiz.serverId) {
+      try { await deleteQuiz(quiz.serverId); } catch { /* déjà supprimé côté serveur — on continue */ }
+      refreshOnline();
+    }
+    removeQuiz(quiz.id);
+  };
+
+  const deleteOnline = async (q: QuizSummary) => {
+    if (!window.confirm(t('tools.quiz.confirmDelete', { name: q.title }))) return;
+    try {
+      await deleteQuiz(q.id);
+      refreshOnline();
     } catch {
       setFeedback({ msg: t('tools.quiz.publishError'), severity: 'error' });
     }
@@ -146,6 +227,10 @@ export default function Quiz() {
       setFeedback({ msg: t('tools.quiz.importError'), severity: 'error' });
     }
   };
+
+  // Server copies not present on this device (linked ids are filtered out).
+  const linkedIds = new Set(quizzes.map((q) => q.serverId).filter(Boolean));
+  const onlineOnly = (online ?? []).filter((q) => !linkedIds.has(q.id));
 
   // ── Routing between the views ─────────────────────────────────
   if (playing) {
@@ -166,7 +251,8 @@ export default function Quiz() {
         onCancel={() => setEditing(null)}
         onSave={(q) => { upsert(q); setEditing(null); }}
         onPlay={(q) => { upsert(q); setEditing(null); playLocal(q); }}
-        onPublish={(q) => { upsert(q); publish(q); }}
+        onSaveOnline={(q) => { upsert(q); saveOnline(q, q.published ?? false); }}
+        onPublish={(q) => { upsert(q); saveOnline(q, true); }}
       />
     );
   }
@@ -188,46 +274,100 @@ export default function Quiz() {
         <LibraryPanel
           isVerified={isVerified}
           onPlay={playBackend}
+          onImport={importFromLibrary}
           onLeaderboard={(id, title) => setLeaderboardFor({ id, title })}
         />
       )}
 
-      {tab === 'mine' && quizzes.length === 0 && (
-        <EmptyQuizzes onCreate={() => setEditing(newQuiz(''))} onImport={() => jsonInput.current?.click()} />
-      )}
-
-      {tab === 'mine' && quizzes.length > 0 && (
+      {tab === 'mine' && (
         <>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 2 }}>
-            <Button variant="contained" startIcon={<Add />} onClick={() => setEditing(newQuiz(''))}>
+          {!isVerified && (
+            <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
+              {t('tools.quiz.anonHint')}
+            </Alert>
+          )}
+
+          {quizzes.length === 0 && onlineOnly.length === 0 && (
+            <EmptyQuizzes onCreate={() => setEditing(newQuiz(''))} onImport={() => jsonInput.current?.click()} />
+          )}
+
+          {quizzes.length > 0 && (
+            <>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 2 }}>
+                <Button variant="contained" startIcon={<Add />} onClick={() => setEditing(newQuiz(''))}>
+                  {t('tools.quiz.newQuiz')}
+                </Button>
+                <Box sx={{ flexGrow: 1 }} />
+                <Button size="small" startIcon={<FileUpload />} onClick={() => jsonInput.current?.click()}>
+                  {t('tools.quiz.importBackup')}
+                </Button>
+                <Button size="small" startIcon={<FileDownload />}
+                  onClick={() => download('freenote-quizzes.json', quizzesToJson(quizzes), 'application/json')}>
+                  {t('tools.quiz.exportBackup')}
+                </Button>
+              </Box>
+
+              <Stack spacing={1.25}>
+                {quizzes.map((quiz) => (
+                  <QuizCard
+                    key={quiz.id}
+                    quiz={quiz}
+                    canPublish={isVerified}
+                    onPlay={() => playLocal(quiz)}
+                    onEdit={() => setEditing(quiz)}
+                    onShare={() => share(quiz)}
+                    onSaveOnline={() => saveOnline(quiz, quiz.published ?? false)}
+                    onPublish={() => saveOnline(quiz, true)}
+                    onUnpublish={() => saveOnline(quiz, false)}
+                    onLeaderboard={quiz.serverId && quiz.published
+                      ? () => setLeaderboardFor({ id: quiz.serverId!, title: quiz.title })
+                      : undefined}
+                    onDelete={() => confirmAndDelete(quiz)}
+                  />
+                ))}
+              </Stack>
+            </>
+          )}
+
+          {quizzes.length === 0 && onlineOnly.length > 0 && (
+            <Button variant="contained" startIcon={<Add />} onClick={() => setEditing(newQuiz(''))} sx={{ mb: 2 }}>
               {t('tools.quiz.newQuiz')}
             </Button>
-            <Box sx={{ flexGrow: 1 }} />
-            <Button size="small" startIcon={<FileUpload />} onClick={() => jsonInput.current?.click()}>
-              {t('tools.quiz.importBackup')}
-            </Button>
-            <Button size="small" startIcon={<FileDownload />}
-              onClick={() => download('freenote-quizzes.json', quizzesToJson(quizzes), 'application/json')}>
-              {t('tools.quiz.exportBackup')}
-            </Button>
-          </Box>
+          )}
 
-          <Stack spacing={1.25}>
-            {quizzes.map((quiz) => (
-              <QuizCard
-                key={quiz.id}
-                quiz={quiz}
-                canPublish={isVerified}
-                onPlay={() => playLocal(quiz)}
-                onEdit={() => setEditing(quiz)}
-                onShare={() => share(quiz)}
-                onPublish={() => publish(quiz)}
-                onDelete={() => {
-                  if (window.confirm(t('tools.quiz.confirmDelete', { name: quiz.title }))) removeQuiz(quiz.id);
-                }}
-              />
-            ))}
-          </Stack>
+          {onlineOnly.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                {t('tools.quiz.onlineOnlyTitle')}
+              </Typography>
+              <Stack spacing={1}>
+                {onlineOnly.map((q) => (
+                  <GlassCard key={q.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <CloudDone fontSize="small" color={q.published ? 'success' : 'info'} aria-hidden="true" />
+                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                      <Typography sx={{ fontWeight: 600 }} noWrap>{q.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('tools.quiz.questionsCount', { count: q.questionCount })}
+                        {' · '}{t(q.published ? 'tools.quiz.publishedChip' : 'tools.quiz.savedChip')}
+                      </Typography>
+                    </Box>
+                    <Tooltip title={t('tools.quiz.importToDevice')}>
+                      <IconButton size="small" color="primary" onClick={() => importOwnOnline(q.id)}
+                        aria-label={t('tools.quiz.importToDevice')}>
+                        <Download fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Button size="small" variant="contained" startIcon={<PlayArrow />} onClick={() => playBackend(q.id)}>
+                      {t('tools.quiz.play')}
+                    </Button>
+                    <IconButton size="small" onClick={() => deleteOnline(q)} aria-label={t('tools.quiz.delete')}>
+                      <DeleteOutlined fontSize="small" />
+                    </IconButton>
+                  </GlassCard>
+                ))}
+              </Stack>
+            </Box>
+          )}
         </>
       )}
 
@@ -237,7 +377,7 @@ export default function Quiz() {
   );
 }
 
-/** Map a local question to the publish DTO (full shape, images included for published quizzes). */
+/** Map a local question to the save/publish DTO (full shape, answers + explanation included). */
 function toQuestionDto(q: QuizQuestion): QuizQuestionDto {
   return {
     type: q.type,
@@ -248,6 +388,7 @@ function toQuestionDto(q: QuizQuestion): QuizQuestionDto {
     image: q.image ?? null,
     code: q.code ?? null,
     language: q.language ?? null,
+    explanation: q.explanation ?? null,
   };
 }
 
@@ -255,13 +396,13 @@ function toQuestionDto(q: QuizQuestion): QuizQuestionDto {
 function localGrade(quiz: Quiz): GradeFn {
   return async (answers) => {
     const r = gradeQuiz(quiz, answers);
-    return { score: r.score, total: r.total, correct: r.correct, correctAnswers: r.correctAnswers };
+    return { score: r.score, total: r.total, correct: r.correct, correctAnswers: r.correctAnswers, explanations: r.explanations };
   };
 }
 function backendGrade(id: number): GradeFn {
   return async (answers, durationMs) => {
     const res = await submitQuizAttempt(id, { answers, durationMs });
-    return { score: res.score, total: res.total, rank: res.rank, correct: res.correct, correctAnswers: res.correctAnswers };
+    return { score: res.score, total: res.total, rank: res.rank, correct: res.correct, correctAnswers: res.correctAnswers, explanations: res.explanations };
   };
 }
 
@@ -281,30 +422,58 @@ function EmptyQuizzes({ onCreate, onImport }: { onCreate: () => void; onImport: 
   );
 }
 
-/** A local quiz row: primary "Jouer" + a kebab for the rest. */
-function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onPublish, onDelete }: {
+/** Statut du quiz local vis-à-vis du serveur : Local / Enregistré (privé) / Publié. */
+function StatusChip({ quiz }: { quiz: Quiz }) {
+  const { t } = useTranslation();
+  if (quiz.serverId && quiz.published) {
+    return <Chip size="small" color="success" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.publishedChip')} sx={{ height: 20 }} />;
+  }
+  if (quiz.serverId) {
+    return <Chip size="small" color="info" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.savedChip')} sx={{ height: 20 }} />;
+  }
+  return <Chip size="small" variant="outlined" label={t('tools.quiz.localChip')} sx={{ height: 20 }} />;
+}
+
+/** A local quiz row. The NEXT server step is always a visible text button (never icon-only):
+ *  local → « Enregistrer en ligne », enregistré → « Publier », publié → « Classement ». */
+function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onSaveOnline, onPublish, onUnpublish, onLeaderboard, onDelete }: {
   quiz: Quiz; canPublish: boolean;
-  onPlay: () => void; onEdit: () => void; onShare: () => void; onPublish: () => void; onDelete: () => void;
+  onPlay: () => void; onEdit: () => void; onShare: () => void;
+  onSaveOnline: () => void; onPublish: () => void; onUnpublish: () => void;
+  onLeaderboard?: () => void; onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const close = () => setMenu(null);
+  const linked = Boolean(quiz.serverId);
+  const published = linked && Boolean(quiz.published);
   return (
-    <GlassCard sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center' }}>
-      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+    <GlassCard sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Box sx={{ minWidth: 0, flexGrow: 1, flexBasis: 180 }}>
         <Typography sx={{ fontWeight: 600 }} noWrap>{quiz.title || t('tools.quiz.untitled')}</Typography>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', mt: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
             {t('tools.quiz.questionsCount', { count: quiz.questions.length })}
           </Typography>
-          {quiz.sharedAt && (
-            <Tooltip title={t('tools.quiz.sharedAtTooltip', { date: new Date(quiz.sharedAt).toLocaleDateString() })}>
-              <Chip size="small" variant="outlined" color="success" label={t('tools.quiz.sharedChip')} sx={{ cursor: 'help', height: 20 }} />
-            </Tooltip>
-          )}
+          <StatusChip quiz={quiz} />
         </Box>
       </Box>
       <Button variant="contained" size="small" startIcon={<PlayArrow />} onClick={onPlay}>{t('tools.quiz.play')}</Button>
+      {canPublish && !linked && (
+        <Button variant="outlined" size="small" startIcon={<CloudDone />} onClick={onSaveOnline}>
+          {t('tools.quiz.saveOnline')}
+        </Button>
+      )}
+      {canPublish && linked && !published && (
+        <Button variant="outlined" color="success" size="small" startIcon={<CloudUpload />} onClick={onPublish}>
+          {t('tools.quiz.publish')}
+        </Button>
+      )}
+      {published && onLeaderboard && (
+        <Button variant="outlined" size="small" startIcon={<EmojiEvents />} onClick={onLeaderboard}>
+          {t('tools.quiz.leaderboard')}
+        </Button>
+      )}
       <Tooltip title={t('tools.quiz.shareLink')}>
         <IconButton size="small" color="primary" onClick={onShare} aria-label={t('tools.quiz.shareLink')}>
           <Share fontSize="small" />
@@ -315,8 +484,16 @@ function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onPublish, onDele
       </IconButton>
       <Menu anchorEl={menu} open={Boolean(menu)} onClose={close}>
         <MenuItem onClick={() => { close(); onEdit(); }}><EditOutlined fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.edit')}</MenuItem>
-        {canPublish && (
+        {canPublish && linked && (
+          <MenuItem onClick={() => { close(); onSaveOnline(); }}>
+            <CloudDone fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.updateOnline')}
+          </MenuItem>
+        )}
+        {canPublish && !linked && (
           <MenuItem onClick={() => { close(); onPublish(); }}><CloudUpload fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.publish')}</MenuItem>
+        )}
+        {canPublish && published && (
+          <MenuItem onClick={() => { close(); onUnpublish(); }}><CloudOff fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.unpublish')}</MenuItem>
         )}
         <MenuItem onClick={() => { close(); onDelete(); }}><DeleteOutlined fontSize="small" sx={{ mr: 1 }} /> {t('tools.quiz.delete')}</MenuItem>
       </Menu>
@@ -324,11 +501,30 @@ function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onPublish, onDele
   );
 }
 
+/** Langages proposés dans le menu déroulant du bloc code — tous inclus dans le bundle
+ *  highlight.js `common` chargé par CodeBlock (« html » est un alias de xml). */
+const CODE_LANGUAGES: { value: string; label: string }[] = [
+  { value: 'java', label: 'Java' },
+  { value: 'python', label: 'Python' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'c', label: 'C' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'csharp', label: 'C#' },
+  { value: 'php', label: 'PHP' },
+  { value: 'html', label: 'HTML' },
+  { value: 'css', label: 'CSS' },
+  { value: 'bash', label: 'Bash / Shell' },
+  { value: 'json', label: 'JSON' },
+  { value: 'kotlin', label: 'Kotlin' },
+];
+
 /** Create/edit a local quiz. Holds its own working draft; commits via callbacks. */
-function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }: {
+function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onSaveOnline, onPublish }: {
   initial: Quiz; canPublish: boolean;
   onCancel: () => void; onSave: (q: Quiz) => void;
-  onPlay: (q: Quiz) => void; onPublish: (q: Quiz) => void;
+  onPlay: (q: Quiz) => void; onSaveOnline: (q: Quiz) => void; onPublish: (q: Quiz) => void;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Quiz>(initial);
@@ -353,6 +549,11 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }
     });
 
   const setType = (qid: string, type: 'mcq' | 'open') => patchQuestion(qid, (q) => ({ ...q, type }));
+
+  // Questions dont le langage est saisi à la main (« Autre… » choisi dans le menu déroulant).
+  const [customLangQids, setCustomLangQids] = useState<Set<string>>(new Set());
+  const isCustomLang = (q: QuizQuestion) =>
+    customLangQids.has(q.id) || Boolean(q.language && !CODE_LANGUAGES.some((l) => l.value === q.language));
 
   // Per-question image picker (verified only; one hidden input reused, target tracked by id).
   const imageInput = useRef<HTMLInputElement>(null);
@@ -445,10 +646,33 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }
               </Button>
             ) : (
               <Box sx={{ mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <TextField size="small" placeholder={t('tools.quiz.languagePlaceholder')} value={q.language ?? ''}
-                    onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, language: e.target.value }))}
-                    slotProps={{ htmlInput: { maxLength: 30 } }} sx={{ width: 170 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                  <TextField
+                    select size="small" label={t('tools.quiz.languageLabel')}
+                    value={isCustomLang(q) ? '__other' : (q.language ?? '')}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === '__other') {
+                        setCustomLangQids((prev) => new Set(prev).add(q.id));
+                        patchQuestion(q.id, (qq) => ({ ...qq, language: '' }));
+                      } else {
+                        setCustomLangQids((prev) => { const next = new Set(prev); next.delete(q.id); return next; });
+                        patchQuestion(q.id, (qq) => ({ ...qq, language: v || undefined }));
+                      }
+                    }}
+                    sx={{ width: 170 }}
+                  >
+                    <MenuItem value="">{t('tools.quiz.languageNone')}</MenuItem>
+                    {CODE_LANGUAGES.map((lang) => (
+                      <MenuItem key={lang.value} value={lang.value}>{lang.label}</MenuItem>
+                    ))}
+                    <MenuItem value="__other">{t('tools.quiz.languageOther')}</MenuItem>
+                  </TextField>
+                  {isCustomLang(q) && (
+                    <TextField size="small" label={t('tools.quiz.languageCustom')} value={q.language ?? ''}
+                      onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, language: e.target.value }))}
+                      slotProps={{ htmlInput: { maxLength: 30 } }} sx={{ width: 170 }} />
+                  )}
                   <Box sx={{ flexGrow: 1 }} />
                   <Button size="small" color="error" startIcon={<Close />}
                     onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, code: undefined, language: undefined }))}>
@@ -496,6 +720,30 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }
                 )}
               </>
             )}
+
+            {/* Optional explanation — shown to the player on the review screen only. Opt-in via a
+                button so a simple MCQ stays a compact card (UI épurée). */}
+            {q.explanation === undefined ? (
+              <Button size="small" startIcon={<Add />} sx={{ mt: 1.5 }}
+                onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, explanation: '' }))}>
+                {t('tools.quiz.addExplanation')}
+              </Button>
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mt: 1.5 }}>
+                <TextField
+                  fullWidth size="small" multiline maxRows={3}
+                  label={t('tools.quiz.explanationLabel')} value={q.explanation}
+                  onChange={(e) => patchQuestion(q.id, (qq) => ({ ...qq, explanation: e.target.value }))}
+                  slotProps={{ htmlInput: { maxLength: 1000 } }}
+                />
+                <Tooltip title={t('tools.quiz.removeExplanation')}>
+                  <IconButton size="small" sx={{ mt: 0.5 }} aria-label={t('tools.quiz.removeExplanation')}
+                    onClick={() => patchQuestion(q.id, (qq) => ({ ...qq, explanation: undefined }))}>
+                    <Close fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
           </GlassCard>
         ))}
       </Stack>
@@ -507,10 +755,19 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button variant="contained" startIcon={<PlayArrow />} onClick={() => onPlay(draft)}>{t('tools.quiz.play')}</Button>
         <Box sx={{ flexGrow: 1 }} />
-        {canPublish && (
-          <Button variant="outlined" color="success" startIcon={<CloudUpload />} onClick={() => onPublish(draft)}>
-            {t('tools.quiz.publish')}
-          </Button>
+        {canPublish ? (
+          <>
+            <Button variant="outlined" startIcon={<CloudDone />} onClick={() => onSaveOnline(draft)}>
+              {t(draft.serverId ? 'tools.quiz.updateOnline' : 'tools.quiz.saveOnline')}
+            </Button>
+            <Button variant="contained" color="success" startIcon={<CloudUpload />} onClick={() => onPublish(draft)}>
+              {t('tools.quiz.publish')}
+            </Button>
+          </>
+        ) : (
+          <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
+            {t('tools.quiz.editorAnonHint')}
+          </Typography>
         )}
       </Box>
     </Box>
@@ -518,15 +775,17 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onPublish }
 }
 
 /** "Bibliothèque" tab — quizzes shared by other verified students. */
-function LibraryPanel({ isVerified, onPlay, onLeaderboard }: {
+function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
   isVerified: boolean;
-  onPlay: (q: QuizSummary) => Promise<void>;
+  onPlay: (id: number) => Promise<void>;
+  onImport: (id: number) => Promise<void>;
   onLeaderboard: (id: number, title: string) => void;
 }) {
   const { t } = useTranslation();
   const [quizzes, setQuizzes] = useState<QuizSummary[] | null>(null);
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!isVerified) return;
@@ -544,7 +803,19 @@ function LibraryPanel({ isVerified, onPlay, onLeaderboard }: {
 
   const play = async (q: QuizSummary) => {
     setBusyId(q.id);
-    try { await onPlay(q); } catch { setError(true); } finally { setBusyId(null); }
+    try { await onPlay(q.id); } catch { setError(true); } finally { setBusyId(null); }
+  };
+
+  const importQuiz = async (q: QuizSummary) => {
+    setBusyId(q.id);
+    try {
+      await onImport(q.id);
+      setImportedIds((s) => new Set(s).add(q.id));
+    } catch {
+      setError(true);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -557,7 +828,7 @@ function LibraryPanel({ isVerified, onPlay, onLeaderboard }: {
       {quizzes?.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>{t('tools.quiz.libraryEmpty')}</Typography>}
       <Stack spacing={1}>
         {quizzes?.map((q) => (
-          <GlassCard key={q.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center' }}>
+          <GlassCard key={q.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>
               <Typography sx={{ fontWeight: 600 }} noWrap>{q.title}</Typography>
               <Typography variant="caption" color="text.secondary">
@@ -566,6 +837,16 @@ function LibraryPanel({ isVerified, onPlay, onLeaderboard }: {
                 {q.courseName ? ` · ${q.courseName}` : ''}
               </Typography>
             </Box>
+            {importedIds.has(q.id) ? (
+              <Chip size="small" color="success" variant="outlined" icon={<Check sx={{ fontSize: 14 }} />} label={t('tools.quiz.importedChip')} />
+            ) : (
+              <Tooltip title={t('tools.quiz.importFromLibrary')}>
+                <IconButton size="small" onClick={() => importQuiz(q)} disabled={busyId !== null}
+                  aria-label={t('tools.quiz.importFromLibrary')}>
+                  <Download fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title={t('tools.quiz.leaderboard')}>
               <IconButton size="small" onClick={() => onLeaderboard(q.id, q.title)} aria-label={t('tools.quiz.leaderboard')}>
                 <EmojiEvents fontSize="small" />
@@ -651,7 +932,12 @@ function PlaySession({ title, questions, grade, onExit }: {
   const [result, setResult] = useState<PlayResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(false);
-  const startRef = useRef(Date.now());
+  // Chrono d'affichage/repli client (le temps officiel du classement est mesuré côté serveur).
+  // Armé dans un effet : Date.now() pendant le rendu viole la règle react-hooks/purity.
+  const startRef = useRef(0);
+  useEffect(() => {
+    if (startRef.current === 0) startRef.current = Date.now();
+  }, []);
 
   const last = pos >= questions.length - 1;
   const current = questions[pos];
@@ -769,6 +1055,7 @@ function ResultView({ title, questions, answers, result, onRestart, onExit }: {
       <Stack spacing={1}>
         {questions.map((q, qi) => {
           const ok = result.correct[qi];
+          const explanation = result.explanations?.[qi];
           return (
             <GlassCard key={qi} sx={{ p: 1.75, borderLeft: '3px solid', borderColor: ok ? 'success.main' : 'error.main' }}>
               <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, whiteSpace: 'pre-wrap' }}>{q.question}</Typography>
@@ -778,6 +1065,11 @@ function ResultView({ title, questions, answers, result, onRestart, onExit }: {
               {!ok && (
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   {t('tools.quiz.correctIs', { answer: result.correctAnswers[qi] })}
+                </Typography>
+              )}
+              {explanation && (
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'info.main', whiteSpace: 'pre-wrap' }}>
+                  💡 {explanation}
                 </Typography>
               )}
             </GlassCard>

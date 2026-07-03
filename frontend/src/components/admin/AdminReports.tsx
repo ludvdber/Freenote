@@ -45,7 +45,7 @@ export default function AdminReports() {
               {report.documentTitle}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-              {report.reporterUsername} — {formatDate(report.createdAt, i18n.language)}
+              {report.reporterUsername} · {formatDate(report.createdAt, i18n.language)}
             </Typography>
           </Box>
 

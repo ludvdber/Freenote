@@ -29,5 +29,9 @@ public record UserResponse(
         // Raw Discord CDN avatar URL — exposed only on the OWN profile (toResponse) so the avatar
         // picker can preview the "Photo Discord" option even when it is not the active source.
         // null on public/other-user responses (don't leak it when the user picked another avatar).
-        String discordAvatarUrl
+        String discordAvatarUrl,
+        // Parcours à l'ISFCE (public si renseigné) : année d'arrivée, année de fin, diplômé.
+        Integer studyStartYear,
+        Integer studyEndYear,
+        boolean graduated
 ) {}

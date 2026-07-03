@@ -56,6 +56,18 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
+    /**
+     * Corps JSON illisible/malformé (syntaxe cassée, null sur un champ primitif, type inattendu).
+     * Erreur du CLIENT → 400 propre, pas un 500 + stack trace (les bots qui postent du garbage
+     * rempliraient sinon les logs d'erreurs). Le détail Jackson n'est pas renvoyé (noms de classes
+     * internes).
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableBody(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Corps de requête invalide");
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());

@@ -33,9 +33,20 @@ class QuizFlowTest extends AbstractIntegrationTest {
     private static final String CREATE_BODY = """
             {
               "title": "Réseaux — OSI",
+              "published": true,
               "questions": [
                 {"question": "Couche transport ?", "choices": ["UDP", "TCP"], "answer": 1},
                 {"question": "Protocole de résolution ?", "choices": ["ARP", "IP", "HTTP"], "answer": 0}
+              ]
+            }
+            """;
+
+    /** Sans "published" : Jackson met le boolean à false → enregistrement PRIVÉ. */
+    private static final String CREATE_PRIVATE_BODY = """
+            {
+              "title": "Brouillon privé",
+              "questions": [
+                {"question": "2+2 ?", "type": "open", "openAnswer": "4", "explanation": "Addition simple."}
               ]
             }
             """;
@@ -135,6 +146,62 @@ class QuizFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + jwt).with(csrf()))
                 .andExpect(status().isNoContent());
         assertThat(attemptRepository.count()).isZero();
+    }
+
+    @Test
+    void shouldSupportPrivateSaveThenPublishLifecycle() throws Exception {
+        // 1. Enregistrement privé (pas de "published" dans le JSON → false).
+        String body = mockMvc.perform(post("/api/quizzes")
+                        .header("Authorization", "Bearer " + jwt).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(CREATE_PRIVATE_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.published").value(false))
+                .andReturn().getResponse().getContentAsString();
+        long id = ((Number) JsonPath.read(body, "$.id")).longValue();
+
+        // 2. Invisible de la bibliothèque et intouchable par un tiers (404, pas 403).
+        User other = createVerifiedUser("quiz-curieux");
+        String otherJwt = jwtFor(other);
+        mockMvc.perform(get("/api/quizzes").header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/quizzes/{id}/play", id).header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/quizzes/{id}/full", id).header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isNotFound());
+
+        // 3. Le propriétaire le voit dans « Mes quiz » et peut l'éditer (réponses incluses).
+        mockMvc.perform(get("/api/quizzes/mine").header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].owned").value(true));
+        mockMvc.perform(get("/api/quizzes/{id}/full", id).header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].openAnswer").value("4"))
+                .andExpect(jsonPath("$.questions[0].explanation").value("Addition simple."));
+
+        // 4. Publication via PUT → visible en bibliothèque, importable (full) par un tiers.
+        mockMvc.perform(put("/api/quizzes/{id}", id)
+                        .header("Authorization", "Bearer " + jwt).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CREATE_PRIVATE_BODY.replace("\"questions\"", "\"published\": true, \"questions\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published").value(true));
+        mockMvc.perform(get("/api/quizzes").header("Authorization", "Bearer " + otherJwt))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].owned").value(false));
+        mockMvc.perform(get("/api/quizzes/{id}/full", id).header("Authorization", "Bearer " + otherJwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].openAnswer").value("4"));
+
+        // 5. L'explication est renvoyée dans le résultat d'un essai (écran de review).
+        mockMvc.perform(post("/api/quizzes/{id}/attempts", id)
+                        .header("Authorization", "Bearer " + otherJwt).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":[\"4\"],\"durationMs\":1000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.score").value(1))
+                .andExpect(jsonPath("$.explanations[0]").value("Addition simple."));
     }
 
     @Test

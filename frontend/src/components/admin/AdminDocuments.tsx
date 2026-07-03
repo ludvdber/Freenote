@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   getPendingDocuments,
+  getDuplicateGroups,
   verifyDocument,
   adminUpdateDocument,
   adminDeleteDocument,
@@ -55,9 +56,16 @@ export default function AdminDocuments() {
     setPage(0);
   }
 
+  const [pendingPage, setPendingPage] = useState(0);
   const { data: pendingDocs } = useQuery({
-    queryKey: ['admin-pending-docs'],
-    queryFn: getPendingDocuments,
+    queryKey: ['admin-pending-docs', pendingPage],
+    queryFn: () => getPendingDocuments(pendingPage, 20),
+  });
+
+  // Groupes de doublons exacts (même hash SHA-256) détectés par le backfill/l'upload.
+  const { data: duplicateGroups } = useQuery({
+    queryKey: ['admin-duplicates'],
+    queryFn: getDuplicateGroups,
   });
 
   const { data: courses } = useQuery({
@@ -74,6 +82,7 @@ export default function AdminDocuments() {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-pending-docs'] });
     queryClient.invalidateQueries({ queryKey: ['admin-all-docs'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-duplicates'] });
   };
 
   const verifyMut = useMutation({ mutationFn: verifyDocument, onSuccess: invalidateAll });
@@ -104,7 +113,7 @@ export default function AdminDocuments() {
     });
   };
 
-  const pendingCount = pendingDocs?.length ?? 0;
+  const pendingCount = pendingDocs?.totalElements ?? 0;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -115,7 +124,7 @@ export default function AdminDocuments() {
             {t('admin.docs.pending')} ({pendingCount})
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {pendingDocs!.map((doc) => (
+            {pendingDocs!.content.map((doc) => (
               <Box
                 key={doc.id}
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.02)', flexWrap: 'wrap' }}
@@ -123,7 +132,7 @@ export default function AdminDocuments() {
                 <Box sx={{ flex: 1, minWidth: 200 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>{doc.title}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {doc.courseName} — {doc.authorName} — {formatDate(doc.createdAt, i18n.language)}
+                    {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
                   </Typography>
                 </Box>
                 <Tooltip title={t('admin.docs.view')}>
@@ -141,6 +150,56 @@ export default function AdminDocuments() {
                     <Delete fontSize="small" />
                   </IconButton>
                 </Tooltip>
+              </Box>
+            ))}
+          </Box>
+          {pendingDocs && pendingDocs.totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Pagination
+                count={pendingDocs.totalPages}
+                page={pendingPage + 1}
+                onChange={(_, p) => setPendingPage(p - 1)}
+                color="primary"
+                shape="rounded"
+                size="small"
+              />
+            </Box>
+          )}
+        </GlassCard>
+      )}
+
+      {/* Doublons exacts (même contenu PDF) — l'admin garde un exemplaire et supprime le reste */}
+      {duplicateGroups && duplicateGroups.length > 0 && (
+        <GlassCard sx={{ p: 2.5, borderColor: 'warning.main' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+            {t('admin.docs.duplicates', { count: duplicateGroups.length })}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            {t('admin.docs.duplicatesHint')}
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {duplicateGroups.map((group, gi) => (
+              <Box key={gi} sx={{ borderLeft: '3px solid', borderColor: 'warning.main', pl: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                {group.map((doc) => (
+                  <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: 1, minWidth: 200 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{doc.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        #{doc.id} · {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
+                      </Typography>
+                    </Box>
+                    <Tooltip title={t('admin.docs.view')}>
+                      <IconButton size="small" component={Link} to={`/documents/${doc.id}`} target="_blank">
+                        <Visibility fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t('document.delete')}>
+                      <IconButton size="small" color="error" onClick={() => setDeleteCandidate(doc.id)}>
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                ))}
               </Box>
             ))}
           </Box>
@@ -186,7 +245,7 @@ export default function AdminDocuments() {
                 <Box sx={{ flex: 1, minWidth: 200 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>{doc.title}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    #{doc.id} — {doc.courseName} — {doc.authorName} — {formatDate(doc.createdAt, i18n.language)}
+                    #{doc.id} · {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
                   </Typography>
                 </Box>
                 <Chip label={t(`categories.${doc.category}`)} size="small" variant="outlined" />
@@ -273,7 +332,7 @@ function EditRow({ form, courses, onChange, onSave, onCancel, isPending, t }: Ed
           options={courses}
           value={selectedCourse}
           onChange={(_, v) => onChange({ ...form, courseId: v?.id })}
-          getOptionLabel={(c) => `${c.name} — ${c.sectionName}`}
+          getOptionLabel={(c) => `${c.name} · ${c.sectionName}`}
           isOptionEqualToValue={(a, b) => a.id === b.id}
           renderInput={(params) => <TextField {...params} label={t('document.course')} />}
           renderOption={(props, c) => (

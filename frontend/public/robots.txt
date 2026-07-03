@@ -1,15 +1,15 @@
 User-agent: *
 Allow: /
 
-# Login-gated routes return only the empty SPA shell to crawlers — keep them out of the
+# Login-gated routes return only the empty SPA shell to crawlers : keep them out of the
 # index to avoid "thin content" penalties. Public surface that SHOULD be indexed:
-# /  /outils  /outils/*  /guides  /guides/*  /ressources  /ressources/*  /a-propos  /news  /news/*  /legal  /privacy  /terms
+# /  /outils  /outils/*  /guides  /guides/*  /browse  /documents/*  /a-propos  /news  /news/*  /legal  /privacy  /terms
+# (/browse et /documents/:id servent une vitrine publique aux anonymes depuis 2026-07-03 ;
+# /ressources redirige vers /browse.)
 Disallow: /admin
 Disallow: /profile
 Disallow: /upload
-Disallow: /browse
 Disallow: /leaderboard
-Disallow: /documents
 Disallow: /courses
 Disallow: /users
 Disallow: /api/

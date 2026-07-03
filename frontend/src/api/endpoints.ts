@@ -32,6 +32,7 @@ import type {
   SubmitAttemptRequest,
   QuizSummary,
   QuizPlayResponse,
+  QuizFullResponse,
   AttemptResultResponse,
   QuizLeaderboardEntry,
   GuideSummary,
@@ -198,8 +199,12 @@ export const updateMandate = (id: number, data: UpdateDelegateRequest) =>
   api.patch<DelegateMember>(`/admin/delegates/${id}/edit`, data).then((r) => r.data);
 
 // --- Admin: Documents ---
-export const getPendingDocuments = () =>
-  api.get<DocumentResponse[]>('/admin/documents/pending').then((r) => r.data);
+export const getPendingDocuments = (page = 0, size = 20) =>
+  api.get<PageResponse<DocumentResponse>>('/admin/documents/pending', { params: { page, size } }).then((r) => r.data);
+
+/** Groupes de doublons exacts (même hash SHA-256) — vue de modération/fusion. */
+export const getDuplicateGroups = () =>
+  api.get<DocumentResponse[][]>('/admin/documents/duplicates').then((r) => r.data);
 
 export const verifyDocument = (id: number) =>
   api.put<DocumentResponse>(`/admin/documents/${id}/verify`).then((r) => r.data);
@@ -334,9 +339,15 @@ export const confirmVerification = (code: string) =>
 export const logout = () =>
   api.post('/auth/logout');
 
-// --- Shared flashcard decks (palier C) ---
-export const publishDeck = (body: PublishDeckRequest) =>
+// --- Flashcard decks (enregistrés côté serveur : privés « mine » + bibliothèque publiée) ---
+export const saveDeck = (body: PublishDeckRequest) =>
   api.post<FlashcardDeckResponse>('/flashcard-decks', body).then((r) => r.data);
+
+export const updateDeck = (id: number, body: PublishDeckRequest) =>
+  api.put<FlashcardDeckResponse>(`/flashcard-decks/${id}`, body).then((r) => r.data);
+
+export const listMyDecks = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<FlashcardDeckSummary>>('/flashcard-decks/mine', { params }).then((r) => r.data);
 
 export const listSharedDecks = (params: { courseId?: number; page?: number; size?: number } = {}) =>
   api.get<PageResponse<FlashcardDeckSummary>>('/flashcard-decks', { params }).then((r) => r.data);
@@ -347,15 +358,25 @@ export const getSharedDeck = (id: number) =>
 export const deleteSharedDeck = (id: number) =>
   api.delete<void>(`/flashcard-decks/${id}`);
 
-// --- Shared quizzes ---
+// --- Quiz (enregistrés côté serveur : privés « mine » + bibliothèque publiée) ---
 export const createQuiz = (body: CreateQuizRequest) =>
   api.post<QuizSummary>('/quizzes', body).then((r) => r.data);
+
+export const updateQuiz = (id: number, body: CreateQuizRequest) =>
+  api.put<QuizSummary>(`/quizzes/${id}`, body).then((r) => r.data);
+
+export const listMyQuizzes = (params: { page?: number; size?: number } = {}) =>
+  api.get<PageResponse<QuizSummary>>('/quizzes/mine', { params }).then((r) => r.data);
 
 export const listQuizzes = (params: { courseId?: number; page?: number; size?: number } = {}) =>
   api.get<PageResponse<QuizSummary>>('/quizzes', { params }).then((r) => r.data);
 
 export const getQuizPlay = (id: number) =>
   api.get<QuizPlayResponse>(`/quizzes/${id}/play`).then((r) => r.data);
+
+/** Vue complète (réponses incluses) — édition d'un quiz possédé ou import d'un quiz publié. */
+export const getQuizFull = (id: number) =>
+  api.get<QuizFullResponse>(`/quizzes/${id}/full`).then((r) => r.data);
 
 export const submitQuizAttempt = (id: number, body: SubmitAttemptRequest) =>
   api.post<AttemptResultResponse>(`/quizzes/${id}/attempts`, body).then((r) => r.data);

@@ -79,7 +79,9 @@ public class ImageToPdfServiceImpl implements ImageToPdfService {
         }
     }
 
-    /** Reads only the image header to reject over-resolution before allocating a huge BufferedImage. */
+    /** Reads only the image header: rejects over-resolution before allocating a huge BufferedImage,
+     *  and checks the REAL sniffed format — the Content-Type check above is declarative only (a GIF
+     *  claiming image/png would otherwise be decoded by whichever reader matches its magic bytes). */
     private void checkDimensions(byte[] data) throws IOException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
@@ -88,6 +90,10 @@ public class ImageToPdfServiceImpl implements ImageToPdfService {
             }
             ImageReader reader = readers.next();
             try {
+                String format = reader.getFormatName().toLowerCase(java.util.Locale.ROOT);
+                if (!"jpeg".equals(format) && !"png".equals(format)) {
+                    throw new IllegalArgumentException("Seules les images JPG et PNG sont acceptées");
+                }
                 reader.setInput(iis);
                 long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
                 if (pixels > MAX_PIXELS) {

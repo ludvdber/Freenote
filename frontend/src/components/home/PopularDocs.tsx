@@ -67,7 +67,7 @@ export default function PopularDocs() {
                       {doc.title}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" noWrap>
-                      {doc.courseName} — {doc.authorName}
+                      {doc.courseName} · {doc.authorName}
                     </Typography>
                   </Box>
                   <Chip

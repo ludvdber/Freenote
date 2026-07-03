@@ -14,9 +14,12 @@ public record QuizQuestionDto(
         String type,
         @NotBlank @Size(max = 500) String question,
         @Size(max = 6) List<@Size(max = 200) String> choices,
-        int answer,
+        // Integer, pas int : une question ouverte n'a pas d'index de réponse et le client peut
+        // omettre le champ — Jackson 3 refuse de mapper null/absent vers un primitif (500 sinon).
+        Integer answer,
         @Size(max = 200) String openAnswer,
         @Size(max = 300_000) String image,
         @Size(max = 5000) String code,
-        @Size(max = 30) String language
+        @Size(max = 30) String language,
+        @Size(max = 1000) String explanation
 ) {}

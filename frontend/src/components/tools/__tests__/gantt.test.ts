@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateProject, normalizeProject, renderTasks,
-  projectToJson, projectFromJson, toCsv, addDaysIso, type GanttProject,
+  projectToJson, projectFromJson, toCsv, addDaysIso, diffDays, projectRange, workerColor,
+  WORKER_COLORS, UNASSIGNED_COLOR, type GanttProject,
 } from '../gantt/logic';
 
 const NOW = 1_700_000_000_000;
@@ -11,8 +12,9 @@ function project(overrides: Partial<GanttProject> = {}): GanttProject {
     id: 'p1',
     title: 'Projet TFE',
     createdAt: NOW,
+    workers: ['Alice', 'Bob'],
     tasks: [
-      { id: 'a', name: 'Analyse', start: '2026-09-01', end: '2026-09-07', progress: 50, dependencies: '' },
+      { id: 'a', name: 'Analyse', start: '2026-09-01', end: '2026-09-07', progress: 50, dependencies: '', assignee: 'Alice' },
       { id: 'b', name: 'Dev', start: '2026-09-08', end: '2026-09-20', progress: 0, dependencies: 'a' },
     ],
     ...overrides,
@@ -22,6 +24,25 @@ function project(overrides: Partial<GanttProject> = {}): GanttProject {
 describe('gantt — dates', () => {
   it('adds days across month boundaries', () => {
     expect(addDaysIso('2026-09-30', 1)).toBe('2026-10-01');
+  });
+  it('computes whole-day differences', () => {
+    expect(diffDays('2026-09-01', '2026-09-08')).toBe(7);
+    expect(diffDays('2026-09-08', '2026-09-01')).toBe(-7);
+    expect(diffDays('2026-09-01', '2026-09-01')).toBe(0);
+  });
+  it('spans the padded project range across all tasks', () => {
+    const r = projectRange(renderTasks(project()), 2);
+    expect(r.start).toBe('2026-08-30'); // 09-01 − 2 j
+    expect(r.end).toBe('2026-09-22');   // 09-20 + 2 j
+  });
+});
+
+describe('gantt — workers', () => {
+  it('colors a worker by its index and grays the unassigned', () => {
+    expect(workerColor(['Alice', 'Bob'], 'Alice')).toBe(WORKER_COLORS[0]);
+    expect(workerColor(['Alice', 'Bob'], 'Bob')).toBe(WORKER_COLORS[1]);
+    expect(workerColor(['Alice'], undefined)).toBe(UNASSIGNED_COLOR);
+    expect(workerColor(['Alice'], 'Zoé')).toBe(UNASSIGNED_COLOR); // inconnu → neutre
   });
 });
 
@@ -68,13 +89,27 @@ describe('gantt — backup', () => {
     expect(restored.title).toBe('Projet TFE');
     expect(restored.serverId).toBeUndefined();
     expect(restored.tasks[1].dependencies).toBe('a');
+    expect(restored.tasks[0].assignee).toBe('Alice');
+    expect(restored.workers).toEqual(['Alice', 'Bob']);
     expect(() => projectFromJson('nope')).toThrow();
+  });
+
+  it('rebuilds the workers list from assignees for v1 backups without the field', () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      project: {
+        id: 'p1', title: 'Vieux backup', createdAt: NOW,
+        tasks: [{ id: 'a', name: 'A', start: '2026-09-01', end: '2026-09-02', progress: 0, dependencies: '', assignee: 'Chloé' }],
+      },
+    });
+    expect(projectFromJson(v1).workers).toEqual(['Chloé']);
   });
 
   it('exports CSV with a header and one row per task', () => {
     const csv = toCsv(project());
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('id,name,start,end,progress,dependencies');
+    expect(lines[0]).toBe('id,name,start,end,progress,dependencies,assignee');
     expect(lines).toHaveLength(3);
+    expect(lines[1].endsWith(',Alice')).toBe(true);
   });
 });

@@ -30,6 +30,10 @@ export interface User {
   /** Raw Discord avatar URL, present only on the own-profile response — lets the avatar picker
    *  preview the "Photo Discord" option even when another source is currently active. */
   discordAvatarUrl: string | null;
+  /** Parcours à l'ISFCE, affiché publiquement si renseigné (badge « Promo {endYear} »). */
+  studyStartYear: number | null;
+  studyEndYear: number | null;
+  graduated: boolean;
 }
 
 export interface DocumentResponse {
@@ -203,6 +207,9 @@ export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
   displayRealName: boolean;
+  studyStartYear?: number | null;
+  studyEndYear?: number | null;
+  graduated: boolean;
 }
 
 export interface RateRequest {
@@ -255,6 +262,8 @@ export interface PublishDeckRequest {
   description?: string | null;
   courseId?: number | null;
   cards: FlashcardCardDto[];
+  /** true = bibliotheque partagee ; false/absent = enregistrement prive (compte seul). */
+  published: boolean;
 }
 
 export interface FlashcardDeckSummary {
@@ -266,6 +275,9 @@ export interface FlashcardDeckSummary {
   courseId: number | null;
   courseName: string | null;
   createdAt: string;
+  published: boolean;
+  /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
+  owned: boolean;
 }
 
 export interface FlashcardDeckResponse extends FlashcardDeckSummary {
@@ -278,14 +290,16 @@ export interface QuizQuestionDto {
   question: string;
   /** MCQ choices. */
   choices: string[];
-  /** MCQ: 0-based index of the correct choice. */
-  answer: number;
+  /** MCQ: 0-based index of the correct choice (absent pour une question ouverte). */
+  answer?: number | null;
   /** Open question: the expected answer. */
   openAnswer?: string;
   /** Base64 data URI (published quizzes only). */
   image?: string | null;
   code?: string | null;
   language?: string | null;
+  /** Explication optionnelle, revelee uniquement sur l'ecran de review apres correction. */
+  explanation?: string | null;
 }
 
 export interface CreateQuizRequest {
@@ -293,6 +307,8 @@ export interface CreateQuizRequest {
   description?: string | null;
   courseId?: number | null;
   questions: QuizQuestionDto[];
+  /** true = bibliotheque partagee (jouable + classement) ; false = enregistrement prive. */
+  published: boolean;
 }
 
 export interface SubmitAttemptRequest {
@@ -311,6 +327,22 @@ export interface QuizSummary {
   courseId: number | null;
   courseName: string | null;
   createdAt: string;
+  published: boolean;
+  /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
+  owned: boolean;
+}
+
+/** Vue complete d'un quiz, REPONSES INCLUSES — edition (proprietaire) ou import (quiz publie). */
+export interface QuizFullResponse {
+  id: number;
+  title: string;
+  description: string | null;
+  courseId: number | null;
+  courseName: string | null;
+  published: boolean;
+  owned: boolean;
+  createdAt: string;
+  questions: QuizQuestionDto[];
 }
 
 /** A question served for playing — WITHOUT the graded answer (server grades on submit). */
@@ -338,6 +370,8 @@ export interface AttemptResultResponse {
   correct: boolean[];
   /** Per-question display text of the correct answer. */
   correctAnswers: string[];
+  /** Explication de l'auteur par question (null si aucune) — ecran de review. */
+  explanations: (string | null)[];
   rank: number;
 }
 
@@ -381,10 +415,12 @@ export interface CreateGuideRequest {
 export interface GanttTaskDto {
   id: string;
   name: string;
-  start: string;
-  end: string;
+  start: string | null;
+  end: string | null;
   progress: number;
-  dependencies: string;
+  dependencies: string | null;
+  /** Travailleur assigné (nom libre), null si non assigné. */
+  assignee: string | null;
 }
 
 export interface SaveGanttRequest {

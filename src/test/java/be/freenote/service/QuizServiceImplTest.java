@@ -11,16 +11,20 @@ import be.freenote.entity.QuizAttempt;
 import be.freenote.entity.QuizQuestionJson;
 import be.freenote.entity.User;
 import be.freenote.exception.ForbiddenException;
+import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.repository.CourseRepository;
 import be.freenote.repository.QuizAttemptRepository;
 import be.freenote.repository.QuizRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.impl.QuizServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,23 +40,36 @@ class QuizServiceImplTest {
     @Mock private QuizAttemptRepository attemptRepository;
     @Mock private UserRepository userRepository;
     @Mock private CourseRepository courseRepository;
+    @Mock private StringRedisTemplate redisTemplate;
+    @Mock private ValueOperations<String, String> valueOps;
 
     @InjectMocks private QuizServiceImpl service;
+
+    @BeforeEach
+    void stubRedis() {
+        // Toutes les branches play/submit passent par opsForValue ; get() rend null par défaut
+        // (pas d'horodatage serveur → repli sur la durée déclarée, comme après un flush Redis).
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
+    }
 
     private User testUser(Long id) {
         return User.builder().id(id).username("user" + id).build();
     }
 
     private QuizQuestionDto mcq(String question, int answer, String... choices) {
-        return new QuizQuestionDto("mcq", question, List.of(choices), answer, null, null, null, null);
+        return new QuizQuestionDto("mcq", question, List.of(choices), answer, null, null, null, null, null);
     }
 
     private QuizQuestionDto open(String question, String expected) {
-        return new QuizQuestionDto("open", question, null, -1, expected, null, null, null);
+        return new QuizQuestionDto("open", question, null, -1, expected, null, null, null, null);
     }
 
     private QuizQuestionJson mcqJson(String question, int answer, String... choices) {
-        return new QuizQuestionJson("mcq", question, List.of(choices), answer, "", null, null, null);
+        return new QuizQuestionJson("mcq", question, List.of(choices), answer, "", null, null, null, null);
+    }
+
+    private CreateQuizRequest request(String title, String description, List<QuizQuestionDto> questions) {
+        return new CreateQuizRequest(title, description, null, questions, true);
     }
 
     private QuizAttempt attempt(Long userId, int score, long durationMs) {
@@ -64,7 +81,7 @@ class QuizServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new CreateQuizRequest("  Réseaux — OSI  ", "  desc  ", null,
+        var request = request("  Réseaux — OSI  ", "  desc  ",
                 List.of(mcq("  Couche transport ?  ", 1, " UDP ", " TCP "),
                         open("Résultat de 2+2 ?", " 4 ")));
 
@@ -74,13 +91,28 @@ class QuizServiceImplTest {
         assertThat(res.description()).isEqualTo("desc");
         assertThat(res.questionCount()).isEqualTo(2);
         assertThat(res.ownerName()).isEqualTo("user1");
+        assertThat(res.published()).isTrue();
+        assertThat(res.owned()).isTrue();
         verify(courseRepository, never()).findById(any()); // no courseId → no lookup
+    }
+
+    @Test
+    void shouldCreatePrivateQuizWhenPublishedFalse() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var request = new CreateQuizRequest("Privé", null, null,
+                List.of(mcq("Q", 0, "A", "B")), false);
+
+        QuizSummary res = service.create(1L, request);
+
+        assertThat(res.published()).isFalse();
     }
 
     @Test
     void shouldRejectMcqAnswerIndexOutOfRange() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
-        var request = new CreateQuizRequest("Bad", null, null,
+        var request = request("Bad", null,
                 List.of(mcq("Q", 5, "A", "B"))); // answer 5 but only 2 choices
 
         assertThatThrownBy(() -> service.create(1L, request))
@@ -91,11 +123,40 @@ class QuizServiceImplTest {
     @Test
     void shouldRejectOpenQuestionWithoutExpectedAnswer() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
-        var request = new CreateQuizRequest("Bad", null, null,
+        var request = request("Bad", null,
                 List.of(open("Q", "   "))); // blank expected answer
 
         assertThatThrownBy(() -> service.create(1L, request))
                 .isInstanceOf(IllegalArgumentException.class);
+        verify(quizRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectNonDataUriImage() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        var bad = new QuizQuestionDto("mcq", "Q", List.of("A", "B"), 0, null,
+                "https://evil.example/pixel.png", null, null, null);
+
+        assertThatThrownBy(() -> service.create(1L, request("Bad", null, List.of(bad))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("data URI");
+        verify(quizRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectQuizOverTotalContentBound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        // 8 questions × ~290 k chars d'image = ~2,3 Mo > borne totale de 2 Mo,
+        // alors que chaque image respecte individuellement la borne @Size(300_000).
+        String bigImage = "data:image/jpeg;base64," + "a".repeat(290_000);
+        List<QuizQuestionDto> questions = java.util.stream.IntStream.range(0, 8)
+                .mapToObj(i -> new QuizQuestionDto("mcq", "Q" + i, List.of("A", "B"), 0, null,
+                        bigImage, null, null, null))
+                .toList();
+
+        assertThatThrownBy(() -> service.create(1L, request("Trop lourd", null, questions)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("volumineux");
         verify(quizRepository, never()).save(any());
     }
 
@@ -127,11 +188,74 @@ class QuizServiceImplTest {
     }
 
     @Test
+    void shouldClampAbsurdDurationToThreeHours() {
+        Quiz quiz = Quiz.builder().id(7L).questionCount(1)
+                .questions(List.of(mcqJson("Q1", 0, "a", "b")))
+                .build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(attemptRepository.save(any(QuizAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(attemptRepository.findForLeaderboard(eq(7L), any())).thenReturn(List.of());
+
+        AttemptResultResponse res = service.submit(1L, 7L,
+                new SubmitAttemptRequest(List.of("0"), Long.MAX_VALUE));
+
+        assertThat(res.durationMs()).isEqualTo(3L * 3600 * 1000);
+    }
+
+    @Test
+    void shouldMeasureDurationServerSideFromPlayTimestamp() {
+        Quiz quiz = Quiz.builder().id(7L).questionCount(1)
+                .questions(List.of(mcqJson("Q1", 0, "a", "b")))
+                .build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(attemptRepository.save(any(QuizAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(attemptRepository.findForLeaderboard(eq(7L), any())).thenReturn(List.of());
+        // Horodatage de départ posé par play il y a ~5 s : la déclaration client (1 ms) est ignorée.
+        when(valueOps.get("quiz:play-start:7:1"))
+                .thenReturn(String.valueOf(System.currentTimeMillis() - 5000));
+
+        AttemptResultResponse res = service.submit(1L, 7L,
+                new SubmitAttemptRequest(List.of("0"), 1));
+
+        assertThat(res.durationMs()).isBetween(4500L, 60_000L);
+    }
+
+    @Test
+    void shouldArmServerTimerOnPlay() {
+        Quiz quiz = Quiz.builder().id(7L).owner(testUser(1L)).published(true)
+                .questions(List.of(mcqJson("Q1", 0, "a", "b"))).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+
+        service.play(7L, 1L, false);
+
+        verify(valueOps).set(eq("quiz:play-start:7:1"), anyString(), any(java.time.Duration.class));
+    }
+
+    @Test
+    void shouldReturnExplanationsInResults() {
+        Quiz quiz = Quiz.builder().id(7L).questionCount(1)
+                .questions(List.of(new QuizQuestionJson("mcq", "Q1", List.of("a", "b"), 0, "",
+                        null, null, null, "Parce que a.")))
+                .build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(attemptRepository.save(any(QuizAttempt.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(attemptRepository.findForLeaderboard(eq(7L), any())).thenReturn(List.of());
+
+        AttemptResultResponse res = service.submit(1L, 7L,
+                new SubmitAttemptRequest(List.of("0"), 1000));
+
+        assertThat(res.explanations()).containsExactly("Parce que a.");
+    }
+
+    @Test
     void shouldGradeOpenAnswerNormalised() {
         Quiz quiz = Quiz.builder().id(7L).questionCount(2)
                 .questions(List.of(
-                        new QuizQuestionJson("open", "2+2 ?", List.of(), -1, "4", null, null, null),
-                        new QuizQuestionJson("open", "Capitale ?", List.of(), -1, "Bruxelles", null, null, null)))
+                        new QuizQuestionJson("open", "2+2 ?", List.of(), -1, "4", null, null, null, null),
+                        new QuizQuestionJson("open", "Capitale ?", List.of(), -1, "Bruxelles", null, null, null, null)))
                 .build();
         when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
@@ -148,6 +272,58 @@ class QuizServiceImplTest {
     }
 
     @Test
+    void shouldHidePrivateQuizFromNonOwner() {
+        Quiz quiz = Quiz.builder().id(7L).owner(testUser(2L)).published(false)
+                .questions(List.of(mcqJson("Q1", 0, "a", "b"))).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+
+        // 404 (pas 403) : un contenu privé ne révèle pas son existence.
+        assertThatThrownBy(() -> service.play(7L, 1L, false))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.full(7L, 1L, false))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.leaderboard(7L, 10, 1L, false))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void shouldLetOwnerPlayOwnPrivateQuizAndExposeAnswersInFull() {
+        Quiz quiz = Quiz.builder().id(7L).owner(testUser(1L)).published(false)
+                .questions(List.of(mcqJson("Q1", 1, "a", "b"))).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+
+        assertThat(service.play(7L, 1L, false).questions()).hasSize(1);
+        assertThat(service.full(7L, 1L, false).questions().get(0).answer()).isEqualTo(1);
+        assertThat(service.full(7L, 1L, false).owned()).isTrue();
+    }
+
+    @Test
+    void shouldForbidUpdatingSomeoneElsesQuiz() {
+        Quiz quiz = Quiz.builder().id(7L).owner(testUser(2L)).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+
+        assertThatThrownBy(() -> service.update(1L, false, 7L,
+                request("X", null, List.of(mcq("Q", 0, "A", "B")))))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void shouldUpdateOwnQuizIncludingPublishedFlag() {
+        Quiz quiz = Quiz.builder().id(7L).owner(testUser(1L)).published(false)
+                .questions(List.of(mcqJson("Old", 0, "a", "b"))).questionCount(1).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        QuizSummary res = service.update(1L, false, 7L,
+                new CreateQuizRequest("Nouveau", null, null,
+                        List.of(mcq("Q1", 0, "A", "B"), mcq("Q2", 1, "A", "B")), true));
+
+        assertThat(res.title()).isEqualTo("Nouveau");
+        assertThat(res.questionCount()).isEqualTo(2);
+        assertThat(res.published()).isTrue();
+    }
+
+    @Test
     void shouldBuildLeaderboardKeepingBestAttemptPerUser() {
         Quiz quiz = Quiz.builder().id(7L).build();
         when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
@@ -157,7 +333,7 @@ class QuizServiceImplTest {
                 attempt(2L, 5, 2000), // user2 best
                 attempt(1L, 4, 500))); // user1 worse → ignored
 
-        List<QuizLeaderboardEntry> board = service.leaderboard(7L, 10);
+        List<QuizLeaderboardEntry> board = service.leaderboard(7L, 10, 99L, false);
 
         assertThat(board).hasSize(2);
         assertThat(board.get(0).rank()).isEqualTo(1);

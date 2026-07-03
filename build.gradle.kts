@@ -47,12 +47,12 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
 
     // MinIO
-    implementation("io.minio:minio:9.0.0")
+    implementation("io.minio:minio:9.0.3")
 
     // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
-    implementation("org.apache.pdfbox:pdfbox:3.0.4")
+    implementation("org.apache.pdfbox:pdfbox:3.0.7")
     // metadata-extractor — read the EXIF Orientation tag so phone photos aren't rotated in the PDF
-    implementation("com.drewnoakes:metadata-extractor:2.19.0")
+    implementation("com.drewnoakes:metadata-extractor:2.20.0")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")
@@ -73,8 +73,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.4")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.4")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

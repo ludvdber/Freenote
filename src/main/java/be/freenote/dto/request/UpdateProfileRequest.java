@@ -1,5 +1,7 @@
 package be.freenote.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -42,4 +44,15 @@ public class UpdateProfileRequest {
     private String lastName;
 
     private boolean displayRealName;
+
+    // Parcours à l'ISFCE (public si renseigné) — null = non communiqué.
+    @Min(value = 2000, message = "Année invalide")
+    @Max(value = 2100, message = "Année invalide")
+    private Integer studyStartYear;
+
+    @Min(value = 2000, message = "Année invalide")
+    @Max(value = 2100, message = "Année invalide")
+    private Integer studyEndYear;
+
+    private boolean graduated;
 }

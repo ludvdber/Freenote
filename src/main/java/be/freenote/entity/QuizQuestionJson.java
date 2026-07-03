@@ -21,5 +21,8 @@ public record QuizQuestionJson(
         String openAnswer,
         String image,
         String code,
-        String language
+        String language,
+        /** Optional teacher-style explanation, revealed only on the post-grading review screen
+         *  (never during play). Nullable — older stored questions simply don't have it. */
+        String explanation
 ) {}

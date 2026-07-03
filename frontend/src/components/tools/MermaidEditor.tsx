@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, TextField, Button, Stack, Alert } from '@mui/material';
-import { FileDownload, Image as ImageIcon, ContentCopy } from '@mui/icons-material';
+import {
+  Box, Typography, TextField, Button, Stack, Alert,
+  Accordion, AccordionSummary, AccordionDetails,
+} from '@mui/material';
+import { FileDownload, Image as ImageIcon, ContentCopy, ExpandMore, PlayArrow } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import GlassCard from '@/components/ui/GlassCard';
+
+interface GuideEntry {
+  title: string;
+  text: string;
+  code?: string;
+}
 
 /** Starter snippets — the editor is generic but these cover the common UML/diagram kinds. */
 const TEMPLATES: { key: string; code: string }[] = [
@@ -70,6 +79,8 @@ let renderSeq = 0;
 
 export default function MermaidEditor() {
   const { t } = useTranslation();
+  const guideRaw = t('tools.mermaid.guide', { returnObjects: true });
+  const guide: GuideEntry[] = Array.isArray(guideRaw) ? (guideRaw as GuideEntry[]) : [];
   const [code, setCode] = useState(TEMPLATES[0].code);
   const [svg, setSvg] = useState('');
   const [error, setError] = useState('');
@@ -154,6 +165,44 @@ export default function MermaidEditor() {
         <Button size="small" startIcon={<ImageIcon />} onClick={downloadPng} disabled={!svg}>{t('tools.mermaid.exportPng')}</Button>
         <Button size="small" startIcon={<ContentCopy />} onClick={copyCode}>{t('tools.mermaid.copyCode')}</Button>
       </Stack>
+
+      {/* Guide syntaxe intégré : comment écrire du Mermaid, par type de diagramme. Chaque
+          section a un extrait « Essayer » qui remplit l'éditeur au-dessus. */}
+      {guide.length > 0 && (
+        <Box component="section" sx={{ mt: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 700, mb: 0.5 }}>
+            {t('tools.mermaid.guideTitle')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            {t('tools.mermaid.guideIntro')}
+          </Typography>
+          {guide.map((g, i) => (
+            <Accordion key={i} disableGutters elevation={0} sx={{ bgcolor: 'transparent' }}>
+              <AccordionSummary expandIcon={<ExpandMore />}>
+                <Typography component="h3" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>{g.title}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: g.code ? 1.5 : 0 }}>
+                  {g.text}
+                </Typography>
+                {g.code && (
+                  <>
+                    <Box component="pre" sx={{
+                      m: 0, p: 1.5, borderRadius: 1.5, overflowX: 'auto',
+                      fontFamily: '"JetBrains Mono", monospace', fontSize: 12.5, lineHeight: 1.6,
+                      bgcolor: (th) => th.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    }}>{g.code}</Box>
+                    <Button size="small" startIcon={<PlayArrow />} sx={{ mt: 1 }}
+                      onClick={() => { setCode(g.code!); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                      {t('tools.mermaid.tryIt')}
+                    </Button>
+                  </>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

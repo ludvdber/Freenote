@@ -15,6 +15,7 @@ const AdminUsers = lazy(() => import('@/components/admin/AdminUsers'));
 const AdminDonations = lazy(() => import('@/components/admin/AdminDonations'));
 const AdminActivityLogs = lazy(() => import('@/components/admin/AdminActivityLogs'));
 const AdminGuides = lazy(() => import('@/components/admin/AdminGuides'));
+const AdminTools = lazy(() => import('@/components/admin/AdminTools'));
 
 const PANELS = [
   AdminDocuments,
@@ -27,6 +28,7 @@ const PANELS = [
   AdminDonations,
   AdminActivityLogs,
   AdminGuides,
+  AdminTools,
 ];
 
 function TabFallback() {
@@ -45,7 +47,7 @@ export default function Admin() {
 
   return (
     <PageWrapper>
-      <Helmet><title>{t('nav.admin')} — Freenote</title></Helmet>
+      <Helmet><title>{t('nav.admin')} · Freenote</title></Helmet>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>{t('nav.admin')}</Typography>
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" scrollButtons="auto">
         <Tab label={t('admin.tabs.documents')} />
@@ -58,6 +60,7 @@ export default function Admin() {
         <Tab label={t('admin.tabs.donations')} />
         <Tab label={t('admin.tabs.activity')} />
         <Tab label={t('admin.tabs.guides')} />
+        <Tab label={t('admin.tabs.tools')} />
       </Tabs>
 
       <Suspense fallback={<TabFallback />}>

@@ -21,7 +21,7 @@ public class DelegateController {
 
     private final DelegateService delegateService;
 
-    // ── Public ──────────────────────────────────────────────────────────
+    // ── Lecture (étudiants VÉRIFIÉS — règle globale anyRequest().hasRole("VERIFIED")) ──
 
     @GetMapping("/api/delegates")
     public ResponseEntity<List<DelegateResponse>> getActiveDelegates() {

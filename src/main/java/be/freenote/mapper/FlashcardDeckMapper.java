@@ -1,6 +1,7 @@
 package be.freenote.mapper;
 
 import be.freenote.dto.request.FlashcardCardDto;
+import be.freenote.dto.response.DeckListRow;
 import be.freenote.dto.response.FlashcardDeckResponse;
 import be.freenote.dto.response.FlashcardDeckSummary;
 import be.freenote.entity.FlashcardDeck;
@@ -16,19 +17,26 @@ public final class FlashcardDeckMapper {
 
     private FlashcardDeckMapper() {}
 
-    public static FlashcardDeckSummary toSummary(FlashcardDeck d) {
+    /** From the light JPQL projection (listings) — no JSONB loaded. */
+    public static FlashcardDeckSummary toSummary(DeckListRow r, Long callerId) {
+        String ownerName = r.ownerUsername() == null
+                ? "Anonyme"
+                : UserMapper.resolveDisplayName(r.ownerDisplayRealName(), r.ownerFirstName(), r.ownerLastName(), r.ownerUsername());
+        boolean owned = r.ownerId() != null && r.ownerId().equals(callerId);
         return new FlashcardDeckSummary(
-                d.getId(), d.getTitle(), d.getDescription(), d.getCardCount(),
-                ownerName(d), courseId(d), courseName(d), d.getCreatedAt());
+                r.id(), r.title(), r.description(), r.cardCount(),
+                ownerName, r.courseId(), r.courseName(), r.createdAt(), r.published(), owned);
     }
 
-    public static FlashcardDeckResponse toResponse(FlashcardDeck d) {
+    public static FlashcardDeckResponse toResponse(FlashcardDeck d, Long callerId) {
         List<FlashcardCardDto> cards = d.getCards().stream()
                 .map(c -> new FlashcardCardDto(c.front(), c.back()))
                 .toList();
+        boolean owned = d.getOwner() != null && d.getOwner().getId().equals(callerId);
         return new FlashcardDeckResponse(
                 d.getId(), d.getTitle(), d.getDescription(), d.getCardCount(),
-                ownerName(d), courseId(d), courseName(d), d.getCreatedAt(), cards);
+                ownerName(d), courseId(d), courseName(d), d.getCreatedAt(), cards,
+                d.isPublished(), owned);
     }
 
     private static String ownerName(FlashcardDeck d) {

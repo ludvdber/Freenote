@@ -44,11 +44,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(csrfHandler)
-                // Exempt webhook + public GET endpoints from CSRF.
-                // /api/dev/** is handled by DevSecurityConfig under the dev profile only.
+                // Exempt Ko-fi (server-to-server, no cookie session) and logout (must always work,
+                // even with a stale/expired CSRF cookie). The other /api/auth/** endpoints are called
+                // by the SPA, which sends X-XSRF-TOKEN on every request (axios interceptor) — no
+                // reason to exempt them. /api/dev/** is handled by DevSecurityConfig (dev only).
                 .ignoringRequestMatchers(
                     "/api/webhooks/**",
-                    "/api/auth/**"
+                    "/api/auth/logout"
                 )
             )
             .cors(cors -> cors.configure(http))
@@ -113,13 +115,13 @@ public class SecurityConfig {
                 // permit the internal ASYNC/ERROR re-dispatches so the stream closes cleanly.
                 .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
 
-                // SPA static assets (Vite bundle embedded in the fat jar under /static)
-                // — everything served by SpaForwardingConfig must be publicly reachable,
-                // otherwise the login page itself would require a login.
-                .requestMatchers(HttpMethod.GET,
-                        "/", "/index.html", "/favicon.ico", "/robots.txt", "/ads.txt", "/sitemap.xml",
-                        "/assets/**", "/static/**", "/*.svg", "/*.png", "/*.jpg", "/*.webp", "/*.ico"
-                ).permitAll()
+                // SPA shell + static assets : tout GET/HEAD hors préfixes backend (/api, /actuator,
+                // /oauth2, /login) est soit un asset du bundle Vite, soit une route React servie
+                // en index.html par SpaForwardingConfig. Miroir exact de la logique de
+                // SpaForwardingConfig — ajouter une route React ne demande AUCUN changement ici,
+                // et une URL inconnue affiche la page 404 du SPA au lieu d'un 401 JSON.
+                // Les données restent protégées : elles passent toutes par /api/** (règles ci-dessous).
+                .requestMatchers(SecurityConfig::isSpaOrStaticGet).permitAll()
 
                 // Public endpoints — tout le reste exige une authentification.
                 // Politique appliquée : seules la home, Tools, les pages légales et le flux RSS école sont exposés sans login.
@@ -131,25 +133,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides", "/api/guides/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+                // Compteurs agrégés de la home (docs, vues, membres) — aucune donnée personnelle,
+                // affichés aussi aux visiteurs anonymes (la home publique montre les stats).
+                .requestMatchers(HttpMethod.GET, "/api/stats").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/webhooks/kofi").permitAll()
-
-                // SPA deep-link routes (React Router owns them; index.html is served back by SpaForwardingConfig)
-                .requestMatchers(HttpMethod.GET,
-                        "/browse", "/browse/**",
-                        "/upload", "/upload/**",
-                        "/profile", "/profile/**",
-                        "/leaderboard",
-                        "/news", "/news/**",
-                        "/guides", "/guides/**",
-                        "/ressources", "/ressources/**",
-                        "/admin", "/admin/**",
-                        "/outils", "/outils/**", "/tools", "/tools/**",
-                        "/legal", "/privacy", "/terms",
-                        "/a-propos", "/about",
-                        "/courses/**",
-                        "/documents/**",
-                        "/users/**"
-                ).permitAll()
 
                 // Admin endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -194,5 +181,18 @@ public class SecurityConfig {
             .addFilterAfter(adminRoleVerificationFilter, JwtAuthFilter.class);
 
         return http.build();
+    }
+
+    /** GET/HEAD hors préfixes backend = shell SPA ou asset statique (voir SpaForwardingConfig). */
+    private static boolean isSpaOrStaticGet(jakarta.servlet.http.HttpServletRequest request) {
+        String method = request.getMethod();
+        if (!"GET".equals(method) && !"HEAD".equals(method)) {
+            return false;
+        }
+        String uri = request.getRequestURI();
+        return !uri.startsWith("/api/")
+                && !uri.startsWith("/actuator")
+                && !uri.startsWith("/oauth2")
+                && !uri.startsWith("/login");
     }
 }

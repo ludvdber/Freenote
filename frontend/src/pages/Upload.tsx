@@ -248,7 +248,7 @@ export default function Upload() {
 
   return (
     <PageWrapper maxWidth="sm">
-      <Helmet><title>{t('upload.title')} — Freenote</title></Helmet>
+      <Helmet><title>{t('upload.title')} · Freenote</title></Helmet>
       <Typography variant="h4" sx={s.title}>
         {t('upload.title')}
       </Typography>

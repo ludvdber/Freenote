@@ -41,7 +41,7 @@ export default function DocumentCard({ document: doc, haloStrength = 0 }: Props)
               </Typography>
             </Tooltip>
             <Typography variant="caption" color="text.secondary" noWrap>
-              {doc.courseName} — {doc.authorName}
+              {doc.courseName} · {doc.authorName}
             </Typography>
           </Box>
         </Box>

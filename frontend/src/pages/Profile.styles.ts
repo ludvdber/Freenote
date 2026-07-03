@@ -76,9 +76,10 @@ export const switchRow: Sx = {
   py: 0.5,
 };
 
+// Pas de marge négative ici : elle faisait chevaucher le texte d'aide sur la ligne du
+// switch dès que l'aide passait sur deux lignes (chevauchement signalé sur /profile).
 export const switchHelp: Sx = {
   ml: 5,
-  mt: -0.5,
 };
 
 export const statRow: Sx = {

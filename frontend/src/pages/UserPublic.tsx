@@ -1,5 +1,5 @@
 import { Typography, Box, Chip, Grid, Button } from '@mui/material';
-import { GitHub, LinkedIn, Language, Edit } from '@mui/icons-material';
+import { GitHub, LinkedIn, Language, Edit, School } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -80,11 +80,26 @@ export default function UserPublic() {
               </Typography>
             )}
             <Typography variant="body2" color="text.secondary" className="mono">
-              {user.xp} XP — {user.documentCount} {t('stats.docs').toLowerCase()}
+              {user.xp} XP · {user.documentCount} {t('stats.docs').toLowerCase()}
             </Typography>
+            {/* Parcours ISFCE : badge « Promo {année} » pour les diplômés, sinon l'année d'arrivée. */}
+            {(user.graduated && user.studyEndYear) ? (
+              <Chip
+                icon={<School sx={{ fontSize: 14 }} />}
+                label={t('profile.journey.promoBadge', { year: user.studyEndYear })}
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{ mt: 0.5, mr: 0.5, fontSize: 11 }}
+              />
+            ) : user.studyStartYear ? (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                {t('profile.journey.sinceYear', { year: user.studyStartYear })}
+              </Typography>
+            ) : null}
             {activeDelegation && (
               <Chip
-                label={`${t('delegates.title')} — ${activeDelegation.sectionName}`}
+                label={`${t('delegates.title')} · ${activeDelegation.sectionName}`}
                 size="small"
                 color="primary"
                 variant="outlined"

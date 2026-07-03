@@ -43,7 +43,7 @@ export default function ResourceDetail() {
         dateCreated: doc.createdAt,
         isAccessibleForFree: false,
         learningResourceType: t(`categories.${doc.category}`),
-        url: `${SITE_URL}/ressources/${doc.id}`,
+        url: `${SITE_URL}/documents/${doc.id}`,
       }
     : null;
 
@@ -60,20 +60,20 @@ export default function ResourceDetail() {
   return (
     <PageWrapper>
       <Helmet>
-        <title>{doc ? `${doc.title} — Freenote` : `${t('resources.title')} — Freenote`}</title>
+        <title>{doc ? `${doc.title} · Freenote` : `${t('resources.title')} · Freenote`}</title>
         {description && <meta name="description" content={description} />}
-        {doc && <link rel="canonical" href={`${SITE_URL}/ressources/${doc.id}`} />}
+        {doc && <link rel="canonical" href={`${SITE_URL}/documents/${doc.id}`} />}
         {doc && <meta property="og:type" content="article" />}
-        {doc && <meta property="og:title" content={`${doc.title} — Freenote`} />}
+        {doc && <meta property="og:title" content={`${doc.title} · Freenote`} />}
         {description && <meta property="og:description" content={description} />}
-        {doc && <meta property="og:url" content={`${SITE_URL}/ressources/${doc.id}`} />}
+        {doc && <meta property="og:url" content={`${SITE_URL}/documents/${doc.id}`} />}
         {doc && <meta property="og:image" content={`${SITE_URL}/og-image.png`} />}
         {doc && <meta name="twitter:card" content="summary_large_image" />}
         {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
       </Helmet>
 
       <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
-        <Button component={RouterLink} to="/ressources" startIcon={<ArrowBack />} sx={{ mb: 2, color: 'text.secondary', fontWeight: 600 }}>
+        <Button component={RouterLink} to="/browse" startIcon={<ArrowBack />} sx={{ mb: 2, color: 'text.secondary', fontWeight: 600 }}>
           {t('resources.backToList')}
         </Button>
 

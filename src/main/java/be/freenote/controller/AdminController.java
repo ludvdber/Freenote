@@ -18,6 +18,7 @@ import be.freenote.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -67,8 +68,18 @@ public class AdminController {
     // --- Documents ---
 
     @GetMapping("/documents/pending")
-    public ResponseEntity<List<DocumentResponse>> getPendingDocuments() {
-        return ResponseEntity.ok(documentService.getUnverified());
+    public ResponseEntity<PageResponse<DocumentResponse>> getPendingDocuments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100));
+        return ResponseEntity.ok(documentService.getUnverified(pageable));
+    }
+
+    /** Groupes de doublons exacts (même hash SHA-256) détectés par le backfill — vue de
+     *  modération : l'admin choisit lequel garder et supprime les autres. */
+    @GetMapping("/documents/duplicates")
+    public ResponseEntity<List<List<DocumentResponse>>> getDuplicateGroups() {
+        return ResponseEntity.ok(documentService.getDuplicateGroups());
     }
 
     @PutMapping("/documents/{id}/verify")

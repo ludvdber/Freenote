@@ -17,9 +17,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Shared flashcard decks (palier C). All endpoints sit under {@code /api/**} so the global rule
- * {@code anyRequest().hasRole("VERIFIED")} applies — publishing, browsing and importing shared decks
- * are reserved to verified ISFCE students (no anonymous/public surface, hence no extra moderation).
+ * Paquets de flashcards enregistrés côté serveur. Tous les endpoints sont sous {@code /api/**} →
+ * règle globale {@code anyRequest().hasRole("VERIFIED")}. Un paquet {@code published=false} est un
+ * enregistrement privé (backup du localStorage, visible du seul propriétaire) ; {@code published=true}
+ * le place dans la bibliothèque partagée, importable (copie locale éditable) par tout vérifié.
+ * Les anonymes utilisent l'outil 100 % côté client (localStorage + export fichier) et n'atteignent
+ * jamais ce contrôleur.
  */
 @RestController
 @RequestMapping("/api/flashcard-decks")
@@ -32,32 +35,59 @@ public class FlashcardDeckController {
 
     @PostMapping
     @RateLimit(max = 10, window = 3600)
-    public ResponseEntity<FlashcardDeckResponse> publish(Authentication authentication,
-                                                         @Valid @RequestBody PublishDeckRequest request) {
+    public ResponseEntity<FlashcardDeckResponse> save(Authentication authentication,
+                                                      @Valid @RequestBody PublishDeckRequest request) {
         Long userId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.publish(userId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(userId, request));
     }
 
+    @PutMapping("/{id}")
+    @RateLimit(max = 60, window = 3600)
+    public ResponseEntity<FlashcardDeckResponse> update(Authentication authentication, @PathVariable Long id,
+                                                        @Valid @RequestBody PublishDeckRequest request) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(service.update(userId, isAdmin(authentication), id, request));
+    }
+
+    /** Bibliothèque : paquets publiés uniquement. */
     @GetMapping
     public ResponseEntity<PageResponse<FlashcardDeckSummary>> list(
+            Authentication authentication,
             @RequestParam(required = false) Long courseId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE));
-        return ResponseEntity.ok(service.list(courseId, pageable));
+        Long callerId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(service.list(courseId, pageable(page, size), callerId));
+    }
+
+    /** « Mes paquets » : tout ce que le compte a enregistré (privés + publiés). */
+    @GetMapping("/mine")
+    public ResponseEntity<PageResponse<FlashcardDeckSummary>> mine(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(service.mine(userId, pageable(page, size)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FlashcardDeckResponse> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+    public ResponseEntity<FlashcardDeckResponse> get(Authentication authentication, @PathVariable Long id) {
+        return ResponseEntity.ok(service.get(id, SecurityUtils.currentUserId(authentication), isAdmin(authentication)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
         Long userId = SecurityUtils.currentUserId(authentication);
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        service.delete(userId, isAdmin, id);
+        service.delete(userId, isAdmin(authentication), id);
         return ResponseEntity.noContent().build();
+    }
+
+    private static Pageable pageable(int page, int size) {
+        return PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE));
+    }
+
+    private static boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

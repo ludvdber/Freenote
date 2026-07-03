@@ -9,7 +9,7 @@ const DEV_USERS = [
   { username: 'admin',    label: 'Admin (ADMIN)' },
   { username: 'Sophie_M', label: 'Sophie (VERIFIED)' },
   { username: 'Thomas_R', label: 'Thomas (VERIFIED)' },
-  { username: 'Lea_F',    label: 'Lea (unverified — newcomer)' },
+  { username: 'Lea_F',    label: 'Lea (unverified newcomer)' },
 ] as const;
 
 export default function DevLoginButton() {

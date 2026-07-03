@@ -24,6 +24,17 @@ function either(fr: string, en: string) {
   return new RegExp(`${esc(fr)}|${esc(en)}`);
 }
 
+/**
+ * Wait for the SPA to be usable. NEVER use waitForLoadState('networkidle') here: for a logged-in
+ * user the notifications SSE stream (/api/notifications/stream) keeps one connection open for the
+ * whole session, so "network idle" is never reached and every test times out. We wait for the DOM
+ * plus a short settle delay, then assert on concrete elements.
+ */
+async function settle(page: Page, ms = 800) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(ms);
+}
+
 /** Scroll to trigger framer-motion whileInView animations */
 async function autoScroll(page: Page) {
   await page.evaluate(async () => {
@@ -51,8 +62,8 @@ async function devLogin(page: Page, username: string) {
       state: {
         user: u,
         token: 'cookie',
-        isVerified: true,
-        isAdmin: u.username === 'admin',
+        isVerified: !!u.verified,
+        isAdmin: u.role === 'ADMIN',
       },
       version: 0,
     };
@@ -68,7 +79,6 @@ test.describe('Visiteur non connecté', () => {
   test('page d\'accueil accessible avec contenu', async ({ page }) => {
     collectConsole(page, 'visitor-home');
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText(either('Réussis plus vite', 'Learn faster'))).toBeVisible({ timeout: 15_000 });
     await autoScroll(page);
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-home.png'), fullPage: true });
@@ -76,7 +86,9 @@ test.describe('Visiteur non connecté', () => {
 
   test('routes protégées redirigent vers l\'accueil', async ({ page }) => {
     collectConsole(page, 'visitor-blocked');
-    for (const route of ['/browse', '/courses/1', '/documents/1', '/users/2', '/leaderboard', '/news']) {
+    // /news, /guides, /browse, /documents/:id, /outils, /a-propos sont PUBLIQUES (vitrine
+    // anonyme pour les deux premières du catalogue) — ne pas les tester ici.
+    for (const route of ['/courses/1', '/users/2', '/leaderboard', '/upload']) {
       await page.goto(route);
       // Should redirect to home
       await page.waitForURL('/', { timeout: 5_000 });
@@ -84,22 +96,51 @@ test.describe('Visiteur non connecté', () => {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-redirect.png') });
   });
 
+  test('pages publiques accessibles sans login', async ({ page }) => {
+    collectConsole(page, 'visitor-public');
+    for (const route of ['/news', '/guides', '/browse', '/a-propos']) {
+      await page.goto(route);
+      await settle(page);
+      expect(page.url()).toContain(route); // pas de redirection
+      const body = await page.locator('body').textContent();
+      expect(body!.length).toBeGreaterThan(100);
+    }
+  });
+
+  test('vitrine anonyme du catalogue : /browse + teaser /documents/:id', async ({ page }) => {
+    collectConsole(page, 'visitor-catalog');
+    await page.goto('/browse');
+    await settle(page);
+    // L'invite de connexion (aperçu public) est visible pour un anonyme.
+    await expect(page.getByText(either('aperçu public', 'public preview')).first()).toBeVisible({ timeout: 10_000 });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-browse-teaser.png'), fullPage: true });
+    // L'ancienne URL /ressources redirige vers /browse.
+    await page.goto('/ressources');
+    await page.waitForURL('/browse', { timeout: 5_000 });
+  });
+
   test('outils accessibles sans login', async ({ page }) => {
     collectConsole(page, 'visitor-tools');
     await page.goto('/outils');
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText(either('Calculateur IPv4', 'IPv4 Calculator'))).toBeVisible({ timeout: 10_000 });
     // Drill into one tool page (separate SEO URL)
     await page.goto('/outils/calculateur-moyenne');
-    await page.waitForLoadState('networkidle');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-tools.png'), fullPage: true });
+  });
+
+  test('quiz : hint local visible pour un anonyme', async ({ page }) => {
+    collectConsole(page, 'visitor-quiz');
+    await page.goto('/outils/quiz');
+    // Le nouvel encart explique le modèle local/en-ligne aux non-connectés.
+    await expect(page.getByText(either('tout reste sur cet appareil', 'stays on this device'))).toBeVisible({ timeout: 10_000 });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-quiz.png'), fullPage: true });
   });
 
   test('pages légales accessibles sans login', async ({ page }) => {
     collectConsole(page, 'visitor-legal');
     await page.goto('/legal');
-    await page.waitForLoadState('networkidle');
+    await settle(page);
     const body = await page.locator('body').textContent();
     expect(body!.length).toBeGreaterThan(200);
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-legal.png'), fullPage: true });
@@ -108,7 +149,6 @@ test.describe('Visiteur non connecté', () => {
   test('page 404', async ({ page }) => {
     collectConsole(page, 'visitor-404');
     await page.goto('/cette-page-nexiste-pas');
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText('404')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-404.png'), fullPage: true });
   });
@@ -116,7 +156,6 @@ test.describe('Visiteur non connecté', () => {
   test('bouton Dev Login visible en dev', async ({ page }) => {
     collectConsole(page, 'visitor-devlogin');
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Dev Login')).toBeVisible({ timeout: 10_000 });
   });
 });
@@ -134,7 +173,7 @@ test.describe('Utilisateur connecté', () => {
   test('browse accessible après login', async ({ page }) => {
     collectConsole(page, 'auth-browse');
     await page.goto('/browse');
-    await page.waitForLoadState('networkidle');
+    await settle(page, 1500);
     // Should NOT redirect — page should show search/documents
     expect(page.url()).toContain('/browse');
     const body = await page.locator('body').textContent();
@@ -145,7 +184,7 @@ test.describe('Utilisateur connecté', () => {
   test('page cours accessible', async ({ page }) => {
     collectConsole(page, 'auth-course');
     await page.goto('/courses/1');
-    await page.waitForLoadState('networkidle');
+    await settle(page, 1500);
     expect(page.url()).toContain('/courses/');
     const headings = page.locator('h1, h2, h3, h4, h5');
     await expect(headings.first()).toBeVisible({ timeout: 10_000 });
@@ -155,7 +194,7 @@ test.describe('Utilisateur connecté', () => {
   test('page document avec métadonnées', async ({ page }) => {
     collectConsole(page, 'auth-document');
     await page.goto('/documents/1');
-    await page.waitForLoadState('networkidle');
+    await settle(page, 1500);
     expect(page.url()).toContain('/documents/');
 
     // Titre visible
@@ -165,12 +204,12 @@ test.describe('Utilisateur connecté', () => {
     // Catégorie
     const body = await page.locator('body').textContent();
     const categories = [
-      'Synthèse', 'Examen', 'Notes', 'Exercices', 'Divers',
+      'Synthèse', 'Examen', 'Notes', 'Exercices', 'Divers', 'Cours', 'TFE',
       'Summary', 'Exam', 'Notes', 'Exercises', 'Miscellaneous',
     ];
     expect(categories.some((c) => body!.includes(c))).toBeTruthy();
 
-    // Give the PDF iframe time to load, then assert the page rendered without errors.
+    // Laisse le canvas pdf.js se rendre, puis vérifie que la page a du contenu.
     await page.waitForTimeout(2_000);
     expect(body!.length).toBeGreaterThan(100);
 
@@ -180,7 +219,7 @@ test.describe('Utilisateur connecté', () => {
   test('leaderboard accessible', async ({ page }) => {
     collectConsole(page, 'auth-leaderboard');
     await page.goto('/leaderboard');
-    await page.waitForLoadState('networkidle');
+    await settle(page, 1500);
     expect(page.url()).toContain('/leaderboard');
     await expect(page.getByText('XP').first()).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'auth-leaderboard.png'), fullPage: true });
@@ -189,7 +228,7 @@ test.describe('Utilisateur connecté', () => {
   test('profil public accessible', async ({ page }) => {
     collectConsole(page, 'auth-user');
     await page.goto('/users/2');
-    await page.waitForLoadState('networkidle');
+    await settle(page, 1500);
     expect(page.url()).toContain('/users/');
     const headings = page.locator('h1, h2, h3, h4, h5, h6');
     await expect(headings.first()).toBeVisible({ timeout: 10_000 });
@@ -199,7 +238,7 @@ test.describe('Utilisateur connecté', () => {
   test('page upload accessible (verified)', async ({ page }) => {
     collectConsole(page, 'auth-upload');
     await page.goto('/upload');
-    await page.waitForLoadState('networkidle');
+    await settle(page);
     expect(page.url()).toContain('/upload');
     // Titre "Partager un document" visible
     await expect(
@@ -208,15 +247,12 @@ test.describe('Utilisateur connecté', () => {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'auth-upload.png'), fullPage: true });
   });
 
-  test('news accessible', async ({ page }) => {
-    collectConsole(page, 'auth-news');
-    await page.goto('/news');
-    await page.waitForLoadState('networkidle');
-    expect(page.url()).toContain('/news');
-    const body = await page.locator('body').textContent();
-    const newsTexts = ['Quoi de neuf', "What's new", 'Rien de neuf', 'Nothing new'];
-    expect(newsTexts.some((t) => body!.includes(t))).toBeTruthy();
-    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'auth-news.png'), fullPage: true });
+  test('quiz : onglets Mes quiz / Bibliothèque', async ({ page }) => {
+    collectConsole(page, 'auth-quiz');
+    await page.goto('/outils/quiz');
+    await settle(page);
+    await expect(page.getByRole('tab').first()).toBeVisible({ timeout: 10_000 });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'auth-quiz.png'), fullPage: true });
   });
 });
 
@@ -228,7 +264,7 @@ test.describe('Theme & Mobile', () => {
   test('toggle dark/light mode', async ({ page }) => {
     collectConsole(page, 'theme-toggle');
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await settle(page);
     const themeButton = page.getByRole('button', { name: /changer de thème|toggle theme/i });
     await expect(themeButton).toBeVisible({ timeout: 10_000 });
     await themeButton.click();
@@ -243,7 +279,7 @@ test.describe('Theme & Mobile', () => {
     collectConsole(page, 'mobile');
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await settle(page);
     const nav = page.locator('nav');
     await expect(nav.locator('button').first()).toBeVisible({ timeout: 10_000 });
     await autoScroll(page);
@@ -252,29 +288,39 @@ test.describe('Theme & Mobile', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════
-//  PART 4 — API HEALTH
+//  PART 4 — API HEALTH (aligné sur l'access gate : email @isfce.be vérifié)
 // ══════════════════════════════════════════════════════════════════════
 
 test.describe('API Health', () => {
-  test('GET /api/stats returns totalDocs > 0', async ({ request }) => {
+  test('GET /api/stats est public (compteurs de la home anonyme)', async ({ request }) => {
     const res = await request.get('http://localhost:8080/api/stats');
     expect(res.ok()).toBeTruthy();
     const json = await res.json();
     expect(json.totalDocs).toBeGreaterThan(0);
   });
 
-  test('GET /api/sections returns non-empty array', async ({ request }) => {
-    const res = await request.get('http://localhost:8080/api/sections');
-    expect(res.ok()).toBeTruthy();
-    const json = await res.json();
-    expect(json.length).toBeGreaterThan(0);
+  test('endpoints publics : news, guides, catalogue teaser', async ({ request }) => {
+    for (const ep of ['/api/news', '/api/guides', '/api/public/documents']) {
+      const res = await request.get(`http://localhost:8080${ep}`);
+      expect(res.status(), ep).toBe(200);
+    }
   });
 
-  test('GET /api/documents/popular returns non-empty array', async ({ request }) => {
-    const res = await request.get('http://localhost:8080/api/documents/popular');
-    expect(res.ok()).toBeTruthy();
-    const json = await res.json();
-    expect(json.length).toBeGreaterThan(0);
+  test('endpoints métier refusés aux anonymes (401)', async ({ request }) => {
+    for (const ep of ['/api/sections', '/api/documents/popular', '/api/documents/search', '/api/quizzes', '/api/leaderboard']) {
+      const res = await request.get(`http://localhost:8080${ep}`);
+      expect(res.status(), ep).toBe(401);
+    }
+  });
+
+  test('sections + populaires accessibles une fois vérifié', async ({ request }) => {
+    await request.post('http://localhost:8080/api/dev/login/Sophie_M');
+    const sections = await request.get('http://localhost:8080/api/sections');
+    expect(sections.ok()).toBeTruthy();
+    expect((await sections.json()).length).toBeGreaterThan(0);
+    const popular = await request.get('http://localhost:8080/api/documents/popular');
+    expect(popular.ok()).toBeTruthy();
+    expect((await popular.json()).length).toBeGreaterThan(0);
   });
 
   test('POST /api/dev/login sets JWT cookie', async ({ request }) => {
@@ -316,9 +362,7 @@ test.describe('Rapport final', () => {
       }
     }
 
-    const screenshotCount = 16;
     console.log(`\n  Total erreurs console: ${totalErrors}`);
-    console.log(`  Total screenshots: ${screenshotCount}`);
     console.log('══════════════════════════════════════════════\n');
   });
 });

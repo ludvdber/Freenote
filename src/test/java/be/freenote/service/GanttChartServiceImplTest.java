@@ -40,8 +40,8 @@ class GanttChartServiceImplTest {
 
     private SaveGanttRequest req(boolean shared) {
         return new SaveGanttRequest("Projet", List.of(
-                new GanttTaskDto("t1", "Analyse", "2026-09-01", "2026-09-07", 150, ""),
-                new GanttTaskDto("t2", "  ", "2026-09-08", "2026-09-20", 0, "t1")), shared);
+                new GanttTaskDto("t1", "Analyse", "2026-09-01", "2026-09-07", 150, "", "Alice"),
+                new GanttTaskDto("t2", "  ", "2026-09-08", "2026-09-20", 0, "t1", null)), shared);
     }
 
     @Test

@@ -69,4 +69,16 @@ public class UserProfile {
     @Column(name = "display_real_name", nullable = false)
     @Builder.Default
     private boolean displayRealName = false;
+
+    /** Année d'arrivée à l'ISFCE (affichée sur le profil public si renseignée). */
+    @Column(name = "study_start_year")
+    private Integer studyStartYear;
+
+    /** Année de fin / de diplôme — alimente le badge « Promo {année} » quand graduated est vrai. */
+    @Column(name = "study_end_year")
+    private Integer studyEndYear;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean graduated = false;
 }

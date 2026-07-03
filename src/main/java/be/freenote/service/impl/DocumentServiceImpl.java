@@ -182,19 +182,20 @@ public class DocumentServiceImpl implements DocumentService {
     public PageResponse<DocumentResponse> search(String query, Long sectionId, Long courseId, String category,
                                                    String sort, Pageable pageable) {
         // Validate up front for BOTH paths: the DB path needs the enum anyway, and the Meilisearch
-        // path must never receive a raw user string (it is concatenated into the filter expression).
-        // A clean 400 without the enum's internal message ("No enum constant be.freenote...").
+        // path must never receive a raw user string (category is concatenated into the filter
+        // expression, sort into the sort array). Clean 400s without internal messages.
         Category cat = parseCategory(category);
+        String safeSort = parseSort(sort);
 
         if (query != null && !query.isBlank()) {
             MeilisearchService.SearchResult result = meilisearchService.search(
-                    query, sectionId, courseId, cat != null ? cat.name() : null, sort, pageable);
+                    query, sectionId, courseId, cat != null ? cat.name() : null, safeSort, pageable);
             List<Long> ids = result.ids();
             if (ids.isEmpty()) {
                 return new PageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
             }
-            // Preserve Meilisearch relevance/sort ordering — findAllById returns rows in DB order.
-            Map<Long, Document> byId = documentRepository.findAllById(ids).stream()
+            // Preserve Meilisearch relevance/sort ordering — the batch fetch returns rows in DB order.
+            Map<Long, Document> byId = documentRepository.findAllByIdWithAssociations(ids).stream()
                     .collect(Collectors.toMap(Document::getId, d -> d));
             List<DocumentResponse> content = ids.stream()
                     .map(byId::get)
@@ -212,6 +213,24 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(documentMapper::toResponse)
                 .toList();
         return PageResponse.from(page, content);
+    }
+
+    /** Sorts acceptés par la recherche — doit rester un sous-ensemble des attributs `sortable`
+     *  configurés dans MeilisearchServiceImpl.initIndex (verifiedRank est géré côté serveur). */
+    private static final Set<String> ALLOWED_SORTS = Set.of(
+            "createdAt:asc", "createdAt:desc",
+            "downloadCount:asc", "downloadCount:desc",
+            "averageRating:asc", "averageRating:desc");
+
+    /** User-supplied sort → whitelisted value, or a clean 400 (never forwarded raw to Meilisearch). */
+    private static String parseSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return null;
+        }
+        if (!ALLOWED_SORTS.contains(sort)) {
+            throw new IllegalArgumentException("Tri invalide");
+        }
+        return sort;
     }
 
     /** User-supplied category filter → enum, or a clean 400 that doesn't leak the enum class name. */
@@ -238,12 +257,32 @@ public class DocumentServiceImpl implements DocumentService {
             throw new ForbiddenException("You can only delete your own documents");
         }
 
-        minioService.delete(document.getFileKey());
-        meilisearchService.deleteDocument(document.getId());
         documentRepository.delete(document);
+        cleanupStorageAfterCommit(document.getFileKey(), document.getId());
         statsService.invalidateCache();
         log.info("Document deleted: id={}, by user={}", documentId, userId);
         activityLogService.log(ActivityType.DOC_DELETE, userId, user.getUsername(), document.getTitle());
+    }
+
+    /** Removes the stored PDF + search index entry only once the DB delete has committed. Doing it
+     *  before commit risks the worse failure mode: a DB rollback would leave a live document row
+     *  pointing at a deleted object. If this cleanup itself fails, we only orphan a MinIO object /
+     *  stale index entry — harmless and re-syncable (reindexIfNeeded), so it is best-effort. */
+    private void cleanupStorageAfterCommit(String fileKey, Long documentId) {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            // Pas de transaction active (tests unitaires Mockito, appel hors proxy) : nettoyer tout de suite.
+            minioService.delete(fileKey);
+            meilisearchService.deleteDocument(documentId);
+            return;
+        }
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        minioService.delete(fileKey);
+                        meilisearchService.deleteDocument(documentId);
+                    }
+                });
     }
 
     @Override
@@ -266,7 +305,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public List<DocumentResponse> getPopular(Long sectionId) {
         List<Document> docs = sectionId == null
-                ? documentRepository.findTop10ByOrderByVerifiedDescDownloadCountDesc()
+                ? documentRepository.findPopularWithAssociations(org.springframework.data.domain.PageRequest.of(0, 10))
                 : documentRepository.findPopularPrioritizingSection(sectionId, org.springframework.data.domain.PageRequest.of(0, 10));
         return docs.stream()
                 .map(documentMapper::toResponse)
@@ -274,9 +313,17 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<DocumentResponse> getUnverified() {
-        return documentRepository.findByVerifiedFalse().stream()
-                .map(documentMapper::toResponse)
+    public PageResponse<DocumentResponse> getUnverified(Pageable pageable) {
+        Page<Document> page = documentRepository.findPendingForReview(pageable);
+        return PageResponse.from(page, page.getContent().stream().map(documentMapper::toResponse).toList());
+    }
+
+    @Override
+    public List<List<DocumentResponse>> getDuplicateGroups() {
+        return documentRepository.findDuplicateHashes().stream()
+                .map(hash -> documentRepository.findAllByFileHash(hash).stream()
+                        .map(documentMapper::toResponse)
+                        .toList())
                 .toList();
     }
 
@@ -334,9 +381,8 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional
     public void adminDelete(Long documentId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
-        minioService.delete(document.getFileKey());
-        meilisearchService.deleteDocument(document.getId());
         documentRepository.delete(document);
+        cleanupStorageAfterCommit(document.getFileKey(), document.getId());
         statsService.invalidateCache();
         activityLogService.log(ActivityType.DOC_DELETE, null, "Admin", document.getTitle());
     }
