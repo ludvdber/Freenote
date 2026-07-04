@@ -85,9 +85,8 @@ export default function ToolsIndex() {
             <GlassCard key={tool.slug} component={Link} to={`/outils/${tool.slug}`} sx={s.tile(size)}>
               <Box sx={s.tileHead}>
                 <Box sx={s.tileIcon(size)} aria-hidden="true">{tool.icon}</Box>
-                {size === 'lg' && (
-                  <Box component="span" sx={s.tileBadge}>{t(`tools.categories.${tool.category}`)}</Box>
-                )}
+                {/* Badge catégorie sur TOUTES les tuiles (cohérence — plus seulement les tuiles hero). */}
+                <Box component="span" sx={s.tileBadge}>{t(`tools.categories.${tool.category}`)}</Box>
               </Box>
               <Typography variant="h6" component="h2" sx={s.tileTitle(size)}>
                 {t(`tools.${tool.key}.name`)}
