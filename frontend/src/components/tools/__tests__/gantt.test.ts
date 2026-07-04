@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  validateProject, normalizeProject, renderTasks,
+  validateProject, normalizeProject, renderTasks, clampIsoDate,
   projectToJson, projectFromJson, toCsv, addDaysIso, diffDays, projectRange, workerColor,
   WORKER_COLORS, UNASSIGNED_COLOR, type GanttProject,
 } from '../gantt/logic';
@@ -80,6 +80,26 @@ describe('gantt — normalize & render', () => {
     expect(r[0].end >= r[0].start).toBe(true);
     expect(r[1].end).toBe(r[1].start); // end<start was clamped up to start
     expect(r[1].dependencies).toBe('a'); // 'ghost' pruned
+  });
+});
+
+describe('gantt — date clamp (crash guard)', () => {
+  it('clamps an out-of-range year to the sane window', () => {
+    // A half-typed year in <input type="date"> emits e.g. year 0002; without clamping the timeline
+    // would span ~2000 years (a giant SVG that freezes the tab).
+    expect(clampIsoDate('0002-09-01')).toBe('1970-01-01');
+    expect(clampIsoDate('9999-01-01')).toBe('2100-12-31');
+    expect(clampIsoDate('2026-09-01')).toBe('2026-09-01'); // in-range untouched
+    expect(clampIsoDate('not-a-date')).toMatch(/^\d{4}-\d{2}-\d{2}$/); // falls back to today
+  });
+
+  it('renderTasks keeps the project span bounded even with an aberrant date', () => {
+    const r = renderTasks(project({
+      tasks: [{ id: 'a', name: 'A', start: '0002-09-01', end: '0002-09-05', progress: 0, dependencies: '' }],
+    }));
+    expect(r[0].start >= '1970-01-01').toBe(true);
+    const range = projectRange(r);
+    expect(diffDays(range.start, range.end)).toBeLessThan(366 * 200);
   });
 });
 

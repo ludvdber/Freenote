@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { isValidIp, calculateIPv4 } from '@/lib/ipv4';
 import { isValidForBase, convertBase } from '@/lib/baseConverter';
@@ -88,8 +89,11 @@ describe('BaseConverter lib — convertBase', () => {
 // --- Component tests (each tool is a standalone component now) ---
 
 describe('IPv4Calculator', () => {
+  // IPv4Calculator now carries a cross-link (RouterLink) to the IPv6 tool, so it needs a Router context.
+  const renderIPv4 = () => render(<MemoryRouter><IPv4Calculator /></MemoryRouter>);
+
   it('should show results for default IP 192.168.1.100/24', () => {
-    render(<IPv4Calculator />);
+    renderIPv4();
     expect(screen.getByText('192.168.1.0')).toBeInTheDocument();
     expect(screen.getByText('192.168.1.255')).toBeInTheDocument();
     expect(screen.getByText('254')).toBeInTheDocument();
@@ -97,7 +101,7 @@ describe('IPv4Calculator', () => {
 
   it('should show error for invalid IP', async () => {
     const user = userEvent.setup();
-    render(<IPv4Calculator />);
+    renderIPv4();
 
     const ipInput = screen.getByDisplayValue('192.168.1.100');
     await user.clear(ipInput);

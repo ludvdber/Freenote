@@ -10,9 +10,10 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/api/endpoints', () => ({
   getUserById: vi.fn(),
   getUserRank: vi.fn(),
+  getDelegateHistory: vi.fn(),
 }));
 
-import { getUserById, getUserRank } from '@/api/endpoints';
+import { getUserById, getUserRank, getDelegateHistory } from '@/api/endpoints';
 import UploaderCard from '../UploaderCard';
 
 function renderCard() {
@@ -33,6 +34,7 @@ describe('UploaderCard', () => {
       verified: true, supporter: true, xp: 120, documentCount: 8, sectionName: 'Informatique',
     } as never);
     vi.mocked(getUserRank).mockResolvedValue(3 as never);
+    vi.mocked(getDelegateHistory).mockResolvedValue([] as never);
 
     renderCard();
 
@@ -50,6 +52,7 @@ describe('UploaderCard', () => {
       verified: false, supporter: false, xp: 0, documentCount: 0, sectionName: null,
     } as never);
     vi.mocked(getUserRank).mockResolvedValue(null as never);
+    vi.mocked(getDelegateHistory).mockResolvedValue([] as never);
 
     renderCard();
 

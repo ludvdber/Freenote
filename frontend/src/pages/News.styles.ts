@@ -146,18 +146,44 @@ const PLACEHOLDER_GRADIENTS = [
   'linear-gradient(135deg, rgba(251,191,36,0.14), rgba(255,107,157,0.16))',
 ];
 
-// Gradient fallback tile when a post has no image. `seed` = any int; variant is deterministic.
+// Gradient "cover" tile when a post has no image: brand mark watermark + the section label,
+// so an imageless card still reads as an intentional magazine cover. `seed` = deterministic variant.
 export const placeholder = (seed: number): Sx => ({
+  position: 'relative',
+  overflow: 'hidden',
   width: '100%',
   height: '100%',
   minHeight: 160,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  p: 2,
   background: PLACEHOLDER_GRADIENTS[Math.abs(seed) % PLACEHOLDER_GRADIENTS.length],
-  color: 'rgba(255,255,255,0.45)',
-  '& svg': { fontSize: 56 },
 });
+
+// Faint brand mark, oversized in the corner as a watermark.
+export const placeholderMark: Sx = {
+  position: 'absolute',
+  right: -14,
+  bottom: -18,
+  opacity: 0.16,
+  transform: 'rotate(-8deg)',
+  pointerEvents: 'none',
+  lineHeight: 0,
+};
+
+// The section label as the cover's focal text (falls back to a wordmark when unlabelled).
+export const placeholderLabel: Sx = {
+  position: 'relative',
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  textAlign: 'center',
+  lineHeight: 1.15,
+  color: 'rgba(255,255,255,0.82)',
+  fontSize: { xs: '1.1rem', md: '1.35rem' },
+  textShadow: '0 2px 12px rgba(0,0,0,0.25)',
+};
 
 export const eyebrow: Sx = {
   display: 'flex',

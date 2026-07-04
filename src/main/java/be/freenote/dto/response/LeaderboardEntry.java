@@ -8,5 +8,11 @@ public record LeaderboardEntry(
         int xp,
         long documentCount,
         boolean supporter,
-        String avatarUrl
+        String avatarUrl,
+        // Parcours ISFCE + rôle communautaire, pour afficher les badges (Promo / Délégué / Ancien délégué)
+        // directement dans le classement sans requête par ligne.
+        boolean graduated,
+        Integer studyEndYear,
+        boolean delegate,
+        boolean formerDelegate
 ) {}

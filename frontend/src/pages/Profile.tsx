@@ -49,6 +49,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import UserAvatar from '@/components/common/UserAvatar';
+import UserBadges from '@/components/common/UserBadges';
 import { useLogout } from '@/hooks/useLogout';
 import type { AvatarSource } from '@/types';
 import * as s from './Profile.styles';
@@ -180,6 +181,9 @@ export default function Profile() {
 
   if (!user) return null;
 
+  const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
+  const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
+
   const previewUrl = (source: AvatarSource): string | null => {
     switch (source) {
       case 'LETTER': return null;
@@ -242,15 +246,12 @@ export default function Profile() {
                 color="warning"
               />
             )}
-            {graduated && studyEndYear && (
-              <Chip
-                size="small"
-                icon={<SchoolIcon sx={{ fontSize: 14 }} />}
-                label={t('profile.journey.promoBadge', { year: studyEndYear })}
-                variant="outlined"
-                color="secondary"
-              />
-            )}
+            <UserBadges
+              graduated={graduated}
+              studyEndYear={studyEndYear ? Number(studyEndYear) : null}
+              delegate={isDelegate}
+              formerDelegate={isFormerDelegate}
+            />
           </Box>
         </Box>
         <Box sx={s.headerActions}>

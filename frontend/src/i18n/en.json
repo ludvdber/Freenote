@@ -53,6 +53,10 @@
     "scopeAll": "All",
     "scopeMine": "My section"
   },
+  "badges": {
+    "delegate": "Delegate",
+    "formerDelegate": "Former delegate"
+  },
   "delegates": {
     "title": "Delegates",
     "section": "Section",
@@ -590,6 +594,8 @@
     "ipv4": {
       "tab": "IPv4 Calculator",
       "name": "IPv4 / subnet calculator (CIDR)",
+      "wrongVersion": "Does your address contain colons (IPv6)?",
+      "gotoIpv6": "Switch to the IPv6 calculator",
       "short": "Network address, broadcast, host range and mask from an IP and a CIDR.",
       "lead": "Enter an IPv4 address and a mask (CIDR or decimal) to get the network address, broadcast, first and last usable IPs, the host count and the binary view.",
       "seoTitle": "IPv4 and subnet calculator (CIDR)",
@@ -718,6 +724,8 @@
     "ipv6": {
       "tab": "IPv6 calculator",
       "name": "IPv6 / subnet calculator",
+      "wrongVersion": "Does your address look like 192.168.x.x (IPv4)?",
+      "gotoIpv4": "Switch to the IPv4 calculator",
       "short": "Compressed/expanded address, network prefix, address range and scope from an IPv6 and a prefix.",
       "lead": "Enter an IPv6 address and a prefix to get its compressed and expanded form, the network address, the first and last address, the total number of addresses and the scope (global, link-local, ULA…).",
       "seoTitle": "IPv6 and subnet calculator (prefix)",
@@ -1119,7 +1127,10 @@
       "done": "Done",
       "exportLabel": "Export",
       "importFile": "CSV / Anki file (.apkg)",
-      "importBackup": "Backup (JSON)",
+      "importDeck": "Import a deck",
+      "importedDeckName": "Imported deck",
+      "importedNewDeck": "Deck imported: {{count}} cards in a new deck.",
+      "importBackup": "Restore (JSON)",
       "exportAnki": "To Anki (.tsv)",
       "exportBackup": "Backup (JSON)",
       "storageLocal": "Saved in this browser",

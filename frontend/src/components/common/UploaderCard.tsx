@@ -3,9 +3,10 @@ import { Verified, Bolt, School, FavoriteBorder, EmojiEvents } from '@mui/icons-
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getUserById, getUserRank } from '@/api/endpoints';
+import { getUserById, getUserRank, getDelegateHistory } from '@/api/endpoints';
 import GlassCard from '@/components/ui/GlassCard';
 import UserAvatar from '@/components/common/UserAvatar';
+import UserBadges from '@/components/common/UserBadges';
 
 /**
  * Compact "shared by" card on the document page: surfaces the uploader's identity and
@@ -26,7 +27,16 @@ export default function UploaderCard({ authorId }: { authorId: number }) {
     staleTime: 60_000,
   });
 
+  const { data: delegateHistory } = useQuery({
+    queryKey: ['delegate-history', authorId],
+    queryFn: () => getDelegateHistory(authorId),
+    staleTime: 60_000,
+  });
+
   if (!u) return null;
+
+  const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
+  const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
 
   return (
     <GlassCard sx={{ p: 2.5, mb: 3 }}>
@@ -51,6 +61,12 @@ export default function UploaderCard({ authorId }: { authorId: number }) {
               <Chip size="small" icon={<FavoriteBorder sx={{ fontSize: 14 }} />} label={t('document.supporter')}
                     color="secondary" variant="outlined" />
             )}
+            <UserBadges
+              graduated={u.graduated}
+              studyEndYear={u.studyEndYear}
+              delegate={isDelegate}
+              formerDelegate={isFormerDelegate}
+            />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
             <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

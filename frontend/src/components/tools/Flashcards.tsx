@@ -89,8 +89,9 @@ export default function Flashcards() {
   }, [isVerified]);
   useEffect(() => { refreshOnline(); }, [refreshOnline]);
 
-  const csvInput = useRef<HTMLInputElement>(null);
-  const jsonInput = useRef<HTMLInputElement>(null);
+  const csvInput = useRef<HTMLInputElement>(null);       // add cards to the OPEN deck
+  const deckFileInput = useRef<HTMLInputElement>(null);  // create a NEW deck from .apkg / CSV
+  const jsonInput = useRef<HTMLInputElement>(null);      // restore a full JSON backup
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, decksToJson(decks));
@@ -147,25 +148,52 @@ export default function Flashcards() {
   };
 
   // ── Import / export ───────────────────────────────────────────
+  /** Parse a card file: .apkg via the heavy WASM (loaded only here), else CSV/TSV. */
+  const parseCardFile = async (file: File): Promise<{ front: string; back: string }[]> => {
+    if (file.name.toLowerCase().endsWith('.apkg')) {
+      const { importApkg } = await import('./flashcards/apkg');
+      return importApkg(await file.arrayBuffer());
+    }
+    return parseCards(await file.text());
+  };
+
+  const showImportError = (e: unknown) => {
+    const code = e && typeof e === 'object' && 'code' in e ? (e as { code: string }).code : '';
+    if (code === 'recent-format') setImportError(t('tools.flashcards.importApkgRecent'));
+    else if (code === 'empty') setImportError(t('tools.flashcards.importEmpty'));
+    else setImportError(t('tools.flashcards.importError'));
+  };
+
+  /** Add cards from a file to the currently open deck. */
   const importCards = async (file: File) => {
     if (!openDeck) return;
     setImportError('');
     try {
-      let parsed: { front: string; back: string }[];
-      if (file.name.toLowerCase().endsWith('.apkg')) {
-        const { importApkg } = await import('./flashcards/apkg'); // heavy WASM loads only here
-        parsed = await importApkg(await file.arrayBuffer());
-      } else {
-        parsed = parseCards(await file.text());
-      }
+      const parsed = await parseCardFile(file);
       if (parsed.length === 0) { setImportError(t('tools.flashcards.importEmpty')); return; }
       patchDeck(openDeck.id, (d) => ({ ...d, cards: [...d.cards, ...parsed.map((p) => newCard(p.front, p.back))] }));
       setFeedback({ msg: t('tools.flashcards.importedShared', { count: parsed.length }), severity: 'success' });
     } catch (e) {
-      const code = e && typeof e === 'object' && 'code' in e ? (e as { code: string }).code : '';
-      if (code === 'recent-format') setImportError(t('tools.flashcards.importApkgRecent'));
-      else if (code === 'empty') setImportError(t('tools.flashcards.importEmpty'));
-      else setImportError(t('tools.flashcards.importError'));
+      showImportError(e);
+    }
+  };
+
+  /** Create a NEW deck from an .apkg / CSV file (deck named after the file). This is the natural
+   *  "import an Anki deck" path — available from the overview, before opening any deck. */
+  const importNewDeck = async (file: File) => {
+    setImportError('');
+    try {
+      const parsed = await parseCardFile(file);
+      if (parsed.length === 0) { setImportError(t('tools.flashcards.importEmpty')); return; }
+      const name = file.name.replace(/\.[^.]+$/, '').trim() || t('tools.flashcards.importedDeckName');
+      const deck = newDeck(name);
+      deck.cards = parsed.map((p) => newCard(p.front, p.back));
+      setDecks((ds) => [...ds, deck]);
+      setOpenId(deck.id);
+      setTab('mine');
+      setFeedback({ msg: t('tools.flashcards.importedNewDeck', { count: parsed.length }), severity: 'success' });
+    } catch (e) {
+      showImportError(e);
     }
   };
 
@@ -273,6 +301,7 @@ export default function Flashcards() {
   return (
     <Box>
       <input ref={csvInput} type="file" accept=".csv,.tsv,.txt,.apkg" hidden onChange={(e) => onFile(e, importCards)} />
+      <input ref={deckFileInput} type="file" accept=".apkg,.csv,.tsv,.txt" hidden onChange={(e) => onFile(e, importNewDeck)} />
       <input ref={jsonInput} type="file" accept=".json" hidden onChange={(e) => onFile(e, importBackup)} />
 
       {/* Tabs hidden while a deck detail is open (focused management) */}
@@ -298,7 +327,7 @@ export default function Flashcards() {
           return (
             <>
               {!isVerified && <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{t('tools.flashcards.anonHint')}</Alert>}
-              <EmptyDecks onCreate={() => setNameDialog('new')} onImport={() => jsonInput.current?.click()} />
+              <EmptyDecks onCreate={() => setNameDialog('new')} onImport={() => deckFileInput.current?.click()} />
             </>
           );
         }
@@ -311,7 +340,8 @@ export default function Flashcards() {
                 <Typography variant="caption" color="text.secondary">{t('tools.flashcards.myDecksHint')}</Typography>
               </Box>
               <Box sx={{ flexGrow: 1 }} />
-              <Button size="small" startIcon={<FileUpload />} onClick={() => jsonInput.current?.click()}>{t('tools.flashcards.importBackup')}</Button>
+              <Button size="small" startIcon={<FileUpload />} onClick={() => deckFileInput.current?.click()}>{t('tools.flashcards.importDeck')}</Button>
+              <Button size="small" startIcon={<Replay />} onClick={() => jsonInput.current?.click()}>{t('tools.flashcards.importBackup')}</Button>
               <Button size="small" startIcon={<FileDownload />} onClick={() => download('freenote-flashcards.json', decksToJson(decks), 'application/json')}>
                 {t('tools.flashcards.exportBackup')}
               </Button>
@@ -433,7 +463,7 @@ function EmptyDecks({ onCreate, onImport }: { onCreate: () => void; onImport: ()
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{t('tools.flashcards.emptyHint')}</Typography>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, justifyContent: 'center' }}>
         <Button variant="contained" startIcon={<Add />} onClick={onCreate}>{t('tools.flashcards.createDeck')}</Button>
-        <Button variant="outlined" startIcon={<FileUpload />} onClick={onImport}>{t('tools.flashcards.importBackup')}</Button>
+        <Button variant="outlined" startIcon={<FileUpload />} onClick={onImport}>{t('tools.flashcards.importDeck')}</Button>
       </Box>
     </GlassCard>
   );

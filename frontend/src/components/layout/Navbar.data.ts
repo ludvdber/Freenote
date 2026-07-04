@@ -11,6 +11,6 @@ export const NAV_LINKS: NavLink[] = [
   { key: 'browse',      to: '/browse' },                     // Public : vitrine anonyme intégrée
   { key: 'leaderboard', to: '/leaderboard', protected: true },
   { key: 'news',        to: '/news' },                       // Flux RSS école, public
-  { key: 'guides',      to: '/guides' },                     // Tutoriels admin, public
+  // { key: 'guides',   to: '/guides' },                     // Masqué pour l'instant (contenu pas prêt) — routes + backend intacts, décommenter pour ré-afficher
   { key: 'tools',       to: '/outils' },
 ];

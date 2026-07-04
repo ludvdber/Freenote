@@ -31,6 +31,7 @@ class UserServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private ReportRepository reportRepository;
+    @Mock private be.freenote.repository.DelegateHistoryRepository delegateHistoryRepository;
     @Mock private UserMapper userMapper;
     @Mock private ActivityLogService activityLogService;
     @Mock private be.freenote.security.JwtRevocationService jwtRevocationService;
@@ -138,10 +139,10 @@ class UserServiceImplTest {
         counts.add(new Object[]{2L, 5L});
         when(documentRepository.countByUserIds(List.of(1L, 2L))).thenReturn(counts);
 
-        LeaderboardEntry e1 = new LeaderboardEntry(1L, 1, "top", "top", 500, 10L, false, null);
-        LeaderboardEntry e2 = new LeaderboardEntry(2L, 2, "second", "second", 300, 5L, false, null);
-        when(userMapper.toLeaderboardEntry(u1, 1, 10L)).thenReturn(e1);
-        when(userMapper.toLeaderboardEntry(u2, 2, 5L)).thenReturn(e2);
+        LeaderboardEntry e1 = new LeaderboardEntry(1L, 1, "top", "top", 500, 10L, false, null, false, null, false, false);
+        LeaderboardEntry e2 = new LeaderboardEntry(2L, 2, "second", "second", 300, 5L, false, null, false, null, false, false);
+        when(userMapper.toLeaderboardEntry(u1, 1, 10L, false, false)).thenReturn(e1);
+        when(userMapper.toLeaderboardEntry(u2, 2, 5L, false, false)).thenReturn(e2);
 
         List<LeaderboardEntry> result = userService.getLeaderboard(10, null);
 

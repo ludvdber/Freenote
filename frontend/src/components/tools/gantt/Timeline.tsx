@@ -18,6 +18,10 @@ const ROW_H = 40;
 const HEADER_H = 44;
 const BAR_H = 24;
 const LEFT_COL = 210;
+// Borne dure du nombre de colonnes-jours rendues. renderTasks() clampe déjà les dates à
+// [1970, 2100], mais ce plafond garantit qu'aucune plage (même une donnée importée aberrante)
+// ne génère un SVG / DOM géant qui gèlerait l'onglet.
+const MAX_TIMELINE_DAYS = 366 * 12;
 
 type DragMode = 'move' | 'start' | 'end';
 interface DragState {
@@ -46,7 +50,7 @@ export default function Timeline({ tasks, workers, dayWidth, onChange, onSelect 
   const svgRef = useRef<SVGSVGElement>(null);
 
   const range = useMemo(() => projectRange(tasks), [tasks]);
-  const totalDays = diffDays(range.start, range.end) + 1;
+  const totalDays = Math.min(Math.max(diffDays(range.start, range.end) + 1, 1), MAX_TIMELINE_DAYS);
   const width = totalDays * dayWidth;
   const height = HEADER_H + tasks.length * ROW_H;
 

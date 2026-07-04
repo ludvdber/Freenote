@@ -1,5 +1,5 @@
 import { Typography, Box, Chip } from '@mui/material';
-import { ArrowForward, Article as ArticleIcon } from '@mui/icons-material';
+import { ArrowForward } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
@@ -11,9 +11,11 @@ import { SITE_URL, STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
+import FreenoteMark from '@/components/icons/FreenoteMark';
 import * as s from './News.styles';
 
-function Thumb({ item }: { item: NewsItem }) {
+function Thumb({ item, markSize = 96 }: { item: NewsItem; markSize?: number }) {
+  const { t } = useTranslation();
   if (item.thumbnail) {
     return (
       <Box className="news-media" sx={{ width: '100%', height: '100%' }}>
@@ -21,11 +23,13 @@ function Thumb({ item }: { item: NewsItem }) {
       </Box>
     );
   }
-  // Deterministic gradient variant from the post id so imageless cards aren't all identical.
+  // Imageless post → a branded "cover": deterministic gradient + brand watermark + the section label.
   const seed = [...item.id].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const label = item.labels[0] ?? t('news.title');
   return (
     <Box sx={s.placeholder(seed)} aria-hidden="true">
-      <ArticleIcon />
+      <Box sx={s.placeholderMark}><FreenoteMark size={markSize} /></Box>
+      <Typography component="span" sx={s.placeholderLabel}>{label}</Typography>
     </Box>
   );
 }
@@ -81,7 +85,7 @@ export default function News() {
 
       {hero && (
         <GlassCard component={RouterLink} to={`/news/${hero.id}`} sx={s.hero}>
-          <Box sx={s.heroMedia}><Thumb item={hero} /></Box>
+          <Box sx={s.heroMedia}><Thumb item={hero} markSize={160} /></Box>
           <Box sx={s.heroBody}>
             <Box sx={s.heroEyebrow}>
               <Chip label={t('news.latest')} size="small" sx={s.chip} />

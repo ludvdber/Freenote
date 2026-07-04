@@ -61,6 +61,32 @@ export default defineConfig(({ mode }) => ({
         'src/components/admin/**',
         'src/components/home/**',
         'src/components/layout/**',
+        // SVG artwork + theme config objects — no executable branch logic to unit-test
+        'src/components/icons/**',
+        'src/theme/**',
+        // Interaction-heavy tool UIs (Quiz/Flashcards/Gantt/Mermaid/… editors & players): their
+        // PURE logic (each tool's logic.ts + src/lib/*) IS unit-tested; the .tsx components are
+        // exercised by the Playwright e2e suite, same split as the page shells above.
+        'src/components/tools/**/*.tsx',
+        'src/components/tools/quiz/image.ts',      // browser <canvas> resize — no jsdom coverage
+        'src/components/tools/flashcards/apkg.ts', // Anki zip/sql.js WASM import — e2e/manual only
+        // Auth & onboarding gates, PDF canvas, markdown renderer, scroll/route helpers — e2e shells
+        'src/components/common/AuthPromptSnackbar.tsx',
+        'src/components/common/DevLoginButton.tsx',
+        'src/components/common/Markdown.tsx',
+        'src/components/common/OnboardingGate.tsx',
+        'src/components/common/PdfViewer.tsx',
+        'src/components/common/ScrollToTop.tsx',
+        'src/components/common/TermsGate.tsx',
+        // Bootstrap / effect hooks (auth init, SSE notification stream) — e2e-covered
+        'src/hooks/useAuthInit.ts',
+        'src/hooks/useNotificationsStream.ts',
+        // Purely visual UI shells (the tested ones — GlassCard, StarRating — stay in)
+        'src/components/ui/AdBanner.tsx',
+        'src/components/ui/Divider.tsx',
+        'src/components/ui/OrbitalLoader.tsx',
+        'src/components/ui/SearchBar.tsx',
+        'src/components/ui/Shimmer.tsx',
       ],
       thresholds: {
         statements: 70,

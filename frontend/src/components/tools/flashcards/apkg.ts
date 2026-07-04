@@ -24,6 +24,11 @@ export class ApkgError extends Error {
   }
 }
 
+/** Safe numeric-entity → char (invalid/out-of-range code points collapse to empty rather than throw). */
+function codePoint(n: number): string {
+  return Number.isFinite(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '';
+}
+
 /** Strip Anki field HTML down to plain text (our cards are plain text). Pure + unit-tested. */
 export function htmlToText(html: string): string {
   return html
@@ -32,12 +37,12 @@ export function htmlToText(html: string): string {
     .replace(/<\/(div|p|li|tr)>/gi, '\n')
     .replace(/<[^>]+>/g, '')                      // remaining tags
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => codePoint(parseInt(h, 16)))   // hex entities e.g. &#x27; → '
+    .replace(/&#(\d+);/g, (_, n: string) => codePoint(Number(n)))                  // decimal entities e.g. &#39; → '
+    .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0*39;/g, "'")
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(Number(n)))
+    .replace(/&amp;/g, '&')                        // decode &amp; LAST so &amp;lt; stays &lt;
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -89,6 +89,11 @@ export interface LeaderboardEntry {
   documentCount: number;
   supporter: boolean;
   avatarUrl: string | null;
+  /** Parcours ISFCE + rôle communautaire, pour les badges (Promo / Délégué / Ancien délégué). */
+  graduated: boolean;
+  studyEndYear: number | null;
+  delegate: boolean;
+  formerDelegate: boolean;
 }
 
 export interface DelegateMember {

@@ -53,6 +53,10 @@
     "scopeAll": "Toutes",
     "scopeMine": "Ma section"
   },
+  "badges": {
+    "delegate": "Délégué",
+    "formerDelegate": "Ancien délégué"
+  },
   "delegates": {
     "title": "Délégués",
     "section": "Section",
@@ -590,6 +594,8 @@
     "ipv4": {
       "tab": "Calculateur IPv4",
       "name": "Calculateur IPv4 / sous-réseaux (CIDR)",
+      "wrongVersion": "Ton adresse contient des « : » (IPv6) ?",
+      "gotoIpv6": "Passer au calculateur IPv6",
       "short": "Adresse réseau, broadcast, plage d'hôtes et masque à partir d'une IP et d'un CIDR.",
       "lead": "Saisis une adresse IPv4 et un masque (en notation CIDR ou décimale) pour obtenir l'adresse réseau, le broadcast, la première et la dernière IP utilisables, le nombre d'hôtes et la visualisation binaire.",
       "seoTitle": "Calculateur IPv4 et sous-réseaux (CIDR)",
@@ -718,6 +724,8 @@
     "ipv6": {
       "tab": "Calculateur IPv6",
       "name": "Calculateur IPv6 / sous-réseaux",
+      "wrongVersion": "Ton adresse ressemble à du 192.168.x.x (IPv4) ?",
+      "gotoIpv4": "Passer au calculateur IPv4",
       "short": "Adresse compressée/étendue, préfixe réseau, plage d'adresses et portée à partir d'une IPv6 et d'un préfixe.",
       "lead": "Saisis une adresse IPv6 et un préfixe pour obtenir sa forme compressée et étendue, l'adresse réseau, la première et la dernière adresse, le nombre total d'adresses et la portée (globale, lien-local, ULA…).",
       "seoTitle": "Calculateur IPv6 et sous-réseaux (préfixe)",
@@ -1119,7 +1127,10 @@
       "done": "Terminé",
       "exportLabel": "Exporter",
       "importFile": "Fichier CSV / Anki (.apkg)",
-      "importBackup": "Sauvegarde (JSON)",
+      "importDeck": "Importer un paquet",
+      "importedDeckName": "Paquet importé",
+      "importedNewDeck": "Paquet importé : {{count}} cartes dans un nouveau paquet.",
+      "importBackup": "Restaurer (JSON)",
       "exportAnki": "Vers Anki (.tsv)",
       "exportBackup": "Sauvegarde (JSON)",
       "storageLocal": "Enregistré dans ce navigateur",

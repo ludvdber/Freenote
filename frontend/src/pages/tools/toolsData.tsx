@@ -49,7 +49,7 @@ export const TOOLS: ToolDef[] = [
   { slug: 'gantt', key: 'gantt', icon: <Timeline />, Component: GanttChart, category: 'study', size: 'wide', wide: true },
   { slug: 'calculateur-moyenne', key: 'grade', icon: <Calculate />, Component: GradeCalculator, category: 'study' },
   { slug: 'diagramme-uml', key: 'mermaid', icon: <Schema />, Component: MermaidEditor, category: 'dev', size: 'wide' },
-  { slug: 'calculateur-ip', key: 'ipv4', icon: <Lan />, Component: IPv4Calculator, category: 'network' },
+  { slug: 'calculateur-ip', key: 'ipv4', icon: <Lan />, Component: IPv4Calculator, category: 'network', size: 'wide' },
   { slug: 'calculateur-ipv6', key: 'ipv6', icon: <Hub />, Component: IPv6Calculator, category: 'network' },
   { slug: 'table-de-verite', key: 'truth', icon: <GridOn />, Component: TruthTable, category: 'dev' },
   { slug: 'convertisseur-bases', key: 'base', icon: <SwapHoriz />, Component: BaseConverter, category: 'dev' },

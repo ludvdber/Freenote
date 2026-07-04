@@ -26,6 +26,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
 import Divider from '@/components/ui/Divider';
 import UserAvatar from '@/components/common/UserAvatar';
+import UserBadges from '@/components/common/UserBadges';
 import type { LeaderboardEntry } from '@/types';
 import * as s from './Leaderboard.styles';
 
@@ -142,6 +143,15 @@ export default function Leaderboard() {
                 <Typography variant="body2" color="text.secondary" className="mono">
                   {e.xp} XP · {e.documentCount} {t('stats.docs').toLowerCase()}
                 </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center', mt: 0.5 }}>
+                  <UserBadges
+                    graduated={e.graduated}
+                    studyEndYear={e.studyEndYear}
+                    delegate={e.delegate}
+                    formerDelegate={e.formerDelegate}
+                    dense
+                  />
+                </Box>
               </MotionGlassCard>
             );
           })}
@@ -202,6 +212,13 @@ export default function Leaderboard() {
                           {isMe && (
                             <Chip label={t('leaderboard.you')} size="small" color="primary" sx={{ ml: 1 }} />
                           )}
+                          <UserBadges
+                            graduated={entry.graduated}
+                            studyEndYear={entry.studyEndYear}
+                            delegate={entry.delegate}
+                            formerDelegate={entry.formerDelegate}
+                            dense
+                          />
                         </Box>
                       </TableCell>
                       <TableCell align="right" className="mono">{entry.xp}</TableCell>
@@ -305,6 +322,15 @@ function LeaderboardMobileCard({ entry, isMe, onSelect, onPrefetch, t }: MobileC
         <Typography variant="caption" color="text.secondary" className="mono">
           {entry.xp} XP · {entry.documentCount} {t('stats.docs').toLowerCase()}
         </Typography>
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+          <UserBadges
+            graduated={entry.graduated}
+            studyEndYear={entry.studyEndYear}
+            delegate={entry.delegate}
+            formerDelegate={entry.formerDelegate}
+            dense
+          />
+        </Box>
       </Box>
     </GlassCard>
   );

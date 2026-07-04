@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import {
   Box, Typography, TextField, Grid, Select, MenuItem,
-  FormControl, InputLabel, Tooltip,
+  FormControl, InputLabel, Tooltip, Link,
 } from '@mui/material';
+import { SwapHoriz } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import GlassCard from '@/components/ui/GlassCard';
@@ -106,6 +108,14 @@ export default function IPv4Calculator() {
 
   return (
     <Box>
+      {/* Mauvaise version ? Lien vers l'autre calculateur. */}
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t('tools.ipv4.wrongVersion')}{' '}
+        <Link component={RouterLink} to="/outils/calculateur-ipv6" sx={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
+          <SwapHoriz fontSize="small" /> {t('tools.ipv4.gotoIpv6')}
+        </Link>
+      </Typography>
+
       {/* Inputs */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6 }}>

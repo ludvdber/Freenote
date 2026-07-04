@@ -226,6 +226,9 @@ export default function AdminDocuments() {
       {updateMut.isError && (
         <Alert severity="error">{(updateMut.error as Error).message || t('common.error')}</Alert>
       )}
+      {deleteMut.isError && (
+        <Alert severity="error" onClose={() => deleteMut.reset()}>{(deleteMut.error as Error).message || t('common.error')}</Alert>
+      )}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {allDocs?.content.map((doc) => (

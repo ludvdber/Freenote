@@ -1,5 +1,5 @@
 import { Typography, Box, Chip, Grid, Button } from '@mui/material';
-import { GitHub, LinkedIn, Language, Edit, School } from '@mui/icons-material';
+import { GitHub, LinkedIn, Language, Edit } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import DocumentCard from '@/components/common/DocumentCard';
 import OrbitalLoader from '@/components/ui/OrbitalLoader';
 import UserAvatar from '@/components/common/UserAvatar';
+import UserBadges from '@/components/common/UserBadges';
 
 export default function UserPublic() {
   const { t, i18n } = useTranslation();
@@ -58,7 +59,8 @@ export default function UserPublic() {
     );
   }
 
-  const activeDelegation = delegateHistory?.find((d) => d.active);
+  const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
+  const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
 
   return (
     <PageWrapper maxWidth="md">
@@ -82,29 +84,20 @@ export default function UserPublic() {
             <Typography variant="body2" color="text.secondary" className="mono">
               {user.xp} XP · {user.documentCount} {t('stats.docs').toLowerCase()}
             </Typography>
-            {/* Parcours ISFCE : badge « Promo {année} » pour les diplômés, sinon l'année d'arrivée. */}
-            {(user.graduated && user.studyEndYear) ? (
-              <Chip
-                icon={<School sx={{ fontSize: 14 }} />}
-                label={t('profile.journey.promoBadge', { year: user.studyEndYear })}
-                size="small"
-                color="secondary"
-                variant="outlined"
-                sx={{ mt: 0.5, mr: 0.5, fontSize: 11 }}
+            {/* Badges communautaires : Promo (diplômé), Délégué / Ancien délégué. */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+              <UserBadges
+                graduated={user.graduated}
+                studyEndYear={user.studyEndYear}
+                delegate={isDelegate}
+                formerDelegate={isFormerDelegate}
               />
-            ) : user.studyStartYear ? (
+            </Box>
+            {/* Fallback année d'arrivée pour les non-diplômés. */}
+            {!(user.graduated && user.studyEndYear) && user.studyStartYear && (
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
                 {t('profile.journey.sinceYear', { year: user.studyStartYear })}
               </Typography>
-            ) : null}
-            {activeDelegation && (
-              <Chip
-                label={`${t('delegates.title')} · ${activeDelegation.sectionName}`}
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ mt: 0.5, fontSize: 11 }}
-              />
             )}
           </Box>
 

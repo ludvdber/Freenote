@@ -105,7 +105,8 @@ public abstract class UserMapper {
         );
     }
 
-    public LeaderboardEntry toLeaderboardEntry(User user, int rank, long documentCount) {
+    public LeaderboardEntry toLeaderboardEntry(User user, int rank, long documentCount,
+                                               boolean delegate, boolean formerDelegate) {
         UserProfile p = user.getProfile();
         return new LeaderboardEntry(
                 user.getId(),
@@ -115,7 +116,11 @@ public abstract class UserMapper {
                 user.getXp(),
                 documentCount,
                 isSupporter(p),
-                resolveAvatarUrl(p, user.getUsername())
+                resolveAvatarUrl(p, user.getUsername()),
+                p != null && p.isGraduated(),
+                p != null ? p.getStudyEndYear() : null,
+                delegate,
+                formerDelegate
         );
     }
 

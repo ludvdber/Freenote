@@ -109,6 +109,13 @@ describe('flashcards — Anki .apkg field parsing', () => {
     expect(htmlToText('R&amp;D &lt;tag&gt; &#39;x&#39;')).toBe("R&D <tag> 'x'");
   });
 
+  it('decodes hexadecimal HTML entities (Anki exports use &#x27; for apostrophes)', () => {
+    expect(htmlToText("d&#x27;une expérience")).toBe("d'une expérience");
+    expect(htmlToText('a &#x2019; b')).toBe('a ’ b');
+    // &amp; is decoded last so an escaped entity survives instead of being double-decoded.
+    expect(htmlToText('&amp;lt;')).toBe('&lt;');
+  });
+
   it('maps note fields (separated by \\x1f) to front/back, joining extra fields into the back', () => {
     expect(fieldsToCard(['<b>Q</b>', 'A'])).toEqual({ front: 'Q', back: 'A' });
     expect(fieldsToCard(['Q', 'A', 'extra'])).toEqual({ front: 'Q', back: 'A\nextra' });

@@ -15,6 +15,7 @@ import be.freenote.exception.DuplicateResourceException;
 import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.mapper.UserMapper;
 import be.freenote.repository.BanRepository;
+import be.freenote.repository.DelegateHistoryRepository;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.ReportRepository;
@@ -48,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final SectionRepository sectionRepository;
     private final UserOauthLinkRepository oauthLinkRepository;
     private final BanRepository banRepository;
+    private final DelegateHistoryRepository delegateHistoryRepository;
     private final UserMapper userMapper;
     private final ActivityLogService activityLogService;
     private final DiscordRoleService discordRoleService;
@@ -149,14 +151,24 @@ public class UserServiceImpl implements UserService {
                 ? userRepository.findAllByOrderByXpDesc(PageRequest.of(0, size))
                 : userRepository.findBySectionOrderByXpDesc(sectionId, PageRequest.of(0, size));
 
-        // Batch fetch document counts — 1 query instead of N
+        // Batch fetch document counts + delegate status — 1 query each instead of N
         Map<Long, Long> docCounts = batchDocCounts(users);
+        List<Long> ids = users.stream().map(User::getId).toList();
+        java.util.Set<Long> activeDelegateIds = ids.isEmpty() ? java.util.Set.of()
+                : new java.util.HashSet<>(delegateHistoryRepository.findActiveDelegateUserIds(ids));
+        java.util.Set<Long> everDelegateIds = ids.isEmpty() ? java.util.Set.of()
+                : new java.util.HashSet<>(delegateHistoryRepository.findAnyDelegateUserIds(ids));
 
         AtomicInteger rank = new AtomicInteger(1);
         return users.stream()
-                .map(user -> userMapper.toLeaderboardEntry(
-                        user, rank.getAndIncrement(),
-                        docCounts.getOrDefault(user.getId(), 0L)))
+                .map(user -> {
+                    boolean active = activeDelegateIds.contains(user.getId());
+                    boolean former = !active && everDelegateIds.contains(user.getId());
+                    return userMapper.toLeaderboardEntry(
+                            user, rank.getAndIncrement(),
+                            docCounts.getOrDefault(user.getId(), 0L),
+                            active, former);
+                })
                 .toList();
     }
 

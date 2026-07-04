@@ -81,6 +81,21 @@ export function addDaysIso(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Fenêtre d'années raisonnable pour la timeline. Un `<input type="date">` émet la valeur à
+ *  CHAQUE frappe : taper « 2 » pour « 2025 » produit d'abord l'an 0002, ce qui ferait couvrir
+ *  ~2000 ans à la timeline (SVG géant → l'onglet gèle). On borne donc les dates aberrantes. */
+export const MIN_GANTT_YEAR = 1970;
+export const MAX_GANTT_YEAR = 2100;
+
+export function clampIsoDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return todayIso();
+  const y = d.getUTCFullYear();
+  if (y < MIN_GANTT_YEAR) return `${MIN_GANTT_YEAR}-01-01`;
+  if (y > MAX_GANTT_YEAR) return `${MAX_GANTT_YEAR}-12-31`;
+  return iso;
+}
+
 /** Whole days from a to b (b − a) — 0 for the same day, negative if b precedes a. */
 export function diffDays(aIso: string, bIso: string): number {
   const a = new Date(`${aIso}T00:00:00Z`).getTime();
@@ -140,23 +155,29 @@ export function normalizeProject(p: GanttProject): GanttProject {
   return { ...p, title: p.title.trim() || 'Projet', tasks };
 }
 
-/** Timeline-ready tasks: valid dates guaranteed, dependencies pruned to existing ids. */
+/** Timeline-ready tasks: valid dates guaranteed AND clamped to a sane year window (so a
+ *  half-typed year can't blow up the renderer), dependencies pruned to existing ids. */
 export function renderTasks(p: GanttProject): RenderTask[] {
   const norm = normalizeProject(p);
   const ids = new Set(norm.tasks.map((t) => t.id));
-  return norm.tasks.map((t) => ({
-    id: t.id,
-    name: t.name,
-    start: t.start,
-    end: t.end,
-    progress: t.progress,
-    dependencies: t.dependencies
-      .split(',')
-      .map((d) => d.trim())
-      .filter((d) => d && ids.has(d))
-      .join(','),
-    assignee: t.assignee,
-  }));
+  return norm.tasks.map((t) => {
+    const start = clampIsoDate(t.start);
+    let end = clampIsoDate(t.end);
+    if (end < start) end = start;
+    return {
+      id: t.id,
+      name: t.name,
+      start,
+      end,
+      progress: t.progress,
+      dependencies: t.dependencies
+        .split(',')
+        .map((d) => d.trim())
+        .filter((d) => d && ids.has(d))
+        .join(','),
+      assignee: t.assignee,
+    };
+  });
 }
 
 // ── JSON backup ──────────────────────────────────────────────────
