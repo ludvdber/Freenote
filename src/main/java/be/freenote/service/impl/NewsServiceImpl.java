@@ -20,6 +20,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -29,6 +31,9 @@ public class NewsServiceImpl implements NewsService {
     private static final String FEED_URL = "https://isfce.blogspot.com/feeds/posts/default";
     private static final String CACHE_KEY = "news:isfce";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+    // First <img src="..."> in the post HTML → used as the /news magazine thumbnail.
+    private static final Pattern IMG_SRC = Pattern.compile(
+            "<img[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
@@ -116,7 +121,7 @@ public class NewsServiceImpl implements NewsService {
                     id = fallbackId(url);
                 }
 
-                items.add(new NewsItem(id, title, date, labels, url, content));
+                items.add(new NewsItem(id, title, date, labels, url, content, extractThumbnail(content)));
             }
 
             return items;
@@ -133,6 +138,25 @@ public class NewsServiceImpl implements NewsService {
             return nodes.item(0).getTextContent();
         }
         return null;
+    }
+
+    /** First {@code <img src>} in the post HTML, used as the /news magazine thumbnail (null if none).
+     *  Blogger serves a resized copy via a {@code /sNNN[-c]/} or {@code /wNNN-hMMM/} path segment;
+     *  we bump it to a larger crop so the hero isn't a blurry thumbnail (no-op for other hosts). */
+    private String extractThumbnail(String content) {
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        Matcher m = IMG_SRC.matcher(content);
+        if (!m.find()) {
+            return null;
+        }
+        String src = m.group(1).trim();
+        if (src.isEmpty()) {
+            return null;
+        }
+        return src.replaceFirst("/s\\d+(-c)?/", "/s1600/")
+                  .replaceFirst("/w\\d+-h\\d+(-[a-z-]+)?/", "/s1600/");
     }
 
     /** Atom entry id "tag:blogger.com,1999:blog-XXXX.post-YYYY" → the stable "YYYY" part (used as

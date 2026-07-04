@@ -7,11 +7,10 @@ import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify';
 import { getNews } from '@/api/endpoints';
 import { SITE_URL, STALE_15M } from '@/lib/constants';
+import { readingMinutes, stripHtml } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import * as s from './NewsDetail.styles';
-
-const stripHtml = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 export default function NewsDetail() {
   const { id } = useParams();
@@ -21,9 +20,8 @@ export default function NewsDetail() {
 
   // The feed content is third-party blog HTML → sanitized with DOMPurify before rendering.
   const cleanHtml = item?.content ? DOMPurify.sanitize(item.content) : '';
-  const plain = item?.content ? stripHtml(item.content) : '';
-  const readMinutes = plain ? Math.max(1, Math.round(plain.split(' ').filter(Boolean).length / 200)) : 0;
-  const excerpt = plain.slice(0, 160);
+  const readMinutes = readingMinutes(item?.content);
+  const excerpt = item?.content ? stripHtml(item.content).slice(0, 160) : '';
 
   const fullDate = item?.date
     ? new Date(item.date).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', {

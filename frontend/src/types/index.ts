@@ -138,6 +138,7 @@ export interface NewsItem {
   labels: string[];
   url: string | null;
   content: string | null;
+  thumbnail: string | null;
 }
 
 export interface ProfileCardResponse {

@@ -35,6 +35,18 @@ export function formatRelativeDate(dateStr: string, locale: string = 'fr'): stri
   return locale.startsWith('fr') ? 'À l\'instant' : 'Just now';
 }
 
+/** Strips HTML tags and collapses whitespace — for excerpts/reading-time off blog content. */
+export function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Rough reading time in minutes (~200 words/min) from an HTML string; min 1 when non-empty. */
+export function readingMinutes(html: string | null | undefined): number {
+  if (!html) return 0;
+  const words = stripHtml(html).split(' ').filter(Boolean).length;
+  return words ? Math.max(1, Math.round(words / 200)) : 0;
+}
+
 export function categoryColor(category: string): string {
   const key = category as keyof typeof TOKENS.categories;
   return TOKENS.categories[key] ?? '#888';

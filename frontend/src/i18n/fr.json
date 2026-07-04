@@ -63,7 +63,10 @@
   },
   "news": {
     "title": "Quoi de neuf à l'ISFCE",
+    "subtitle": "Les annonces et actualités de l'école, relayées ici pour ne rien manquer.",
     "metaDescription": "Les actualités de l'ISFCE : rentrées, inscriptions, événements et annonces de l'école, relayées pour les étudiants.",
+    "latest": "À la une",
+    "more": "Plus d'actualités",
     "readMore": "Lire la suite",
     "empty": "Rien de neuf pour l'instant, reviens bientôt.",
     "back": "Retour aux actualités",
@@ -560,6 +563,22 @@
     "metaDescription": "Outils gratuits pour étudiants : calculateur de moyenne pondérée, calculateur IPv4, convertisseur de bases, encodeur Base64 et décodeur JWT. Sans compte, dans le navigateur.",
     "openTool": "Ouvrir l'outil",
     "allTools": "Tous les outils",
+    "filterLabel": "Filtrer les outils par catégorie",
+    "categories": {
+      "all": "Tous",
+      "study": "Étude",
+      "network": "Réseaux",
+      "dev": "Développement"
+    },
+    "previews": {
+      "flashFront": "H₂O",
+      "flashBack": "Eau",
+      "flashHint": "Retourner",
+      "quizQ": "Capitale de la Belgique ?",
+      "quizA": "Anvers",
+      "quizB": "Bruxelles",
+      "quizC": "Gand"
+    },
     "aboutTitle": "À quoi ça sert",
     "examplesTitle": "Exemples",
     "faqTitle": "Questions fréquentes",
@@ -619,10 +638,10 @@
     "mermaid": {
       "tab": "Diagrammes UML (Mermaid)",
       "name": "Éditeur de diagrammes UML en ligne (Mermaid)",
-      "short": "Crée des diagrammes de classe, séquence, flux, ER ou Gantt à partir de texte, puis exporte en SVG/PNG.",
-      "lead": "Décris ton diagramme en texte Mermaid à gauche, vois le rendu à droite en temps réel. Diagrammes de classe (UML), séquence, flux, entité-association, états et Gantt, exportables en SVG ou PNG.",
+      "short": "Crée des diagrammes de classe, séquence, flux, ER ou états à partir de texte, puis exporte en SVG/PNG.",
+      "lead": "Décris ton diagramme en texte Mermaid à gauche, vois le rendu à droite en temps réel. Diagrammes de classe (UML), séquence, flux, entité-association et états, exportables en SVG ou PNG.",
       "seoTitle": "Éditeur de diagrammes UML en ligne (Mermaid) gratuit",
-      "seoDescription": "Crée des diagrammes UML (classe, séquence, flux, entité-association, états, Gantt) en ligne à partir de texte, gratuitement et sans inscription. Aperçu en direct et export SVG/PNG.",
+      "seoDescription": "Crée des diagrammes UML (classe, séquence, flux, entité-association, états) en ligne à partir de texte, gratuitement et sans inscription. Aperçu en direct et export SVG/PNG.",
       "codeLabel": "Code Mermaid",
       "previewEmpty": "Le diagramme s'affichera ici.",
       "syntaxError": "Erreur de syntaxe",
@@ -634,8 +653,7 @@
         "sequence": "Séquence",
         "flow": "Flux",
         "er": "Entité-association",
-        "state": "États",
-        "gantt": "Gantt"
+        "state": "États"
       },
       "tryIt": "Essayer cet exemple",
       "guideTitle": "Comment écrire en Mermaid ?",
@@ -643,7 +661,7 @@
       "guide": [
         {
           "title": "La première ligne choisit le type de diagramme",
-          "text": "Chaque diagramme commence par un mot-clé : flowchart TD (organigramme de haut en bas, LR pour gauche-droite), classDiagram (classes UML), sequenceDiagram (séquence), erDiagram (entité-association), stateDiagram-v2 (états) ou gantt. Tout ce qui suit décrit le contenu.",
+          "text": "Chaque diagramme commence par un mot-clé : flowchart TD (organigramme de haut en bas, LR pour gauche-droite), classDiagram (classes UML), sequenceDiagram (séquence), erDiagram (entité-association) ou stateDiagram-v2 (états). Tout ce qui suit décrit le contenu.",
           "code": "flowchart LR\n    A[Départ] --> B[Arrivée]"
         },
         {

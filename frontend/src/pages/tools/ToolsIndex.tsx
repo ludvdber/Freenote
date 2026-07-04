@@ -1,4 +1,5 @@
-import { Container, Typography, Box, Grid } from '@mui/material';
+import { useState } from 'react';
+import { Container, Typography, Box } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -6,11 +7,15 @@ import { Helmet } from 'react-helmet-async';
 import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
 import { SITE_URL } from '@/lib/constants';
-import { TOOLS } from './toolsData';
+import { TOOLS, TOOL_CATEGORIES, type ToolCategory } from './toolsData';
+import { FlashcardPreview, QuizPreview } from './ToolPreviews';
 import * as s from './ToolsIndex.styles';
+
+type Filter = 'all' | ToolCategory;
 
 export default function ToolsIndex() {
   const { t, i18n } = useTranslation();
+  const [filter, setFilter] = useState<Filter>('all');
 
   const getArray = <T,>(key: string): T[] => {
     const value = t(key, { returnObjects: true });
@@ -19,6 +24,9 @@ export default function ToolsIndex() {
 
   const intro = getArray<string>('tools.indexAbout');
   const canonical = `${SITE_URL}/outils`;
+
+  const visible = filter === 'all' ? TOOLS : TOOLS.filter((tool) => tool.category === filter);
+  const filters: Filter[] = ['all', ...TOOL_CATEGORIES];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -53,20 +61,48 @@ export default function ToolsIndex() {
       <Typography variant="h4" component="h1" sx={s.title}>{t('tools.title')}</Typography>
       <Typography component="p" sx={s.subtitle}>{t('tools.subtitle')}</Typography>
 
-      <Grid container spacing={2.5}>
-        {TOOLS.map((tool) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tool.slug}>
-            <GlassCard component={Link} to={`/outils/${tool.slug}`} sx={s.card}>
-              <Box sx={s.cardIcon} aria-hidden="true">{tool.icon}</Box>
-              <Typography variant="h6" component="h2" sx={s.cardTitle}>{t(`tools.${tool.key}.name`)}</Typography>
-              <Typography variant="body2" sx={s.cardDesc}>{t(`tools.${tool.key}.short`)}</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontWeight: 600, fontSize: '0.85rem' }}>
+      <Box sx={s.filterRow} role="tablist" aria-label={t('tools.filterLabel')}>
+        {filters.map((f) => (
+          <Box
+            key={f}
+            component="button"
+            role="tab"
+            aria-selected={filter === f}
+            onClick={() => setFilter(f)}
+            sx={s.filterChip(filter === f)}
+          >
+            {t(`tools.categories.${f}`)}
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={s.bento}>
+        {visible.map((tool) => {
+          const size = tool.size ?? 'sm';
+          const preview =
+            size !== 'lg' ? null : tool.key === 'flashcards' ? <FlashcardPreview /> : tool.key === 'quiz' ? <QuizPreview /> : null;
+          return (
+            <GlassCard key={tool.slug} component={Link} to={`/outils/${tool.slug}`} sx={s.tile(size)}>
+              <Box sx={s.tileHead}>
+                <Box sx={s.tileIcon(size)} aria-hidden="true">{tool.icon}</Box>
+                {size === 'lg' && (
+                  <Box component="span" sx={s.tileBadge}>{t(`tools.categories.${tool.category}`)}</Box>
+                )}
+              </Box>
+              <Typography variant="h6" component="h2" sx={s.tileTitle(size)}>
+                {t(`tools.${tool.key}.name`)}
+              </Typography>
+              <Typography variant="body2" sx={s.tileDesc(size)}>
+                {t(`tools.${tool.key}.short`)}
+              </Typography>
+              {preview && <Box sx={s.previewWrap}>{preview}</Box>}
+              <Box sx={s.tileCta}>
                 {t('tools.openTool')} <ArrowForward fontSize="small" />
               </Box>
             </GlassCard>
-          </Grid>
-        ))}
-      </Grid>
+          );
+        })}
+      </Box>
 
       <AdSlot width={728} height={90} sx={{ my: 5 }} />
 

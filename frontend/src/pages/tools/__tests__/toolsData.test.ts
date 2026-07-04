@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TOOLS, toolBySlug } from '../toolsData';
+import { TOOLS, TOOL_CATEGORIES, toolBySlug } from '../toolsData';
 
 describe('tools registry', () => {
   it('exposes the tools with unique slugs and i18n keys', () => {
@@ -23,6 +23,17 @@ describe('tools registry', () => {
       expect(tool.icon).toBeTruthy();
       expect(tool.Component).toBeTruthy();
     }
+  });
+
+  it('every tool has a category belonging to the known set', () => {
+    for (const tool of TOOLS) {
+      expect(TOOL_CATEGORIES).toContain(tool.category);
+    }
+  });
+
+  it('exposes the two flagship study tools as large bento tiles', () => {
+    expect(toolBySlug('flashcards')?.size).toBe('lg');
+    expect(toolBySlug('quiz')?.size).toBe('lg');
   });
 
   it('toolBySlug resolves a known slug and returns undefined otherwise', () => {

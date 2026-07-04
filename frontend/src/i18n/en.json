@@ -63,7 +63,10 @@
   },
   "news": {
     "title": "What's new at ISFCE",
+    "subtitle": "The school's announcements and news, relayed here so you never miss a thing.",
     "metaDescription": "ISFCE news: term starts, enrolment, events and school announcements, relayed for students.",
+    "latest": "Featured",
+    "more": "More news",
     "readMore": "Read more",
     "empty": "Nothing new right now, check back soon.",
     "back": "Back to news",
@@ -560,6 +563,22 @@
     "metaDescription": "Free tools for students: weighted grade calculator, IPv4 subnet calculator, base converter, Base64 encoder and JWT decoder. No account, runs in your browser.",
     "openTool": "Open tool",
     "allTools": "All tools",
+    "filterLabel": "Filter tools by category",
+    "categories": {
+      "all": "All",
+      "study": "Study",
+      "network": "Networking",
+      "dev": "Development"
+    },
+    "previews": {
+      "flashFront": "H₂O",
+      "flashBack": "Water",
+      "flashHint": "Flip",
+      "quizQ": "Capital of Belgium?",
+      "quizA": "Antwerp",
+      "quizB": "Brussels",
+      "quizC": "Ghent"
+    },
     "aboutTitle": "What it does",
     "examplesTitle": "Examples",
     "faqTitle": "Frequently asked questions",
@@ -619,10 +638,10 @@
     "mermaid": {
       "tab": "UML diagrams (Mermaid)",
       "name": "Online UML diagram editor (Mermaid)",
-      "short": "Create class, sequence, flowchart, ER or Gantt diagrams from text, then export to SVG/PNG.",
-      "lead": "Describe your diagram in Mermaid text on the left and see it render live on the right. Class (UML), sequence, flowchart, entity-relationship, state and Gantt diagrams, exportable to SVG or PNG.",
+      "short": "Create class, sequence, flowchart, ER or state diagrams from text, then export to SVG/PNG.",
+      "lead": "Describe your diagram in Mermaid text on the left and see it render live on the right. Class (UML), sequence, flowchart, entity-relationship and state diagrams, exportable to SVG or PNG.",
       "seoTitle": "Free online UML diagram editor (Mermaid)",
-      "seoDescription": "Create UML diagrams (class, sequence, flowchart, entity-relationship, state, Gantt) online from text, free and without signing up. Live preview and SVG/PNG export.",
+      "seoDescription": "Create UML diagrams (class, sequence, flowchart, entity-relationship, state) online from text, free and without signing up. Live preview and SVG/PNG export.",
       "codeLabel": "Mermaid code",
       "previewEmpty": "The diagram will appear here.",
       "syntaxError": "Syntax error",
@@ -634,8 +653,7 @@
         "sequence": "Sequence",
         "flow": "Flowchart",
         "er": "Entity-relationship",
-        "state": "State",
-        "gantt": "Gantt"
+        "state": "State"
       },
       "tryIt": "Try this example",
       "guideTitle": "How to write Mermaid?",
@@ -643,7 +661,7 @@
       "guide": [
         {
           "title": "The first line picks the diagram type",
-          "text": "Every diagram starts with a keyword: flowchart TD (top-down flowchart, LR for left-right), classDiagram (UML classes), sequenceDiagram, erDiagram (entity-relationship), stateDiagram-v2 or gantt. Everything after it describes the content.",
+          "text": "Every diagram starts with a keyword: flowchart TD (top-down flowchart, LR for left-right), classDiagram (UML classes), sequenceDiagram, erDiagram (entity-relationship) or stateDiagram-v2. Everything after it describes the content.",
           "code": "flowchart LR\n    A[Start] --> B[End]"
         },
         {

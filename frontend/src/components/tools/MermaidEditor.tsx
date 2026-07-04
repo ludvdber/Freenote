@@ -63,16 +63,6 @@ const TEMPLATES: { key: string; code: string }[] = [
     Publié --> Archivé : archiver
     Archivé --> [*]`,
   },
-  {
-    key: 'gantt',
-    code: `gantt
-    title Planning de projet
-    dateFormat YYYY-MM-DD
-    section Analyse
-    Cahier des charges :a1, 2026-09-01, 7d
-    section Développement
-    Backend :after a1, 14d`,
-  },
 ];
 
 let renderSeq = 0;
