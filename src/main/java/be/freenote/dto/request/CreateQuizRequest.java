@@ -12,7 +12,7 @@ public record CreateQuizRequest(
         @NotBlank @Size(max = 100) String title,
         @Size(max = 500) String description,
         Long courseId,
-        @NotEmpty @Size(max = 100) @Valid List<QuizQuestionDto> questions,
+        @NotEmpty @Size(max = 100) List<@Valid QuizQuestionDto> questions,
         /** true = visible dans la bibliotheque partagee ; false = enregistre prive (compte seul). */
         Boolean published  // Boolean nullable : absent/null = prive (Jackson 3 refuse null sur un primitif)
 ) {}

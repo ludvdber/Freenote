@@ -6,7 +6,10 @@ plugins {
 }
 
 group = "be"
-version = "0.0.1-SNAPSHOT"
+// SemVer : 1.x.0 = nouvelles fonctionnalités, 1.0.x = correctifs. Le jar est renommé freenote.jar
+// au déploiement (deploy/freenote.service), donc bumper la version ne casse pas systemd ; les scripts
+// locaux résolvent build/libs/freenote-*.jar par glob. Garder frontend/src/lib/constants.ts APP_VERSION synchro.
+version = "1.1.0"
 
 java {
     toolchain {

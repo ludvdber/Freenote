@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Chip, Avatar, Button, Collapse } from '@mui/material';
-import { ExpandMore, ExpandLess, History } from '@mui/icons-material';
+import { Box, Typography, Chip, Avatar, Button, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import { History } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -13,13 +13,19 @@ import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
 import * as s from './DelegatesDiscord.styles';
 
+const formerYearRange = (m: DelegateMember) => {
+  const start = new Date(m.startDate).getFullYear();
+  const end = m.endDate ? new Date(m.endDate).getFullYear() : null;
+  return end ? `${start} – ${end}` : `${start} – …`;
+};
+
 export default function DelegatesDiscord() {
   const { t, i18n } = useTranslation();
   const { token } = useAuthStore();
   const { data: delegates } = useQuery({ queryKey: ['delegates'], queryFn: getDelegates });
   const { data: former } = useQuery({ queryKey: ['delegates-former'], queryFn: getFormerDelegates });
   const [selectedDelegate, setSelectedDelegate] = useState<DelegateMember | null>(null);
-  const [showFormer, setShowFormer] = useState(false);
+  const [formerOpen, setFormerOpen] = useState(false);
   const delegatesCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +47,8 @@ export default function DelegatesDiscord() {
   }, [selectedDelegate]);
 
   const hasDelegates = (delegates?.length ?? 0) > 0;
-  const hasFormer = (former?.length ?? 0) > 0;
+  const formerCount = former?.reduce((n, sec) => n + sec.members.length, 0) ?? 0;
+  const hasFormer = formerCount > 0;
 
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -126,39 +133,18 @@ export default function DelegatesDiscord() {
               </GlassCard>
             </Box>
 
+            {/* Anciens délégués : un simple compteur qui ouvre une modale scrollable — reste net même
+                avec des dizaines d'anciens, au lieu d'un pavé de chips sous le cadre. */}
             {hasFormer && (
               <Box sx={{ mt: 1.5 }}>
                 <Button
                   size="small"
                   startIcon={<History />}
-                  endIcon={showFormer ? <ExpandLess /> : <ExpandMore />}
-                  onClick={() => setShowFormer((v) => !v)}
+                  onClick={() => setFormerOpen(true)}
                   sx={{ color: 'text.secondary' }}
                 >
-                  {t('delegates.formerToggle')}
+                  {t('delegates.formerToggle')} · {formerCount}
                 </Button>
-                <Collapse in={showFormer}>
-                  <GlassCard sx={{ p: 2, mt: 1 }}>
-                    {former?.map((d) => (
-                      <Box key={d.sectionName} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          {d.sectionName}
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                          {d.members.map((m, i) => (
-                            <Chip
-                              key={`${m.username}-${i}`}
-                              size="small"
-                              variant="outlined"
-                              label={m.displayName ? `${m.displayName} (${m.username})` : m.username}
-                              sx={{ opacity: 0.7 }}
-                            />
-                          ))}
-                        </Box>
-                      </Box>
-                    ))}
-                  </GlassCard>
-                </Collapse>
               </Box>
             )}
           </Box>
@@ -168,6 +154,66 @@ export default function DelegatesDiscord() {
           </Box>
         </Box>
       </Box>
+
+      <Dialog open={formerOpen} onClose={() => setFormerOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <History fontSize="small" /> {t('delegates.formerToggle')}
+        </DialogTitle>
+        <DialogContent dividers sx={{ maxHeight: 440 }}>
+          {former?.map((sec) => (
+            <Box key={sec.sectionName} sx={{ mb: 2, '&:last-child': { mb: 0 } }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              >
+                {sec.sectionName}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 0.75 }}>
+                {sec.members.map((m, i) => {
+                  // Cliquable vers le profil quand l'ancien délégué a un compte (userId). DelegatesDiscord
+                  // n'est rendu qu'aux connectés, donc pas besoin de reverifier token ici.
+                  const clickable = Boolean(m.userId);
+                  return (
+                    <Box
+                      key={`${m.username}-${i}`}
+                      component={clickable ? Link : 'div'}
+                      {...(clickable ? { to: `/users/${m.userId}`, onClick: () => setFormerOpen(false) } : {})}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 0.75, borderRadius: 2,
+                        borderLeft: '3px solid', borderColor: 'divider', textDecoration: 'none', color: 'inherit',
+                        bgcolor: (th) => (th.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                        ...(clickable && {
+                          cursor: 'pointer',
+                          transition: 'border-color .15s ease, background-color .15s ease',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            bgcolor: (th) => (th.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                          },
+                        }),
+                      }}
+                    >
+                      <Avatar sx={{ width: 28, height: 28, fontSize: 13 }}>
+                        {(m.displayName ?? m.username).charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                          {m.displayName ?? m.username}
+                        </Typography>
+                        {m.displayName && (
+                          <Typography variant="caption" color="text.secondary">@{m.username}</Typography>
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" className="mono">
+                        {formerYearRange(m)}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          ))}
+        </DialogContent>
+      </Dialog>
     </motion.section>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress } from '@mui/material';
-import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined } from '@mui/icons-material';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink } from '@mui/material';
+import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined, NavigateNext } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -164,6 +164,22 @@ export default function DocumentView() {
   return (
     <PageWrapper maxWidth="lg">
       <Helmet><title>{doc ? `${doc.title} · Freenote` : 'Freenote'}</title></Helmet>
+
+      {/* Fil d'Ariane : Explorer → Cours → document courant. */}
+      <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 2, fontSize: '0.85rem' }}>
+        <MuiLink component={RouterLink} to="/browse" underline="hover" color="text.secondary">
+          {t('nav.browse')}
+        </MuiLink>
+        {doc.courseId && (
+          <MuiLink component={RouterLink} to={`/courses/${doc.courseId}`} underline="hover" color="text.secondary">
+            {doc.courseName}
+          </MuiLink>
+        )}
+        <Typography color="text.primary" sx={{ fontSize: 'inherit', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {doc.title}
+        </Typography>
+      </Breadcrumbs>
+
       <Box sx={s.header}>
         <Box sx={s.chipsRow}>
           <Chip

@@ -18,6 +18,9 @@ const AUTH_ERROR_KEYS: Record<string, string> = {
 const StatsSection = lazy(() => import('@/components/home/StatsSection'));
 const NewsAndLinks = lazy(() => import('@/components/home/NewsAndLinks'));
 const PopularDocs = lazy(() => import('@/components/home/PopularDocs'));
+const PublicDocsPreview = lazy(() => import('@/components/home/PublicDocsPreview'));
+const HomeToolsStrip = lazy(() => import('@/components/home/HomeToolsStrip'));
+const HowItWorks = lazy(() => import('@/components/home/HowItWorks'));
 const RecentAndShortcuts = lazy(() => import('@/components/home/RecentAndShortcuts'));
 const DelegatesDiscord = lazy(() => import('@/components/home/DelegatesDiscord'));
 
@@ -54,22 +57,66 @@ export default function Home() {
       <Helmet><title>Freenote : éclaire ta promo</title></Helmet>
       <HeroSection />
       <Container maxWidth="lg">
-        {/* Stats agrégées visibles aussi des anonymes (GET /api/stats est permitAll) : la home
-            publique montre du contenu réel au lieu d'un grand vide entre le hero et le footer. */}
+        {/* Hiérarchie : PRODUIT (stats + docs) → (comment ça marche, anon) → NEWS + liens.
+            Le produit passe avant le contenu tiers ; les outils (bande pleine largeur, plus bas)
+            descendent sous « Quoi de neuf » + les liens utiles et ne sont plus collés au catalogue. */}
+
+        {/* Stats agrégées, visibles aussi des anonymes (GET /api/stats est permitAll). */}
         <Suspense fallback={<SectionFallback />}>
           <StatsSection />
         </Suspense>
+
+        {/* Aperçu du catalogue : docs réels (populaires) pour les connectés, extrait public anonymisé
+            (catégories sûres, sans auteur ni PDF) pour les anonymes. */}
+        <Divider />
+        <Suspense fallback={<SectionFallback />}>
+          {token ? <PopularDocs /> : <PublicDocsPreview />}
+        </Suspense>
+
+        {/* Onboarding explicite pour les visiteurs anonymes. */}
+        {!token && (
+          <>
+            <Divider />
+            <Suspense fallback={<SectionFallback />}>
+              <HowItWorks />
+            </Suspense>
+          </>
+        )}
+
+        {/* News de l'école (contenu tiers) + liens utiles. */}
         <Divider />
         <Suspense fallback={<SectionFallback />}>
           <NewsAndLinks />
         </Suspense>
+      </Container>
+
+      {/* Outils — bande PLEINE LARGEUR légèrement teintée : casse le rythme des cartes en verre et
+          lit « zone d'apps » plutôt que « encore des cartes ». Hors Container pour le fond full-bleed,
+          avec un Container interne qui re-contraint le contenu. */}
+      <Box
+        component="section"
+        sx={{
+          mt: 6,
+          py: { xs: 4, md: 6 },
+          borderTop: '1px solid',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          background: (th) =>
+            th.palette.mode === 'dark'
+              ? 'linear-gradient(180deg, rgba(123,47,247,0.07), rgba(0,210,255,0.05))'
+              : 'linear-gradient(180deg, rgba(123,47,247,0.04), rgba(0,210,255,0.04))',
+        }}
+      >
+        <Container maxWidth="lg">
+          <Suspense fallback={<SectionFallback />}>
+            <HomeToolsStrip />
+          </Suspense>
+        </Container>
+      </Box>
+
+      <Container maxWidth="lg">
         {token && (
           <>
-            <Divider />
-            <Suspense fallback={<SectionFallback />}>
-              <PopularDocs />
-            </Suspense>
-            <Divider />
             <Suspense fallback={<SectionFallback />}>
               <RecentAndShortcuts />
             </Suspense>
@@ -79,6 +126,7 @@ export default function Home() {
             </Suspense>
           </>
         )}
+
         {/* Pub en bas de page (au-dessus du footer), jamais collée au hero sans contenu autour. */}
         {!token && <AdSlot width={728} height={90} sx={{ mt: 6, mb: 4 }} />}
       </Container>

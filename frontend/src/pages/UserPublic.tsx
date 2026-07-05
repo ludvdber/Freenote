@@ -1,11 +1,10 @@
 import { Typography, Box, Chip, Grid, Button } from '@mui/material';
-import { GitHub, LinkedIn, Language, Edit } from '@mui/icons-material';
+import { GitHub, LinkedIn, Language, Edit, School, EmojiEvents } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getUserById, getDelegateHistory, getDocumentsByUser } from '@/api/endpoints';
-import { formatDate } from '@/lib/utils';
+import { getUserById, getDelegateHistory, getDocumentsByUser, getUserRank } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
@@ -13,9 +12,10 @@ import DocumentCard from '@/components/common/DocumentCard';
 import OrbitalLoader from '@/components/ui/OrbitalLoader';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
+import DelegateMandates from '@/components/common/DelegateMandates';
 
 export default function UserPublic() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
   const currentUser = useAuthStore((s) => s.user);
@@ -30,6 +30,12 @@ export default function UserPublic() {
   const { data: delegateHistory } = useQuery({
     queryKey: ['delegate-history', userId],
     queryFn: () => getDelegateHistory(userId),
+    enabled: !!user,
+  });
+
+  const { data: rank } = useQuery({
+    queryKey: ['user-rank', userId],
+    queryFn: () => getUserRank(userId),
     enabled: !!user,
   });
 
@@ -60,7 +66,6 @@ export default function UserPublic() {
   }
 
   const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
-  const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
 
   return (
     <PageWrapper maxWidth="md">
@@ -84,13 +89,33 @@ export default function UserPublic() {
             <Typography variant="body2" color="text.secondary" className="mono">
               {user.xp} XP · {user.documentCount} {t('stats.docs').toLowerCase()}
             </Typography>
-            {/* Badges communautaires : Promo (diplômé), Délégué / Ancien délégué. */}
+            {/* Section ISFCE + rang + badges communautaires. « Ancien délégué » n'est PAS mis ici :
+                il apparaît dans l'encadré Délégués ci-dessous, avec les années début–fin. */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+              {rank != null && (
+                <Chip
+                  icon={<EmojiEvents sx={{ fontSize: 14 }} />}
+                  label={`#${rank}`}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  sx={{ fontSize: 11 }}
+                />
+              )}
+              {user.sectionName && (
+                <Chip
+                  icon={<School sx={{ fontSize: 14 }} />}
+                  label={user.sectionName}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontSize: 11 }}
+                />
+              )}
               <UserBadges
                 graduated={user.graduated}
                 studyEndYear={user.studyEndYear}
                 delegate={isDelegate}
-                formerDelegate={isFormerDelegate}
+                formerDelegate={false}
               />
             </Box>
             {/* Fallback année d'arrivée pour les non-diplômés. */}
@@ -171,32 +196,7 @@ export default function UserPublic() {
 
       </GlassCard>
 
-      {delegateHistory && delegateHistory.length > 0 && (
-        <GlassCard sx={{ p: 2.5, mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-            {t('delegates.title')}
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-            {delegateHistory.map((dh) => (
-              <Box key={dh.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Chip
-                  label={dh.active ? t('admin.delegates.activeChip') : t('admin.delegates.endedChip')}
-                  size="small"
-                  color={dh.active ? 'success' : 'default'}
-                  variant="outlined"
-                  sx={{ fontSize: 10, minWidth: 60 }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {dh.sectionName}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" className="mono">
-                  {formatDate(dh.startDate, i18n.language)}{dh.endDate ? ` → ${formatDate(dh.endDate, i18n.language)}` : ' → …'}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </GlassCard>
-      )}
+      <DelegateMandates history={delegateHistory} title={t('delegates.title')} />
 
       {docs && docs.content.length > 0 && (
         <>

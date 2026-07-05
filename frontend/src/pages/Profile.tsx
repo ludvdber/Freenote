@@ -14,6 +14,7 @@ import {
   DialogActions,
   Grid,
   MenuItem,
+  Collapse,
 } from '@mui/material';
 import {
   Person,
@@ -21,7 +22,6 @@ import {
   Settings,
   Star,
   FavoriteBorder,
-  HowToVote,
   Verified,
   Bolt,
   DeleteForever,
@@ -29,6 +29,9 @@ import {
   AccountCircle,
   Badge as BadgeIcon,
   School as SchoolIcon,
+  ExpandMore,
+  ExpandLess,
+  Description,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -42,14 +45,16 @@ import {
   deleteAccount,
   getDelegateHistory,
   getFavorites,
+  getDocumentsByUser,
   syncDiscordRole,
 } from '@/api/endpoints';
-import { formatDate, extractApiError } from '@/lib/utils';
+import { extractApiError } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
+import DelegateMandates from '@/components/common/DelegateMandates';
 import { useLogout } from '@/hooks/useLogout';
 import type { AvatarSource } from '@/types';
 import * as s from './Profile.styles';
@@ -60,7 +65,7 @@ const DICEBEAR_URL = (username: string) =>
 const FAV_PREVIEW_COUNT = 8;
 
 export default function Profile() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { setUser } = useAuthStore();
   const logout = useLogout();
   const queryClient = useQueryClient();
@@ -73,6 +78,11 @@ export default function Profile() {
   const { data: favorites } = useQuery({
     queryKey: ['my-favorites'],
     queryFn: () => getFavorites(0, FAV_PREVIEW_COUNT),
+    enabled: !!user?.id,
+  });
+  const { data: myDocs } = useQuery({
+    queryKey: ['user-docs', user?.id],
+    queryFn: () => getDocumentsByUser(user!.id),
     enabled: !!user?.id,
   });
   const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: getSections });
@@ -95,6 +105,7 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   // Initialise the editable form from the loaded user. Adjusting state during render
   // (keyed on user.id) instead of an effect is React's recommended pattern and avoids a
@@ -182,7 +193,26 @@ export default function Profile() {
   if (!user) return null;
 
   const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
-  const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
+
+  // Revert every editable field back to the loaded account (the sticky bar's "cancel").
+  const resetForm = () => {
+    setBio(user.bio ?? '');
+    setWebsite(user.website ?? '');
+    setGithub(user.github ?? '');
+    setLinkedin(user.linkedin ?? '');
+    setDiscord(user.discord ?? '');
+    setProfilePublic(user.profilePublic);
+    setShowInCarousel(user.showInCarousel);
+    setAvatarSource(user.avatarSource);
+    setFirstName(user.firstName ?? '');
+    setLastName(user.lastName ?? '');
+    setDisplayRealName(user.displayRealName);
+    setSectionId(user.sectionId ?? '');
+    setStudyStartYear(user.studyStartYear?.toString() ?? '');
+    setStudyEndYear(user.studyEndYear?.toString() ?? '');
+    setGraduated(user.graduated);
+    setSaveError('');
+  };
 
   const previewUrl = (source: AvatarSource): string | null => {
     switch (source) {
@@ -250,7 +280,7 @@ export default function Profile() {
               graduated={graduated}
               studyEndYear={studyEndYear ? Number(studyEndYear) : null}
               delegate={isDelegate}
-              formerDelegate={isFormerDelegate}
+              formerDelegate={false}
             />
           </Box>
         </Box>
@@ -403,14 +433,33 @@ export default function Profile() {
           </GlassCard>
 
           <GlassCard sx={s.sectionCard}>
-            <Typography variant="subtitle1" sx={s.sectionTitle}>
-              <AccountCircle fontSize="small" /> {t('profile.avatar.title')}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-              {t('profile.avatar.help')}
-            </Typography>
-            <Box sx={s.avatarOptions}>
-              {avatarOptions.map(({ source, available, reason }) => {
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="subtitle1" sx={s.sectionTitle}>
+                <AccountCircle fontSize="small" /> {t('profile.avatar.title')}
+              </Typography>
+              <Button
+                size="small"
+                onClick={() => setAvatarOpen((v) => !v)}
+                endIcon={avatarOpen ? <ExpandLess /> : <ExpandMore />}
+              >
+                {t('profile.avatar.toggle')}
+              </Button>
+            </Box>
+            {/* Collapsed by default (rare action): show only the current avatar + its label. */}
+            {!avatarOpen && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1 }}>
+                <UserAvatar username={user.username} url={previewUrl(avatarSource)} size={44} />
+                <Typography variant="body2" color="text.secondary">
+                  {t(`profile.avatar.source.${avatarSource}`)}
+                </Typography>
+              </Box>
+            )}
+            <Collapse in={avatarOpen}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, mt: 1 }}>
+                {t('profile.avatar.help')}
+              </Typography>
+              <Box sx={s.avatarOptions}>
+                {avatarOptions.map(({ source, available, reason }) => {
                 const selected = avatarSource === source;
                 return (
                   <Box
@@ -439,7 +488,8 @@ export default function Profile() {
                   </Box>
                 );
               })}
-            </Box>
+              </Box>
+            </Collapse>
           </GlassCard>
         </Grid>
 
@@ -607,37 +657,46 @@ export default function Profile() {
             )}
           </GlassCard>
 
-          {delegateHistory && delegateHistory.length > 0 && (
-            <GlassCard sx={s.sectionCard}>
-              <Typography variant="subtitle1" sx={s.sectionTitle}>
-                <HowToVote fontSize="small" /> {t('profile.delegationSection')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {delegateHistory.map((dh) => (
-                  <Box key={dh.id} sx={s.mandateRow}>
-                    <Chip
-                      label={
-                        dh.active
-                          ? t('admin.delegates.activeChip')
-                          : t('admin.delegates.endedChip')
-                      }
-                      size="small"
-                      color={dh.active ? 'success' : 'default'}
-                      variant="outlined"
-                      sx={{ fontSize: 11 }}
-                    />
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {dh.sectionName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" className="mono">
-                      {formatDate(dh.startDate, i18n.language)}
-                      {dh.endDate ? ` → ${formatDate(dh.endDate, i18n.language)}` : ` → …`}
-                    </Typography>
+          {/* Mes documents : la boucle de motivation d'un uploader (vues + note par doc). */}
+          <GlassCard sx={s.sectionCard}>
+            <Typography variant="subtitle1" sx={s.sectionTitle}>
+              <Description fontSize="small" /> {t('profile.documents')}
+            </Typography>
+            {myDocs && myDocs.content.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {myDocs.content.slice(0, 6).map((d) => (
+                  <Box
+                    key={d.id}
+                    component={RouterLink}
+                    to={`/documents/${d.id}`}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', color: 'inherit', px: 1, py: 0.75, borderRadius: 2, '&:hover': { bgcolor: 'action.hover' } }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{d.title}</Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>{d.courseName}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, color: 'text.secondary' }}>
+                      <Visibility sx={{ fontSize: 14 }} />
+                      <Typography variant="caption" className="mono">{d.downloadCount}</Typography>
+                    </Box>
+                    {d.averageRating > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, color: 'warning.main' }}>
+                        <Star sx={{ fontSize: 14 }} />
+                        <Typography variant="caption" className="mono">{d.averageRating.toFixed(1)}</Typography>
+                      </Box>
+                    )}
                   </Box>
                 ))}
+                <Box component={RouterLink} to={`/users/${user.id}`} sx={{ mt: 0.5, fontSize: '0.85rem', fontWeight: 600, color: 'primary.main', textDecoration: 'none' }}>
+                  {t('profile.viewPublic')} →
+                </Box>
               </Box>
-            </GlassCard>
-          )}
+            ) : (
+              <Typography variant="body2" color="text.secondary">{t('profile.noDocuments')}</Typography>
+            )}
+          </GlassCard>
+
+          <DelegateMandates history={delegateHistory} title={t('profile.delegationSection')} />
         </Grid>
       </Grid>
 
@@ -682,6 +741,46 @@ export default function Profile() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Barre de sauvegarde sticky : apparaît dès qu'il y a des modifs, où que tu sois dans la page
+          (fini le scroll jusqu'au bouton Enregistrer du header). */}
+      {isDirty && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 16, md: 24 },
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1200,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 1.25,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.28)',
+            maxWidth: 'calc(100vw - 24px)',
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
+            {t('profile.unsavedChanges')}
+          </Typography>
+          <Button size="small" onClick={resetForm} disabled={saveMutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? t('common.loading') : t('profile.save')}
+          </Button>
+        </Box>
+      )}
     </PageWrapper>
   );
 }

@@ -1,3 +1,7 @@
+// App version (SemVer). Keep in sync with build.gradle.kts `version` — shown discreetly in the footer
+// so users can reference "which version am I on" when reporting a bug. 1.x.0 = features, 1.0.x = fixes.
+export const APP_VERSION = '1.1.0';
+
 export const CATEGORIES = ['SYNTHESE', 'EXAMEN', 'NOTES', 'EXERCICES', 'COURS', 'TFE', 'DIVERS'] as const;
 
 export const MAX_FILE_SIZE = 7 * 1024 * 1024; // 7 MB (PDF)

@@ -62,6 +62,7 @@
     "section": "Section",
     "members": "Membres",
     "since": "Depuis le",
+    "ongoing": "en cours",
     "formerToggle": "Anciens délégués",
     "empty": "Pas encore de délégué dans ta section ? Dis-le nous."
   },
@@ -452,8 +453,11 @@
     "verified": "Vérifié",
     "favoritesTitle": "Mes favoris ({{count}})",
     "noFavorites": "Tu n'as pas encore de favoris.",
+    "noDocuments": "Tu n'as pas encore partagé de document.",
+    "unsavedChanges": "Modifications non enregistrées",
     "avatar": {
       "title": "Avatar",
+      "toggle": "Modifier",
       "help": "Choisis comment ton avatar est affiché. Pas d'upload : la lettre de ton pseudo, un avatar généré, ou ta photo Discord.",
       "source": {
         "AUTO": "Automatique",
@@ -494,6 +498,26 @@
         "bug": "Signaler un bug",
         "kofi": "Offrir un café"
       }
+    },
+    "tools": {
+      "title": "Outils",
+      "subtitle": "Flashcards, quiz, calculateurs et diagrammes pour réviser et coder.",
+      "viewAll": "Tous les outils"
+    },
+    "how": {
+      "title": "Comment ça marche",
+      "step1Title": "Connecte-toi avec Discord",
+      "step1Desc": "Un clic, aucun mot de passe à retenir.",
+      "step2Title": "Vérifie ton email @isfce.be",
+      "step2Desc": "Un code à 6 chiffres confirme que tu es à l'ISFCE.",
+      "step3Title": "Accède à tout",
+      "step3Desc": "Documents, cours, classement et outils réservés à ta promo."
+    },
+    "publicDocs": {
+      "title": "Aperçu du catalogue",
+      "subtitle": "Un échantillon public. Connecte-toi pour tout lire.",
+      "viewAll": "Explorer",
+      "loginCta": "Se connecter pour tout voir"
     }
   },
   "search": {
@@ -1107,6 +1131,8 @@
       "showAnswer": "Afficher la réponse",
       "sessionDone": "Session terminée !",
       "sessionDoneHint": "Tu as révisé toutes les cartes dues. Reviens plus tard pour les suivantes.",
+      "sessionSuccessRate": "{{pct}} % de réussite",
+      "sessionStats": "{{total}} cartes · {{success}} réussies · {{again}} à revoir",
       "backToCards": "Retour aux cartes",
       "import": "Importer",
       "close": "Fermer",
@@ -1194,11 +1220,14 @@
           "a": "Oui, autant que tu veux : un par cours, par chapitre ou par examen. Le sélecteur en haut permet de basculer de l'un à l'autre."
         }
       ],
-      "localChip": "Local",
-      "savedChip": "Enregistré",
+      "localChip": "Navigateur uniquement",
+      "savedChip": "Non publié",
       "publishedChip": "Publié",
-      "saveOnline": "Enregistrer en ligne",
-      "updateOnline": "Mettre à jour en ligne",
+      "localChipTooltip": "Enregistré uniquement dans ce navigateur. Exporte une sauvegarde JSON avant de vider ton cache ou de changer d'appareil.",
+      "savedChipTooltip": "Enregistré sur ton compte (privé) : accessible depuis tes appareils, mais pas visible dans la bibliothèque.",
+      "publishedChipTooltip": "Publié dans la bibliothèque : visible et révisable par les autres étudiants vérifiés.",
+      "saveOnline": "Enregistrer sur mon compte",
+      "updateOnline": "Mettre à jour sur mon compte",
       "saveOnlineOk": "Paquet enregistré sur ton compte (privé) ✓",
       "saveOnlineTooltip": "Sauvegarde privée sur ton compte : retrouve-le depuis n'importe quel appareil.",
       "unpublish": "Dépublier",
@@ -1284,6 +1313,7 @@
       "leaderboard": "Classement",
       "leaderboardIntro": "Meilleur score par joueur ; à score égal, le plus rapide l'emporte.",
       "leaderboardEmpty": "Personne n'a encore joué. Lance-toi !",
+      "finalLeaderboardTitle": "Classement — fais mieux !",
       "you": "Toi",
       "quit": "Quitter",
       "previous": "Précédent",
@@ -1298,6 +1328,8 @@
       "backToList": "Retour",
       "shareTitle": "Partager ce quiz",
       "shareHint": "N'importe qui peut ouvrir ce lien et jouer, même sans compte. Le quiz est entièrement contenu dans le lien : rien n'est stocké sur le serveur, et il n'apparaît pas au classement.",
+      "shareRankedHint": "Ce lien ouvre ton quiz publié : tout étudiant vérifié qui le joue apparaît au classement.",
+      "playLinkLoginHint": "Connecte-toi avec ton compte ISFCE vérifié pour jouer ce quiz et apparaître au classement.",
       "copy": "Copier",
       "close": "Fermer",
       "about": [
@@ -1328,11 +1360,14 @@
           "a": "Le quiz partagé par lien est entièrement contenu dans l'adresse : un curieux pourrait techniquement la décoder. C'est sans conséquence pour un quiz d'entraînement, mais pour un classement fiable, préfère publier le quiz dans la bibliothèque (les réponses restent alors côté serveur)."
         }
       ],
-      "localChip": "Local",
-      "savedChip": "Enregistré",
+      "localChip": "Navigateur uniquement",
+      "savedChip": "Non publié",
       "publishedChip": "Publié",
-      "saveOnline": "Enregistrer en ligne",
-      "updateOnline": "Mettre à jour en ligne",
+      "localChipTooltip": "Enregistré uniquement dans ce navigateur. Exporte une sauvegarde avant de vider ton cache ou de changer d'appareil.",
+      "savedChipTooltip": "Enregistré sur ton compte (privé) : accessible depuis tes appareils, mais pas dans la bibliothèque et sans classement.",
+      "publishedChipTooltip": "Publié dans la bibliothèque : jouable par les étudiants vérifiés, avec classement.",
+      "saveOnline": "Enregistrer sur mon compte",
+      "updateOnline": "Mettre à jour sur mon compte",
       "saveOnlineOk": "Quiz enregistré sur ton compte (privé) ✓",
       "unpublish": "Dépublier",
       "confirmDeleteLinked": "Supprimer « {{name}} » ? Sa copie en ligne sera aussi supprimée.",

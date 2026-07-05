@@ -24,9 +24,36 @@ export const toolbar: Sx = {
 };
 
 export const canvasArea: Sx = {
-  height: { xs: '70vh', md: '80vh' },
+  height: { xs: '78vh', md: '85vh' },
   overflow: 'auto',
+  overscrollBehavior: 'contain',
   p: { xs: 1, sm: 2 },
+};
+
+// Vertical stack of pages. `fit-content` + `minWidth 100%` lets a zoomed page (wider than the
+// viewport) push the column wider so the container scrolls horizontally, while narrower pages stay
+// centered.
+export const pagesCol: Sx = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: { xs: 1.5, sm: 2 },
+  width: 'fit-content',
+  minWidth: '100%',
+  mx: 'auto',
+};
+
+// A single page — reads like paper: white sheet + soft shadow. minHeight is set inline (placeholder)
+// so the page reserves its space before it lazily renders.
+export const pageBox: Sx = {
+  display: 'flex',
+  justifyContent: 'center',
+  width: '100%',
+  backgroundColor: '#fff',
+  borderRadius: 1,
+  overflow: 'hidden',
+  boxShadow: (t) =>
+    t.palette.mode === 'dark' ? '0 2px 14px rgba(0,0,0,0.5)' : '0 2px 12px rgba(0,0,0,0.14)',
 };
 
 export const center: Sx = {

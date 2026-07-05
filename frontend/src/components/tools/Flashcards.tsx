@@ -7,7 +7,7 @@ import {
 import {
   Add, DeleteOutlined, EditOutlined, Check, MoreVert, FileDownload, FileUpload, Replay, Loop,
   ArrowBack, Style as StyleIcon, CloudUpload, CloudDone, CloudOff, CloudDownload, KeyboardArrowDown,
-  Search,
+  Search, Public,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -469,16 +469,29 @@ function EmptyDecks({ onCreate, onImport }: { onCreate: () => void; onImport: ()
   );
 }
 
-/** Statut du paquet local vis-à-vis du serveur : Local / Enregistré (privé) / Publié. */
+/** Statut du paquet, sans ambiguïté « en ligne ou pas » : icône + libellé + tooltip explicatif.
+ *  Navigateur uniquement (CloudOff) / Non publié = compte privé (CloudDone) / Publié = biblio (Public). */
 function DeckStatusChip({ deck }: { deck: Deck }) {
   const { t } = useTranslation();
   if (deck.serverId && deck.published) {
-    return <Chip size="small" color="success" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.publishedChip')} sx={{ height: 22 }} />;
+    return (
+      <Tooltip title={t('tools.flashcards.publishedChipTooltip')}>
+        <Chip size="small" color="success" variant="outlined" icon={<Public />} label={t('tools.flashcards.publishedChip')} sx={{ height: 22 }} />
+      </Tooltip>
+    );
   }
   if (deck.serverId) {
-    return <Chip size="small" color="info" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.savedChip')} sx={{ height: 22 }} />;
+    return (
+      <Tooltip title={t('tools.flashcards.savedChipTooltip')}>
+        <Chip size="small" color="info" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.savedChip')} sx={{ height: 22 }} />
+      </Tooltip>
+    );
   }
-  return <Chip size="small" variant="outlined" label={t('tools.flashcards.localChip')} sx={{ height: 22 }} />;
+  return (
+    <Tooltip title={t('tools.flashcards.localChipTooltip')}>
+      <Chip size="small" color="warning" variant="outlined" icon={<CloudOff />} label={t('tools.flashcards.localChip')} sx={{ height: 22 }} />
+    </Tooltip>
+  );
 }
 
 /** One deck in the "Mes paquets" overview: stats + quick study + open + kebab. */
@@ -869,6 +882,9 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
   const [extra, setExtra] = useState<string[]>([]);
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // Première note donnée à chaque carte (honnête « la savais-tu du premier coup ? ») → bilan de fin.
+  // En state (pas en ref) pour être lu proprement au rendu de l'écran final sans violer react-hooks/refs.
+  const [firstRating, setFirstRating] = useState<Record<string, Rating>>({});
 
   const fullQueue = [...queue, ...extra];
   const currentId = fullQueue[pos];
@@ -877,6 +893,7 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
 
   const rate = (rating: Rating) => {
     if (!currentId) return;
+    setFirstRating((m) => (m[currentId] ? m : { ...m, [currentId]: rating }));
     onRate(currentId, rating);
     if (rating === 'again') setExtra((e) => [...e, currentId]);
     setFlipped(false);
@@ -899,11 +916,34 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
   }, [flipped, done, currentId]);
 
   if (done) {
+    const values = Object.values(firstRating);
+    const total = values.length;
+    const counts: Record<Rating, number> = { again: 0, hard: 0, good: 0, easy: 0 };
+    values.forEach((r) => { counts[r] += 1; });
+    const success = total - counts.again;
+    const pct = total ? Math.round((success / total) * 100) : 0;
     return (
       <GlassCard sx={{ p: 4, textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 40, mb: 1 }} aria-hidden="true">🎉</Typography>
-        <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{t('tools.flashcards.sessionDone')}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>{t('tools.flashcards.sessionDoneHint')}</Typography>
+        <Typography sx={{ fontSize: 40, mb: 1 }} aria-hidden="true">{pct >= 60 ? '🎉' : '💪'}</Typography>
+        <Typography sx={{ fontWeight: 700, mb: total > 0 ? 1.5 : 0.5 }}>{t('tools.flashcards.sessionDone')}</Typography>
+        {total > 0 ? (
+          <>
+            <Typography variant="h4" className="mono" sx={{ fontWeight: 800, color: pct >= 60 ? 'success.main' : 'warning.main' }}>
+              {t('tools.flashcards.sessionSuccessRate', { pct })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t('tools.flashcards.sessionStats', { total, success, again: counts.again })}
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mb: 2.5, rowGap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {RATINGS.map(({ rating, color }) => (
+                <Chip key={rating} size="small" variant="outlined" color={color}
+                  label={`${t(`tools.flashcards.rating.${rating}`)} · ${counts[rating]}`} />
+              ))}
+            </Stack>
+          </>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>{t('tools.flashcards.sessionDoneHint')}</Typography>
+        )}
         <Button variant="contained" startIcon={<ArrowBack />} onClick={onExit}>{t('tools.flashcards.backToCards')}</Button>
       </GlassCard>
     );

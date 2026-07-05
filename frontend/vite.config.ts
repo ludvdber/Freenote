@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => ({
         'src/components/tools/flashcards/apkg.ts', // Anki zip/sql.js WASM import — e2e/manual only
         // Auth & onboarding gates, PDF canvas, markdown renderer, scroll/route helpers — e2e shells
         'src/components/common/AuthPromptSnackbar.tsx',
+        'src/components/common/DelegateMandates.tsx',
         'src/components/common/DevLoginButton.tsx',
         'src/components/common/Markdown.tsx',
         'src/components/common/OnboardingGate.tsx',

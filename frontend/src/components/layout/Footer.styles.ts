@@ -40,6 +40,10 @@ export const iconSize: Sx = { fontSize: 16 };
 export const bottomBorder: Sx = {
   borderTop: (t) => `1px solid ${t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)'}`,
   pt: 2,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 0.5,
 };
 
 export const copyright: Sx = { display: 'block', textAlign: 'center' };

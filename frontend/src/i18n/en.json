@@ -62,6 +62,7 @@
     "section": "Section",
     "members": "Members",
     "since": "Since",
+    "ongoing": "present",
     "formerToggle": "Former delegates",
     "empty": "No delegate in your section yet? Let us know."
   },
@@ -452,8 +453,11 @@
     "verified": "Verified",
     "favoritesTitle": "My favorites ({{count}})",
     "noFavorites": "You haven't favorited any document yet.",
+    "noDocuments": "You haven't shared any document yet.",
+    "unsavedChanges": "Unsaved changes",
     "avatar": {
       "title": "Avatar",
+      "toggle": "Change",
       "help": "Pick how your avatar is shown. No upload: your username letter, a generated avatar, or your Discord picture.",
       "source": {
         "AUTO": "Automatic",
@@ -494,6 +498,26 @@
         "bug": "Report a bug",
         "kofi": "Buy a coffee"
       }
+    },
+    "tools": {
+      "title": "Tools",
+      "subtitle": "Flashcards, quizzes, calculators and diagrams to revise and code.",
+      "viewAll": "All tools"
+    },
+    "how": {
+      "title": "How it works",
+      "step1Title": "Sign in with Discord",
+      "step1Desc": "One click, no password to remember.",
+      "step2Title": "Verify your @isfce.be email",
+      "step2Desc": "A 6-digit code confirms you're at ISFCE.",
+      "step3Title": "Unlock everything",
+      "step3Desc": "Documents, courses, leaderboard and tools reserved for your class."
+    },
+    "publicDocs": {
+      "title": "Catalogue preview",
+      "subtitle": "A public sample. Sign in to read everything.",
+      "viewAll": "Browse",
+      "loginCta": "Sign in to see everything"
     }
   },
   "search": {
@@ -1107,6 +1131,8 @@
       "showAnswer": "Show answer",
       "sessionDone": "Session complete!",
       "sessionDoneHint": "You reviewed every due card. Come back later for the next ones.",
+      "sessionSuccessRate": "{{pct}}% correct",
+      "sessionStats": "{{total}} cards · {{success}} correct · {{again}} to review",
       "backToCards": "Back to cards",
       "import": "Import",
       "close": "Close",
@@ -1194,11 +1220,14 @@
           "a": "Yes, as many as you like: one per course, chapter or exam. The selector at the top lets you switch between them."
         }
       ],
-      "localChip": "Local",
-      "savedChip": "Saved",
+      "localChip": "This browser only",
+      "savedChip": "Not published",
       "publishedChip": "Published",
-      "saveOnline": "Save online",
-      "updateOnline": "Update online",
+      "localChipTooltip": "Saved only in this browser. Export a JSON backup before clearing your cache or switching devices.",
+      "savedChipTooltip": "Saved to your account (private): available on your devices, but not visible in the library.",
+      "publishedChipTooltip": "Published in the library: visible and reviewable by other verified students.",
+      "saveOnline": "Save to my account",
+      "updateOnline": "Update on my account",
       "saveOnlineOk": "Deck saved to your account (private) ✓",
       "saveOnlineTooltip": "Private backup on your account: get it back from any device.",
       "unpublish": "Unpublish",
@@ -1284,6 +1313,7 @@
       "leaderboard": "Leaderboard",
       "leaderboardIntro": "Best score per player; on a tie, the fastest wins.",
       "leaderboardEmpty": "No one has played yet. Give it a go!",
+      "finalLeaderboardTitle": "Leaderboard — beat it!",
       "you": "You",
       "quit": "Quit",
       "previous": "Previous",
@@ -1298,6 +1328,8 @@
       "backToList": "Back",
       "shareTitle": "Share this quiz",
       "shareHint": "Anyone can open this link and play, even without an account. The quiz is fully contained in the link: nothing is stored on the server, and it doesn't appear on the leaderboard.",
+      "shareRankedHint": "This link opens your published quiz: every verified student who plays it appears on the leaderboard.",
+      "playLinkLoginHint": "Sign in with your verified ISFCE account to play this quiz and appear on the leaderboard.",
       "copy": "Copy",
       "close": "Close",
       "about": [
@@ -1328,11 +1360,14 @@
           "a": "A quiz shared by link is fully contained in the address: a curious user could technically decode it. That's harmless for a practice quiz, but for a reliable leaderboard, prefer publishing the quiz to the library (the answers then stay on the server)."
         }
       ],
-      "localChip": "Local",
-      "savedChip": "Saved",
+      "localChip": "This browser only",
+      "savedChip": "Not published",
       "publishedChip": "Published",
-      "saveOnline": "Save online",
-      "updateOnline": "Update online",
+      "localChipTooltip": "Saved only in this browser. Export a backup before clearing your cache or switching devices.",
+      "savedChipTooltip": "Saved to your account (private): available on your devices, but not in the library and not ranked.",
+      "publishedChipTooltip": "Published in the library: playable by verified students, with a leaderboard.",
+      "saveOnline": "Save to my account",
+      "updateOnline": "Update on my account",
       "saveOnlineOk": "Quiz saved to your account (private) ✓",
       "unpublish": "Unpublish",
       "confirmDeleteLinked": "Delete “{{name}}”? Its online copy will also be deleted.",

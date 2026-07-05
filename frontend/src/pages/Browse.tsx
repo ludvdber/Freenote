@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Pagination,
   Chip, CircularProgress, Button, Alert,
 } from '@mui/material';
 import { ArrowForward, Lock, Star } from '@mui/icons-material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
@@ -29,12 +29,42 @@ export default function Browse() {
 
 function FullBrowse() {
   const { t } = useTranslation();
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
-  const [sectionId, setSectionId] = useState<number | ''>('');
-  const [courseId, setCourseId] = useState<number | ''>('');
-  const [page, setPage] = useState(0);
+
+  // Filters live in the URL so they survive a back-navigation from a document (React would otherwise
+  // reset the useState on remount and drop every filter), and become shareable/bookmarkable.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const category = searchParams.get('cat') ?? '';
+  const sectionId: number | '' = searchParams.get('section') ? Number(searchParams.get('section')) : '';
+  const courseId: number | '' = searchParams.get('course') ? Number(searchParams.get('course')) : '';
+  const page = Math.max(0, Number(searchParams.get('page') ?? '0') || 0);
+  const urlQuery = searchParams.get('q') ?? '';
+
+  // Local, immediate text for the input; debounced into the URL so typing doesn't spam history.
+  const [query, setQuery] = useState(urlQuery);
   const debouncedQuery = useDebounce(query, 400);
+
+  // Patch the URL params (replace: no extra history entry per filter tweak). Empty values are dropped
+  // so the URL stays clean (?section=2 rather than ?q=&cat=&section=2).
+  const patchParams = (updates: Record<string, string | number>) => {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === '' || value == null) next.delete(key);
+      else next.set(key, String(value));
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  // Sync the debounced search text into the URL (and reset to page 0). Guarded so it no-ops when they
+  // already match — e.g. right after a back-nav restores ?q=… and the input re-initialises from it.
+  useEffect(() => {
+    const current = searchParams.get('q') ?? '';
+    if (debouncedQuery === current) return;
+    const next = new URLSearchParams(searchParams);
+    if (debouncedQuery) next.set('q', debouncedQuery);
+    else next.delete('q');
+    next.delete('page');
+    setSearchParams(next, { replace: true });
+  }, [debouncedQuery, searchParams, setSearchParams]);
 
   const { data: sections } = useQuery({ queryKey: ['sections'], queryFn: getSections, staleTime: STALE_15M });
   const { data: courses } = useQuery({
@@ -56,8 +86,6 @@ function FullBrowse() {
       }),
   });
 
-  const handleFilterChange = () => setPage(0);
-
   return (
     <PageWrapper>
       <Helmet><title>{t('nav.browse')} · Freenote</title></Helmet>
@@ -69,10 +97,7 @@ function FullBrowse() {
         <Box sx={s.searchCol}>
           <SearchBar
             value={query}
-            onChange={(v) => {
-              setQuery(v);
-              handleFilterChange();
-            }}
+            onChange={(v) => setQuery(v)}
           />
         </Box>
         <FormControl size="small" sx={s.filterControl}>
@@ -80,11 +105,7 @@ function FullBrowse() {
           <Select
             value={sectionId}
             label={t('document.section')}
-            onChange={(e) => {
-              setSectionId(e.target.value as number);
-              setCourseId('');
-              handleFilterChange();
-            }}
+            onChange={(e) => patchParams({ section: e.target.value as number, course: '', page: 0 })}
           >
             <MenuItem value="">{t('common.seeAll')}</MenuItem>
             {sections?.map((sec) => (
@@ -100,10 +121,7 @@ function FullBrowse() {
             <Select
               value={courseId}
               label={t('document.course')}
-              onChange={(e) => {
-                setCourseId(e.target.value as number);
-                handleFilterChange();
-              }}
+              onChange={(e) => patchParams({ course: e.target.value as number, page: 0 })}
             >
               <MenuItem value="">{t('common.seeAll')}</MenuItem>
               {courses?.map((c) => (
@@ -119,10 +137,7 @@ function FullBrowse() {
           <Select
             value={category}
             label={t('document.category')}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              handleFilterChange();
-            }}
+            onChange={(e) => patchParams({ cat: e.target.value, page: 0 })}
           >
             <MenuItem value="">{t('common.seeAll')}</MenuItem>
             {CATEGORIES.map((c) => (
@@ -154,7 +169,7 @@ function FullBrowse() {
                 count={data.totalPages}
                 page={page + 1}
                 onChange={(_, p) => {
-                  setPage(p - 1);
+                  patchParams({ page: p - 1 });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 color="primary"

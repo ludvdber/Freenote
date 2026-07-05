@@ -7,7 +7,7 @@ import {
 import {
   Add, DeleteOutlined, EditOutlined, MoreVert, Share, CloudUpload, CloudDone, CloudOff, PlayArrow,
   EmojiEvents, ArrowBack, Check, Close, ContentCopy, Quiz as QuizIcon, FileDownload, FileUpload,
-  Image as ImageIcon, Code as CodeIcon, Download,
+  Image as ImageIcon, Code as CodeIcon, Download, Public,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,6 +46,15 @@ function readEphemeralFromHash(): Quiz | null {
   } catch {
     return null;
   }
+}
+
+/** Read a `#play=<id>` shared-published-quiz link from the URL hash, once, at mount. Playing it goes
+ *  through the backend so the player is recorded on the leaderboard (verified accounts only). */
+function readPlayIdFromHash(): number | null {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#play=')) return null;
+  const id = Number(hash.slice('#play='.length));
+  return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 function download(filename: string, content: string, type: string) {
@@ -87,7 +96,9 @@ type PlayResult = {
   correct: boolean[]; correctAnswers: string[]; explanations?: (string | null)[];
 };
 type GradeFn = (answers: (string | null)[], durationMs: number) => Promise<PlayResult>;
-type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn };
+/** `quizId` set only for backend-graded plays → drives the leaderboard shown on the result screen. */
+type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number };
+type ShareTarget = { url: string; ranked: boolean };
 
 export default function Quiz() {
   const { t } = useTranslation();
@@ -97,11 +108,12 @@ export default function Quiz() {
   const [tab, setTab] = useState<'mine' | 'library'>('mine');
   const [editing, setEditing] = useState<Quiz | null>(null);
   const [ephemeral] = useState<Quiz | null>(readEphemeralFromHash);
+  const [pendingPlayId] = useState<number | null>(readPlayIdFromHash);
   const [playing, setPlaying] = useState<PlayState | null>(() =>
     ephemeral ? { title: ephemeral.title, questions: ephemeral.questions, grade: localGrade(ephemeral) } : null,
   );
   const [leaderboardFor, setLeaderboardFor] = useState<{ id: number; title: string } | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const jsonInput = useRef<HTMLInputElement>(null);
 
@@ -117,6 +129,28 @@ export default function Quiz() {
   useEffect(() => {
     if (ephemeral) window.history.replaceState(null, '', window.location.pathname);
   }, [ephemeral]);
+
+  // A shared `#play=<id>` link: load the published quiz from the backend and play it (recorded on the
+  // leaderboard). Verified accounts only — the /api/quizzes endpoints require ROLE_VERIFIED.
+  useEffect(() => {
+    if (pendingPlayId == null) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    let cancelled = false;
+    (async () => {
+      if (!isVerified) {
+        if (!cancelled) setFeedback({ msg: t('tools.quiz.playLinkLoginHint'), severity: 'error' });
+        return;
+      }
+      try {
+        const data = await getQuizPlay(pendingPlayId);
+        if (!cancelled) setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id });
+      } catch {
+        if (!cancelled) setFeedback({ msg: t('tools.quiz.libraryError'), severity: 'error' });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPlayId, isVerified]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, quizzesToJson(quizzes));
@@ -149,10 +183,26 @@ export default function Quiz() {
 
   const playBackend = async (id: number) => {
     const data = await getQuizPlay(id);
-    setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id) });
+    setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id });
+  };
+
+  /** Play a card's quiz. A PUBLISHED quiz is played through the backend so the author (and anyone)
+   *  is recorded on the leaderboard; anything else is graded locally. */
+  const playQuiz = (quiz: Quiz) => {
+    if (quiz.serverId && quiz.published) {
+      playBackend(quiz.serverId).catch(() => setFeedback({ msg: t('tools.quiz.libraryError'), severity: 'error' }));
+    } else {
+      playLocal(quiz);
+    }
   };
 
   const share = (quiz: Quiz) => {
+    // Published quiz → a `#play=<id>` link that opens the backend quiz WITH the leaderboard, instead
+    // of the client-only ephemeral link (which never counts). Verified players appear on the board.
+    if (quiz.serverId && quiz.published) {
+      setShareTarget({ url: `${window.location.origin}${window.location.pathname}#play=${quiz.serverId}`, ranked: true });
+      return;
+    }
     const err = validateQuiz(quiz);
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const url = `${window.location.origin}${window.location.pathname}#quiz=${encodeQuiz(quiz)}`;
@@ -160,7 +210,7 @@ export default function Quiz() {
     // block the share dialog and point the author to publishing instead (rather than hand out a
     // link that won't paste everywhere).
     if (url.length > 8000) { setFeedback({ msg: t('tools.quiz.shareTooLong'), severity: 'error' }); return; }
-    setShareUrl(url);
+    setShareTarget({ url, ranked: false });
   };
 
   /** Create-or-update the linked server copy. `published` pilots private save vs library. */
@@ -239,6 +289,7 @@ export default function Quiz() {
         title={playing.title}
         questions={playing.questions}
         grade={playing.grade}
+        quizId={playing.quizId}
         onExit={() => setPlaying(null)}
       />
     );
@@ -313,7 +364,7 @@ export default function Quiz() {
                     key={quiz.id}
                     quiz={quiz}
                     canPublish={isVerified}
-                    onPlay={() => playLocal(quiz)}
+                    onPlay={() => playQuiz(quiz)}
                     onEdit={() => setEditing(quiz)}
                     onShare={() => share(quiz)}
                     onSaveOnline={() => saveOnline(quiz, quiz.published ?? false)}
@@ -371,7 +422,7 @@ export default function Quiz() {
         </>
       )}
 
-      <ShareDialog url={shareUrl} onClose={() => setShareUrl(null)} onCopied={() => setFeedback({ msg: t('tools.quiz.copied'), severity: 'success' })} />
+      <ShareDialog target={shareTarget} onClose={() => setShareTarget(null)} onCopied={() => setFeedback({ msg: t('tools.quiz.copied'), severity: 'success' })} />
       <FeedbackBar feedback={feedback} onClose={() => setFeedback(null)} />
     </Box>
   );
@@ -422,16 +473,29 @@ function EmptyQuizzes({ onCreate, onImport }: { onCreate: () => void; onImport: 
   );
 }
 
-/** Statut du quiz local vis-à-vis du serveur : Local / Enregistré (privé) / Publié. */
+/** Statut du quiz, sans ambiguïté « en ligne ou pas » : icône + libellé + tooltip explicatif.
+ *  Navigateur uniquement (CloudOff) / Non publié = compte privé (CloudDone) / Publié = biblio (Public). */
 function StatusChip({ quiz }: { quiz: Quiz }) {
   const { t } = useTranslation();
   if (quiz.serverId && quiz.published) {
-    return <Chip size="small" color="success" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.publishedChip')} sx={{ height: 20 }} />;
+    return (
+      <Tooltip title={t('tools.quiz.publishedChipTooltip')}>
+        <Chip size="small" color="success" variant="outlined" icon={<Public sx={{ fontSize: 14 }} />} label={t('tools.quiz.publishedChip')} sx={{ height: 20 }} />
+      </Tooltip>
+    );
   }
   if (quiz.serverId) {
-    return <Chip size="small" color="info" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.savedChip')} sx={{ height: 20 }} />;
+    return (
+      <Tooltip title={t('tools.quiz.savedChipTooltip')}>
+        <Chip size="small" color="info" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.savedChip')} sx={{ height: 20 }} />
+      </Tooltip>
+    );
   }
-  return <Chip size="small" variant="outlined" label={t('tools.quiz.localChip')} sx={{ height: 20 }} />;
+  return (
+    <Tooltip title={t('tools.quiz.localChipTooltip')}>
+      <Chip size="small" color="warning" variant="outlined" icon={<CloudOff sx={{ fontSize: 14 }} />} label={t('tools.quiz.localChip')} sx={{ height: 20 }} />
+    </Tooltip>
+  );
 }
 
 /** A local quiz row. The NEXT server step is always a visible text button (never icon-only):
@@ -754,6 +818,9 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onSaveOnlin
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button variant="contained" startIcon={<PlayArrow />} onClick={() => onPlay(draft)}>{t('tools.quiz.play')}</Button>
+        {/* « Enregistrer » aussi en bas (pas seulement en haut) : sur un quiz long, le bouton du
+            haut est hors écran. Même action que celui du haut : enregistre le brouillon et ferme. */}
+        <Button variant="outlined" startIcon={<Check />} onClick={() => onSave(draft)}>{t('tools.quiz.save')}</Button>
         <Box sx={{ flexGrow: 1 }} />
         {canPublish ? (
           <>
@@ -866,16 +933,47 @@ function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
   );
 }
 
-/** Leaderboard for a backend quiz. */
-function LeaderboardPanel({ quizId, title, onBack }: { quizId: number; title: string; onBack: () => void }) {
+/** Reusable ranked list for a backend quiz — used by the standalone panel AND the end-of-play screen. */
+function LeaderboardList({ quizId, highlightUserId, max = 50 }: { quizId: number; highlightUserId?: number; max?: number }) {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const [rows, setRows] = useState<QuizLeaderboardEntry[] | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    getQuizLeaderboard(quizId, 50).then(setRows).catch(() => setError(true));
-  }, [quizId]);
+    getQuizLeaderboard(quizId, max).then(setRows).catch(() => setError(true));
+  }, [quizId, max]);
+
+  if (rows === null && !error) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={32} /></Box>;
+  if (error) return <Typography color="error">{t('tools.quiz.libraryError')}</Typography>;
+  if (rows && rows.length === 0) return <Typography color="text.secondary" sx={{ py: 2 }}>{t('tools.quiz.leaderboardEmpty')}</Typography>;
+
+  return (
+    <Stack spacing={1}>
+      {rows?.map((r) => {
+        const isMe = highlightUserId === r.userId;
+        return (
+          <GlassCard key={r.userId} sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, ...(isMe && { borderColor: 'primary.main' }) }}>
+            <Typography className="mono" sx={{ fontWeight: 700, width: 32, textAlign: 'center', color: r.rank <= 3 ? 'primary.main' : 'text.secondary' }}>
+              {r.rank}
+            </Typography>
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+              <Typography sx={{ fontWeight: 600 }} noWrap>
+                {r.userName}{isMe ? ` · ${t('tools.quiz.you')}` : ''}
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" className="mono">{(r.durationMs / 1000).toFixed(1)}s</Typography>
+            <Chip size="small" color="primary" variant="outlined" label={`${r.score}/${r.total}`} className="mono" />
+          </GlassCard>
+        );
+      })}
+    </Stack>
+  );
+}
+
+/** Leaderboard for a backend quiz (standalone panel, reached from a quiz card / the library). */
+function LeaderboardPanel({ quizId, title, onBack }: { quizId: number; title: string; onBack: () => void }) {
+  const { t } = useTranslation();
+  const { user } = useAuthStore();
 
   return (
     <Box>
@@ -885,28 +983,7 @@ function LeaderboardPanel({ quizId, title, onBack }: { quizId: number; title: st
       </Box>
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{title}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('tools.quiz.leaderboardIntro')}</Typography>
-      {rows === null && !error && <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={32} /></Box>}
-      {error && <Typography color="error">{t('tools.quiz.libraryError')}</Typography>}
-      {rows?.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>{t('tools.quiz.leaderboardEmpty')}</Typography>}
-      <Stack spacing={1}>
-        {rows?.map((r) => {
-          const isMe = user?.id === r.userId;
-          return (
-            <GlassCard key={r.userId} sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, ...(isMe && { borderColor: 'primary.main' }) }}>
-              <Typography className="mono" sx={{ fontWeight: 700, width: 32, textAlign: 'center', color: r.rank <= 3 ? 'primary.main' : 'text.secondary' }}>
-                {r.rank}
-              </Typography>
-              <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                <Typography sx={{ fontWeight: 600 }} noWrap>
-                  {r.userName}{isMe ? ` · ${t('tools.quiz.you')}` : ''}
-                </Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary" className="mono">{(r.durationMs / 1000).toFixed(1)}s</Typography>
-              <Chip size="small" color="primary" variant="outlined" label={`${r.score}/${r.total}`} className="mono" />
-            </GlassCard>
-          );
-        })}
-      </Stack>
+      <LeaderboardList quizId={quizId} highlightUserId={user?.id} />
     </Box>
   );
 }
@@ -923,8 +1000,8 @@ function QuestionContent({ q }: { q: QuizPlayQuestion }) {
 }
 
 /** A focused play session: one question per screen, then a result + review. Grading is injected. */
-function PlaySession({ title, questions, grade, onExit }: {
-  title: string; questions: QuizPlayQuestion[]; grade: GradeFn; onExit: () => void;
+function PlaySession({ title, questions, grade, quizId, onExit }: {
+  title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number; onExit: () => void;
 }) {
   const { t } = useTranslation();
   const [answers, setAnswers] = useState<(string | null)[]>(() => questions.map(() => null));
@@ -964,7 +1041,7 @@ function PlaySession({ title, questions, grade, onExit }: {
   };
 
   if (result) {
-    return <ResultView title={title} questions={questions} answers={answers} result={result} onRestart={restart} onExit={onExit} />;
+    return <ResultView title={title} questions={questions} answers={answers} result={result} quizId={quizId} onRestart={restart} onExit={onExit} />;
   }
 
   return (
@@ -1026,11 +1103,12 @@ function PlaySession({ title, questions, grade, onExit }: {
 }
 
 /** Score + per-question review after a finished play (server/client-graded, type-agnostic). */
-function ResultView({ title, questions, answers, result, onRestart, onExit }: {
+function ResultView({ title, questions, answers, result, quizId, onRestart, onExit }: {
   title: string; questions: QuizPlayQuestion[]; answers: (string | null)[]; result: PlayResult;
-  onRestart: () => void; onExit: () => void;
+  quizId?: number; onRestart: () => void; onExit: () => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
   const pct = Math.round((result.score / Math.max(1, result.total)) * 100);
 
   const myAnswer = (q: QuizPlayQuestion, raw: string | null): string => {
@@ -1050,6 +1128,14 @@ function ResultView({ title, questions, answers, result, onRestart, onExit }: {
           <Chip color="primary" icon={<EmojiEvents />} label={t('tools.quiz.yourRank', { rank: result.rank })} sx={{ mt: 1 }} />
         ) : null}
       </GlassCard>
+
+      {/* Classement affiché juste après le score (quiz backend) — « donne envie de faire mieux ». */}
+      {quizId != null && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.finalLeaderboardTitle')}</Typography>
+          <LeaderboardList quizId={quizId} highlightUserId={user?.id} />
+        </Box>
+      )}
 
       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.review')}</Typography>
       <Stack spacing={1}>
@@ -1085,20 +1171,24 @@ function ResultView({ title, questions, answers, result, onRestart, onExit }: {
   );
 }
 
-/** Dialog showing the shareable ephemeral URL with a copy button. */
-function ShareDialog({ url, onClose, onCopied }: { url: string | null; onClose: () => void; onCopied: () => void }) {
+/** Dialog showing the shareable URL with a copy button. Hint differs for a ranked (published) link
+ *  vs the ephemeral client-only link. */
+function ShareDialog({ target, onClose, onCopied }: { target: ShareTarget | null; onClose: () => void; onCopied: () => void }) {
   const { t } = useTranslation();
+  const url = target?.url ?? '';
   const copy = async () => {
     if (!url) return;
     try { await navigator.clipboard.writeText(url); onCopied(); } catch { /* clipboard blocked — user can copy manually */ }
   };
   return (
-    <Dialog open={url !== null} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={target !== null} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t('tools.quiz.shareTitle')}</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{t('tools.quiz.shareHint')}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {t(target?.ranked ? 'tools.quiz.shareRankedHint' : 'tools.quiz.shareHint')}
+        </Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField fullWidth size="small" value={url ?? ''} slotProps={{ htmlInput: { readOnly: true } }} onFocus={(e) => e.target.select()} />
+          <TextField fullWidth size="small" value={url} slotProps={{ htmlInput: { readOnly: true } }} onFocus={(e) => e.target.select()} />
           <Button variant="contained" startIcon={<ContentCopy />} onClick={copy}>{t('tools.quiz.copy')}</Button>
         </Box>
       </DialogContent>
