@@ -1,7 +1,8 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import { Chat, MarkEmailRead, AutoAwesome } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import GlassCard from '@/components/ui/GlassCard';
+import { DISCORD_OAUTH_URL } from '@/lib/constants';
 
 /**
  * "How it works" 3-step section for anonymous visitors. The verified-@isfce.be access gate is the
@@ -48,6 +49,13 @@ export default function HowItWorks() {
             <Typography variant="body2" color="text.secondary">{step.desc}</Typography>
           </GlassCard>
         ))}
+      </Box>
+
+      {/* CTA direct : évite au visiteur de chercher où se connecter après avoir lu les 3 étapes. */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+        <Button variant="contained" size="large" startIcon={<Chat />} component="a" href={DISCORD_OAUTH_URL}>
+          {t('home.how.cta')}
+        </Button>
       </Box>
     </Box>
   );

@@ -3,7 +3,7 @@ import { GitHub } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { KOFI_URL, GITHUB_URL, APP_VERSION } from '@/lib/constants';
+import { KOFI_URL, GITHUB_URL } from '@/lib/constants';
 import * as s from './Footer.styles';
 
 export default function Footer() {
@@ -107,9 +107,6 @@ export default function Footer() {
         <Box sx={s.bottomBorder}>
           <Typography variant="caption" color="text.secondary" sx={s.copyright}>
             {t('footer.madeWith')}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" className="mono" sx={{ opacity: 0.6 }}>
-            v{APP_VERSION}
           </Typography>
         </Box>
       </Container>

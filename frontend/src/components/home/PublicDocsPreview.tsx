@@ -1,18 +1,23 @@
 import { Box, Typography, Chip, Skeleton, Button } from '@mui/material';
-import { ArrowForward, Star, Lock } from '@mui/icons-material';
+import { Star, ArrowForward, Lock } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import { listPublicDocuments } from '@/api/endpoints';
 import { categoryColor } from '@/lib/utils';
 import { STALE_15M, DISCORD_OAUTH_URL } from '@/lib/constants';
+import { TOOLS, type ToolDef } from '@/pages/tools/toolsData';
 import GlassCard from '@/components/ui/GlassCard';
+import * as ps from './PopularDocs.styles';
+
+// Highest-pull tools — 8 to fill the column to roughly the height of the docs list + login CTA.
+const FEATURED = ['flashcards', 'quiz', 'calculateur-moyenne', 'calculateur-ip', 'diagramme-uml', 'gantt', 'table-de-verite', 'convertisseur-bases'];
 
 /**
- * Product-proof for anonymous visitors: a small, copyright-safe, anonymised slice of the catalogue
- * (metadata only — no author, no PDF, only the categories the backend deems public). Each card links
- * to the /documents/:id teaser which shows the login gate. This gives the public home real content
- * instead of asking visitors to take the value on faith.
+ * Anonymous "product proof": same two-column layout as the connected <PopularDocs>, but the docs are
+ * the copyright-safe anonymised catalogue slice, and the right column (where logged-in users see the
+ * leaderboard) shows the free tools as clickable cards — the SEO magnet, surfaced to every visitor.
  */
 export default function PublicDocsPreview() {
   const { t } = useTranslation();
@@ -22,73 +27,103 @@ export default function PublicDocsPreview() {
     staleTime: STALE_15M,
   });
   const docs = data?.content ?? [];
+  const hasDocs = !isLoading && docs.length > 0;
+
+  const tools = FEATURED
+    .map((slug) => TOOLS.find((x) => x.slug === slug))
+    .filter((x): x is ToolDef => Boolean(x));
 
   return (
-    <Box component="section" sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <Box>
-          <Typography variant="h5" component="h2" sx={{ fontWeight: 800 }}>
-            <span aria-hidden="true">📚</span> {t('home.publicDocs.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">{t('home.publicDocs.subtitle')}</Typography>
-        </Box>
-        <Box
-          component={Link}
-          to="/browse"
-          sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 0.5 }}
-        >
-          {t('home.publicDocs.viewAll')} <ArrowForward sx={{ fontSize: 16 }} />
-        </Box>
-      </Box>
-
-      {/* Liste compacte de lignes (accent couleur-catégorie à gauche) — volontairement DIFFÉRENTE des
-          tuiles d'outils, pour que l'œil distingue « documents » et « apps ». */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25 }}>
-        {isLoading &&
-          Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} variant="rounded" height={68} sx={{ borderRadius: 2 }} />
-          ))}
-
-        {!isLoading &&
-          docs.map((d) => (
-            <GlassCard
-              key={d.id}
-              component={Link}
-              to={`/documents/${d.id}`}
-              sx={{
-                p: 1.5, textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 1.5,
-                borderLeft: '3px solid', borderLeftColor: categoryColor(d.category),
-                transition: 'transform .15s ease, border-color .15s ease',
-                '&:hover': { transform: 'translateX(3px)', borderColor: 'primary.main', borderLeftColor: categoryColor(d.category) },
-              }}
-            >
-              <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
-                  <Chip size="small" label={t(`categories.${d.category}`)} sx={{ height: 19, fontSize: 11, bgcolor: `${categoryColor(d.category)}22`, color: categoryColor(d.category), fontWeight: 700 }} />
-                  {d.year && <Typography variant="caption" color="text.secondary">{d.year}</Typography>}
-                </Box>
-                <Typography sx={{ fontWeight: 700, lineHeight: 1.25 }} noWrap>{d.title}</Typography>
-                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                  {[d.courseName, d.sectionName].filter(Boolean).join(' · ')}
-                </Typography>
+    <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+      <Box sx={ps.section}>
+        <Box sx={ps.row}>
+          {/* Aperçu du catalogue — même format que la vue connectée, mais anonymisé (pas d'auteur). */}
+          <Box sx={ps.docsCol}>
+            <Box sx={ps.colHeader}>
+              <Typography variant="h5" component="h2" sx={ps.colTitle}>
+                <span aria-hidden="true">📚</span> {t('home.publicDocs.title')}
+              </Typography>
+              <Box component={Link} to="/browse" sx={ps.viewAllLink}>
+                {t('home.publicDocs.viewAll')} →
               </Box>
-              {d.ratingCount > 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, color: 'warning.main', flexShrink: 0 }}>
-                  <Star sx={{ fontSize: 14 }} />
-                  <Typography variant="caption" className="mono">{Number(d.averageRating).toFixed(1)}</Typography>
+            </Box>
+            <GlassCard sx={ps.listCard}>
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} variant="rounded" height={44} sx={{ borderRadius: 1, m: 1 }} />
+              ))}
+
+              {!isLoading && !hasDocs && (
+                <Box sx={ps.emptyState}>
+                  <Typography sx={{ fontSize: 32, mb: 1 }} aria-hidden="true">✨</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('popular.empty')}</Typography>
                 </Box>
               )}
-            </GlassCard>
-          ))}
-      </Box>
 
-      {!isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5 }}>
-          <Button variant="contained" startIcon={<Lock />} component="a" href={DISCORD_OAUTH_URL}>
-            {t('home.publicDocs.loginCta')}
-          </Button>
+              {docs.map((d, idx) => (
+                <Box key={d.id} component={Link} to={`/documents/${d.id}`} sx={ps.docRow(idx === 0)}>
+                  <Typography className="mono" sx={ps.rank}>{idx + 1}</Typography>
+                  <Box sx={ps.docInfo}>
+                    <Typography variant="body2" sx={ps.docTitle} noWrap>{d.title}</Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {[d.courseName, d.sectionName].filter(Boolean).join(' · ')}
+                    </Typography>
+                  </Box>
+                  <Chip label={t(`categories.${d.category}`)} size="small" sx={ps.categoryChip(categoryColor(d.category))} />
+                  {d.ratingCount > 0 && (
+                    <Box sx={ps.dlCol}>
+                      <Star sx={{ fontSize: 14, color: 'warning.main' }} />
+                      <Typography variant="caption" className="mono" color="text.secondary">
+                        {Number(d.averageRating).toFixed(1)}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </GlassCard>
+
+            {!isLoading && (
+              <Box sx={{ mt: 2 }}>
+                <Button variant="contained" startIcon={<Lock />} component="a" href={DISCORD_OAUTH_URL} fullWidth>
+                  {t('home.publicDocs.loginCta')}
+                </Button>
+              </Box>
+            )}
+          </Box>
+
+          {/* Outils — à la place du classement pour l'anonyme : cartes cliquables (comme les liens utiles). */}
+          <Box sx={ps.leaderboardCol}>
+            <Box sx={ps.colHeader}>
+              <Typography variant="h5" component="h2" sx={ps.colTitle}>
+                <span aria-hidden="true">🧰</span> {t('home.tools.title')}
+              </Typography>
+              <Box component={Link} to="/outils" sx={ps.viewAllLink}>
+                {t('home.tools.viewAll')} →
+              </Box>
+            </Box>
+            <GlassCard sx={ps.listCard}>
+              {tools.map((tool) => (
+                <Box key={tool.slug} component={Link} to={`/outils/${tool.slug}`} sx={ps.docRow(false)}>
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'linear-gradient(135deg, rgba(0,210,255,0.18), rgba(123,47,247,0.18))',
+                      color: 'primary.main', '& svg': { fontSize: 18 },
+                    }}
+                  >
+                    {tool.icon}
+                  </Box>
+                  <Box sx={ps.docInfo}>
+                    <Typography variant="body2" sx={ps.docTitle} noWrap>{t(`tools.${tool.key}.name`)}</Typography>
+                  </Box>
+                  <ArrowForward sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+                </Box>
+              ))}
+            </GlassCard>
+          </Box>
         </Box>
-      )}
-    </Box>
+      </Box>
+    </motion.section>
   );
 }

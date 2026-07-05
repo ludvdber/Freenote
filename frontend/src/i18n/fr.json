@@ -495,6 +495,9 @@
         "favorites": "Mes favoris",
         "mySection": "Explorer",
         "leaderboard": "Classement",
+        "tools": "Outils",
+        "news": "Actualité",
+        "profile": "Mon profil",
         "bug": "Signaler un bug",
         "kofi": "Offrir un café"
       }
@@ -511,7 +514,8 @@
       "step2Title": "Vérifie ton email @isfce.be",
       "step2Desc": "Un code à 6 chiffres confirme que tu es à l'ISFCE.",
       "step3Title": "Accède à tout",
-      "step3Desc": "Documents, cours, classement et outils réservés à ta promo."
+      "step3Desc": "Documents, cours, classement et outils réservés à ta promo.",
+      "cta": "Se connecter avec Discord"
     },
     "publicDocs": {
       "title": "Aperçu du catalogue",

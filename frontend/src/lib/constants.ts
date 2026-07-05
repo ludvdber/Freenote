@@ -1,5 +1,5 @@
-// App version (SemVer). Keep in sync with build.gradle.kts `version` — shown discreetly in the footer
-// so users can reference "which version am I on" when reporting a bug. 1.x.0 = features, 1.0.x = fixes.
+// App version (SemVer). Source of truth stays build.gradle.kts `version`; kept here for reference and
+// potential reuse (not displayed in the UI). 1.x.0 = features, 1.0.x = fixes.
 export const APP_VERSION = '1.1.0';
 
 export const CATEGORIES = ['SYNTHESE', 'EXAMEN', 'NOTES', 'EXERCICES', 'COURS', 'TFE', 'DIVERS'] as const;
