@@ -24,6 +24,7 @@
     "subtitle": "Synthèses, exercices, notes de cours : chaque document partagé aide la prochaine promo à réussir.",
     "cta": "Explorer les cours",
     "ctaSecondary": "Partager un doc",
+    "ctaLogin": "Se connecter",
     "scrollDown": "Faire défiler",
     "restricted": "Réservé aux étudiants de l'ISFCE"
   },
@@ -514,7 +515,7 @@
       "step2Title": "Vérifie ton email @isfce.be",
       "step2Desc": "Un code à 6 chiffres confirme que tu es à l'ISFCE.",
       "step3Title": "Accède à tout",
-      "step3Desc": "Documents, cours, classement et outils réservés à ta promo.",
+      "step3Desc": "Documents, cours et classement réservés à ta promo.",
       "cta": "Se connecter avec Discord"
     },
     "publicDocs": {

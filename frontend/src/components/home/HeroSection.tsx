@@ -5,6 +5,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '@/stores/useThemeStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import DiscordIcon from '@/components/icons/DiscordIcon';
+import { DISCORD_OAUTH_URL } from '@/lib/constants';
 // OrbsFallback is a pure-CSS component (no Three.js import), so referencing it here does NOT pull
 // the heavy @react-three/fiber + three bundle into the entry chunk.
 import OrbsFallback from '@/components/three/ParticleField/OrbsFallback';
@@ -14,6 +17,7 @@ import * as s from './HeroSection.styles';
 
 export default function HeroSection() {
   const { t } = useTranslation();
+  const { token } = useAuthStore();
   const theme = useThemeStore((st) => st.theme);
   const scrolledRef = useRef(false);
   const [showBackground, setShowBackground] = useState(false);
@@ -112,16 +116,31 @@ export default function HeroSection() {
               >
                 {t('hero.cta')}
               </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                component={Link}
-                to="/upload"
-                startIcon={<CloudUpload />}
-                sx={s.ctaSecondary}
-              >
-                {t('hero.ctaSecondary')}
-              </Button>
+              {/* Déconnecté : « Partager un doc » n'a pas de sens (upload exige un compte vérifié) —
+                  le second CTA devient directement le login Discord. */}
+              {token ? (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  component={Link}
+                  to="/upload"
+                  startIcon={<CloudUpload />}
+                  sx={s.ctaSecondary}
+                >
+                  {t('hero.ctaSecondary')}
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  component="a"
+                  href={DISCORD_OAUTH_URL}
+                  startIcon={<DiscordIcon />}
+                  sx={s.ctaSecondary}
+                >
+                  {t('hero.ctaLogin')}
+                </Button>
+              )}
             </Box>
           </motion.div>
         </Container>

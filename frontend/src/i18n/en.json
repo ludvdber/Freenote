@@ -24,6 +24,7 @@
     "subtitle": "Summaries, exercises, course notes: every shared document helps the next class succeed.",
     "cta": "Browse courses",
     "ctaSecondary": "Share a doc",
+    "ctaLogin": "Sign in",
     "scrollDown": "Scroll down",
     "restricted": "Reserved for ISFCE students"
   },
@@ -514,7 +515,7 @@
       "step2Title": "Verify your @isfce.be email",
       "step2Desc": "A 6-digit code confirms you're at ISFCE.",
       "step3Title": "Unlock everything",
-      "step3Desc": "Documents, courses, leaderboard and tools reserved for your class.",
+      "step3Desc": "Documents, courses and leaderboard reserved for your class.",
       "cta": "Sign in with Discord"
     },
     "publicDocs": {

@@ -2,6 +2,7 @@ import { Box, Typography, Button } from '@mui/material';
 import { Chat, MarkEmailRead, AutoAwesome } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import GlassCard from '@/components/ui/GlassCard';
+import DiscordIcon from '@/components/icons/DiscordIcon';
 import { DISCORD_OAUTH_URL } from '@/lib/constants';
 
 /**
@@ -53,7 +54,7 @@ export default function HowItWorks() {
 
       {/* CTA direct : évite au visiteur de chercher où se connecter après avoir lu les 3 étapes. */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-        <Button variant="contained" size="large" startIcon={<Chat />} component="a" href={DISCORD_OAUTH_URL}>
+        <Button variant="contained" size="large" startIcon={<DiscordIcon />} component="a" href={DISCORD_OAUTH_URL}>
           {t('home.how.cta')}
         </Button>
       </Box>
