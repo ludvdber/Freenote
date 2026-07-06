@@ -23,7 +23,7 @@ interface AdBannerProps {
  */
 export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
   const { t } = useTranslation();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
 
   if (user?.supporter) return null;
 
@@ -61,12 +61,6 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
           >
             Ko-fi ☕
           </MuiLink>
-          {!token && (
-            <>
-              {' · '}
-              {t('ad.loginHint')}
-            </>
-          )}
         </Typography>
       </Box>
     </Fade>

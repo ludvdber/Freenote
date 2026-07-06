@@ -4,7 +4,7 @@ import { ArrowBack, Lock, Star, Login, Visibility } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { getPublicDocument } from '@/api/endpoints';
+import { getPublicDocument, getPublicDocumentStatus } from '@/api/endpoints';
 import { STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -24,10 +24,21 @@ export default function ResourceDetail() {
     retry: false,
   });
 
+  // Hors catégories publiques (Cours/Examen/Synthèse/TFE/Exercices), l'extrait 404 : le statut
+  // léger dit « existe mais réservé » (titre seul) — un lien partagé affiche alors un CTA de
+  // connexion au lieu d'un faux « introuvable » qui tuait la conversion.
+  const { data: status } = useQuery({
+    queryKey: ['public-document-status', id],
+    queryFn: () => getPublicDocumentStatus(Number(id)),
+    enabled: Boolean(id) && isError,
+    staleTime: STALE_15M,
+    retry: false,
+  });
+
   const showAd = !user?.supporter;
 
   const fullDate = doc?.createdAt
-    ? new Date(doc.createdAt).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(doc.createdAt).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
 
   const description = doc
@@ -78,7 +89,27 @@ export default function ResourceDetail() {
         </Button>
 
         {isError ? (
-          <GlassCard sx={{ p: 4 }}><Typography color="text.secondary">{t('resources.notFound')}</Typography></GlassCard>
+          <GlassCard sx={{ p: 4, textAlign: 'center', border: '1px solid', borderColor: 'primary.main' }}>
+            <Lock sx={{ fontSize: 32, color: 'primary.main', mb: 1 }} aria-hidden="true" />
+            {status?.exists && status.title && (
+              <Typography variant="h2" sx={{ fontWeight: 800, fontSize: { xs: '1.3rem', md: '1.6rem' }, mb: 1 }}>
+                {status.title}
+              </Typography>
+            )}
+            <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{t('resources.reservedTitle')}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>{t('resources.reservedBody')}</Typography>
+            {token ? (
+              <Button variant="contained" startIcon={<Visibility />} component={RouterLink} to={`/documents/${id}`}>
+                {t('resources.openDocument')}
+              </Button>
+            ) : (
+              <Button variant="contained" startIcon={<Login />} component="a" href={DISCORD_OAUTH_URL}>
+                {t('resources.loginCta')}
+              </Button>
+            )}
+            <Divider sx={{ my: 2.5 }} />
+            <Typography variant="caption" color="text.secondary">{t('resources.gatedHint')}</Typography>
+          </GlassCard>
         ) : isLoading || !doc ? (
           <GlassCard sx={{ p: 4 }}><Typography color="text.secondary">{t('common.loading')}</Typography></GlassCard>
         ) : (

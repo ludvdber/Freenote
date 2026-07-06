@@ -20,12 +20,45 @@ export const titleVariants = {
   show: { y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
 };
 
+// ~85vh (au lieu de 100) : la première rangée de stats dépasse sous le pli et appelle le
+// scroll naturellement — sans wheel-jacking.
 export const heroContainer: Sx = {
   position: 'relative',
-  minHeight: '100vh',
+  minHeight: { xs: '92vh', md: '85vh' },
   display: 'flex',
   alignItems: 'center',
   overflow: 'hidden',
+};
+
+// Nébuleuses CSS supplémentaires derrière le titre (coût nul, densifient la scène).
+export const nebulaA: Sx = {
+  position: 'absolute',
+  top: '18%',
+  left: '12%',
+  width: 520,
+  height: 520,
+  borderRadius: '50%',
+  pointerEvents: 'none',
+  zIndex: 0,
+  background: (t) => t.palette.mode === 'dark'
+    ? 'radial-gradient(circle, rgba(123,47,247,0.16) 0%, transparent 65%)'
+    : 'radial-gradient(circle, rgba(123,47,247,0.10) 0%, transparent 65%)',
+  filter: 'blur(12px)',
+};
+
+export const nebulaB: Sx = {
+  position: 'absolute',
+  bottom: '10%',
+  right: '8%',
+  width: 620,
+  height: 620,
+  borderRadius: '50%',
+  pointerEvents: 'none',
+  zIndex: 0,
+  background: (t) => t.palette.mode === 'dark'
+    ? 'radial-gradient(circle, rgba(0,210,255,0.12) 0%, transparent 65%)'
+    : 'radial-gradient(circle, rgba(0,210,255,0.09) 0%, transparent 65%)',
+  filter: 'blur(12px)',
 };
 
 export const scrollIndicator: Sx = {
@@ -78,7 +111,7 @@ export const titleGradient: Sx = {
 };
 
 export const subtitle: Sx = {
-  mb: 0,
+  mb: 4,
   fontWeight: 400,
   fontSize: { xs: '1rem', md: '1.15rem' },
   maxWidth: 560,
@@ -86,13 +119,14 @@ export const subtitle: Sx = {
   lineHeight: 1.7,
 };
 
+// Eyebrow AU-DESSUS du titre (le différenciateur d'abord) — même pill, position promue.
 export const restrictedBadge: Sx = {
   display: 'inline-block',
-  mt: 3,
-  mb: 4,
-  letterSpacing: 0.5,
-  fontWeight: 600,
-  fontSize: 13,
+  mb: 3,
+  letterSpacing: 1.2,
+  textTransform: 'uppercase',
+  fontWeight: 700,
+  fontSize: 12,
   px: 2,
   py: 0.5,
   borderRadius: 2,

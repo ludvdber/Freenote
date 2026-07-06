@@ -19,8 +19,8 @@
     "goHome": "Retour à l'accueil"
   },
   "hero": {
-    "title": "Réussis plus vite",
-    "titleHighlight": "à plusieurs.",
+    "title": "Éclaire",
+    "titleHighlight": "ta promo.",
     "subtitle": "Synthèses, exercices, notes de cours : chaque document partagé aide la prochaine promo à réussir.",
     "cta": "Explorer les cours",
     "ctaSecondary": "Partager un doc",
@@ -29,12 +29,11 @@
     "restricted": "Réservé aux étudiants de l'ISFCE"
   },
   "stats": {
-    "title": "En chiffres",
     "docs": "Documents",
     "downloads": "Vues",
-    "contributors": "Contributeurs",
+    "contributors": "Étudiants",
     "courses": "Cours",
-    "weekUploads": "docs ajoutés cette semaine"
+    "weekUploads": "docs ajoutés ces 7 derniers jours"
   },
   "popular": {
     "title": "Documents populaires",
@@ -51,17 +50,29 @@
     "empty": "Le podium est libre. À toi de jouer.",
     "you": "Toi",
     "yourRank": "Ta position",
-    "scopeAll": "Toutes",
-    "scopeMine": "Ma section"
+    "scopeAll": "Toutes les sections",
+    "scopeMine": "Ma section",
+    "sectionFilter": "Section"
   },
   "badges": {
     "delegate": "Délégué",
     "formerDelegate": "Ancien délégué"
   },
+  "levels": {
+    "stardust": "Poussière d'étoile",
+    "meteor": "Météore",
+    "comet": "Comète",
+    "star": "Étoile",
+    "supernova": "Supernova",
+    "constellation": "Constellation",
+    "galaxy": "Galaxie",
+    "tooltipNext": "Encore {{remaining}} XP avant le palier {{next}}",
+    "tooltipMax": "Palier maximum. Tu illumines la galaxie.",
+    "progressTo": "Prochain palier : {{next}}"
+  },
   "delegates": {
     "title": "Délégués",
     "section": "Section",
-    "members": "Membres",
     "since": "Depuis le",
     "ongoing": "en cours",
     "formerToggle": "Anciens délégués",
@@ -78,11 +89,12 @@
     "back": "Retour aux actualités",
     "source": "Lire sur le blog de l'ISFCE",
     "notFound": "Actualité introuvable.",
-    "readTime": "{{count}} min de lecture"
+    "readTime": "{{count}} min de lecture",
+    "readNext": "À lire ensuite"
   },
   "guides": {
     "title": "Guides",
-    "intro": "Des tutoriels clairs sur la programmation, les réseaux et les outils, rédigés pour les étudiants de l'ISFCE et ouverts à tous.",
+    "intro": "Des tutoriels clairs sur la programmation, les réseaux et les outils — expliqués pas à pas, avec des exemples.",
     "metaDescription": "Guides et tutoriels gratuits : programmation Java, réseaux, outils informatiques. Des explications pas à pas pour les étudiants de l'ISFCE.",
     "empty": "Aucun guide publié pour l'instant, reviens bientôt.",
     "read": "Lire le guide",
@@ -99,8 +111,9 @@
     "loginCta": "Se connecter",
     "empty": "Aucune ressource publique pour l'instant.",
     "preview": "Aperçu",
-    "backToList": "Retour aux ressources",
-    "notFound": "Ressource introuvable.",
+    "backToList": "Retour à l'explorateur",
+    "reservedTitle": "Ce document est réservé aux étudiants ISFCE.",
+    "reservedBody": "Connecte-toi avec ton adresse @isfce.be vérifiée pour l'ouvrir — l'accès est gratuit.",
     "course": "Cours",
     "section": "Section",
     "category": "Catégorie",
@@ -116,13 +129,10 @@
     "carousel": "Communauté",
     "empty": "La communauté n'attend que toi.",
     "pauseCarousel": "Mettre en pause le carrousel",
-    "playCarousel": "Reprendre le carrousel",
-    "discordRoles": "Crée un compte sur le site pour obtenir le rôle Vérifié sur Discord et accéder aux discussions des cours. Les autres rôles sont attribués selon ton XP.",
-    "discordRolesShort": "Rôles Discord liés à ton XP"
+    "playCarousel": "Reprendre le carrousel"
   },
   "ad": {
-    "disclaimer": "Pub. Soutiens Freenote pour la cacher.",
-    "loginHint": "Connecte-toi pour que ton don désactive les pubs."
+    "disclaimer": "Pub — un café = 30 jours sans pub."
   },
   "links": {
     "title": "Liens utiles",
@@ -141,7 +151,6 @@
     "course": "Cours",
     "section": "Section",
     "category": "Catégorie",
-    "author": "Auteur",
     "anonymous": "Anonyme",
     "verified": "Vérifié",
     "aiGenerated": "Généré par IA",
@@ -149,22 +158,28 @@
     "year": "Année",
     "professor": "Professeur",
     "rating": "Note",
+    "myRating": "Ta note",
+    "ratingSaved": "Note enregistrée, merci !",
+    "reportThanks": "Signalement envoyé, merci. Un admin va y jeter un œil.",
+    "pending": "En attente",
+    "badgeNew": "Nouveau",
+    "badgeHot": "Très consulté ces derniers temps",
+    "votes_one": "{{count}} vote",
+    "votes_other": "{{count}} votes",
+    "noVotesYet": "Pas encore de note — sois le premier à voter.",
+    "moreActions": "Plus d'actions",
     "downloads": "Vues",
     "publishedAt": "Publié le",
-    "summary": "Résumé IA",
     "upload": "Partager un document",
     "delete": "Supprimer",
     "download": "Télécharger",
     "pdfError": "Impossible d'afficher l'aperçu de ce PDF.",
     "openInTab": "Ouvrir le PDF",
-    "prevPage": "Page précédente",
-    "nextPage": "Page suivante",
     "zoomIn": "Agrandir",
     "zoomOut": "Réduire",
     "pdfPageAria": "{{title}}, page {{page}}",
     "report": "Signaler",
     "noResults": "Aucun document trouvé. Essaie avec d'autres mots-clés.",
-    "favorite": "Favori",
     "addFavorite": "Ajouter aux favoris",
     "removeFavorite": "Retirer des favoris",
     "reportPlaceholder": "Raison...",
@@ -213,7 +228,6 @@
     },
     "docs": {
       "pending": "Documents en attente",
-      "noPending": "Aucun document en attente de vérification.",
       "verify": "Vérifier",
       "view": "Voir le document",
       "all": "Tous les documents",
@@ -232,8 +246,6 @@
       "delete": "Supprimer",
       "deleteTitle": "Supprimer la section",
       "deleteConfirm": "Supprimer « {{name}} » et {{count}} document(s) associés ? Les fichiers seront définitivement perdus.",
-      "approve": "Approuver",
-      "pending": "En attente",
       "docCount_one": "{{count}} document",
       "docCount_other": "{{count}} documents"
     },
@@ -247,14 +259,9 @@
       "delete": "Supprimer",
       "deleteTitle": "Supprimer le cours",
       "deleteConfirm": "Supprimer « {{name}} » et {{count}} document(s) associés ? Les fichiers seront définitivement perdus.",
-      "pending": "En attente",
-      "approved": "Approuvés",
       "all": "Tous",
-      "approve": "Approuver",
       "filterSection": "Filtrer par section",
-      "filterStatus": "Statut",
       "allSections": "Toutes les sections",
-      "noPending": "Aucun cours en attente d'approbation.",
       "docCount_one": "{{count}} document",
       "docCount_other": "{{count}} documents"
     },
@@ -319,7 +326,12 @@
       "sectionAll": "Toutes les sections",
       "ban": "Bannir",
       "banTitle": "Bannir l'utilisateur",
-      "banConfirm": "Bannir définitivement « {{username}} » ? Son email ISFCE et son compte Discord seront blacklistés : il ne pourra plus revenir, sauf avec une nouvelle adresse @isfce.be ET un nouveau Discord. Le compte est supprimé."
+      "banConfirm": "Bannir définitivement « {{username}} » ? Son email ISFCE et son compte Discord seront blacklistés : il ne pourra plus revenir, sauf avec une nouvelle adresse @isfce.be ET un nouveau Discord. Le compte est supprimé.",
+      "banReasonLabel": "Raison (optionnelle)",
+      "banReasonHint": "Conservée dans le registre des bannissements, visible des admins uniquement.",
+      "roleTitle": "Changer le rôle",
+      "roleConfirm": "Passer « {{username}} » au rôle {{role}} ?",
+      "roleConfirmUnverify": "Attention : le rôle USER retire aussi la vérification de l'email — le compte perd l'accès aux documents jusqu'à re-vérification."
     },
     "donations": {
       "title": "Dons & sans-pub",
@@ -389,13 +401,13 @@
     "submit": "Partager",
     "success": "Doc partagé, merci pour ta promo !",
     "successMessage": "Ton document est en ligne ! Il sera vérifié par un modérateur sous 24-48h. Tu recevras tes XP après validation.",
-    "pdfOnly": "PDF uniquement pour l'instant : convertis ton fichier et réessaie.",
     "titleCounter": "{{count}}/{{max}}",
     "titleDupWarning": "Un document du même titre existe déjà dans ce cours (tu peux quand même l'envoyer).",
     "anonymousHelp": "Masque ton pseudo sur la page du document : les autres élèves verront « Anonyme » comme auteur. Tu reçois quand même tes XP et tes contributions sur ton profil.",
     "aiGeneratedHelp": "Coche si le contenu a été rédigé ou fortement généré par une IA (ChatGPT, Claude, etc.). Un badge « IA » sera affiché sur le document.",
-    "rateLimited": "Limite d'envoi atteinte (5 documents par heure). Réessaie dans {{time}}.",
-    "rateLimitedNoTime": "Limite d'envoi atteinte (5 documents par heure). Réessaie un peu plus tard.",
+    "rateLimited": "Doucement ! 3 envois par minute max. Réessaie dans {{time}}.",
+    "rateLimitedNoTime": "Doucement ! 3 envois par minute max. Réessaie dans un instant.",
+    "duplicate": "Ce document existe déjà sur Freenote (fichier identique).",
     "professorSuggested": "Conseillé",
     "professorAll": "Tous les profs"
   },
@@ -425,8 +437,6 @@
       "sinceYear": "À l'ISFCE depuis {{year}}"
     },
     "documents": "Mes documents",
-    "settings": "Paramètres",
-    "theme": "Thème",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": "C'est définitif. Tes docs restent en ligne, mais ton compte disparaît. Tu confirmes ?",
     "save": "Enregistrer",
@@ -448,7 +458,6 @@
     "delegationSection": "Mandats de délégué",
     "dangerZone": "Zone de danger",
     "dangerZoneHelp": "Cette action est irréversible. Tes documents resteront en ligne mais seront affichés comme « Anonyme ».",
-    "memberSince": "Membre depuis",
     "documentsPublished": "Documents publiés",
     "supporter": "Supporter",
     "verified": "Vérifié",
@@ -475,7 +484,6 @@
     "displayRealNameHelp": "Quand activé, les autres voient « Prénom Nom » au lieu de ton pseudo."
   },
   "auth": {
-    "confirm": "Confirmer",
     "verificationRequired": "Vérification requise",
     "verifyEmailMessage": "Vérifie ton email @isfce.be pour débloquer cette fonctionnalité.",
     "loginRequired": "Connecte-toi pour accéder à ce contenu",
@@ -505,11 +513,11 @@
     },
     "tools": {
       "title": "Outils",
-      "subtitle": "Flashcards, quiz, calculateurs et diagrammes pour réviser et coder.",
       "viewAll": "Tous les outils"
     },
     "how": {
       "title": "Comment ça marche",
+      "tagline": "Ce que la promo d'avant aurait voulu avoir.",
       "step1Title": "Connecte-toi avec Discord",
       "step1Desc": "Un clic, aucun mot de passe à retenir.",
       "step2Title": "Vérifie ton email @isfce.be",
@@ -520,18 +528,21 @@
     },
     "publicDocs": {
       "title": "Aperçu du catalogue",
-      "subtitle": "Un échantillon public. Connecte-toi pour tout lire.",
       "viewAll": "Explorer",
       "loginCta": "Se connecter pour tout voir"
     }
   },
   "search": {
     "placeholder": "Rechercher des documents...",
-    "filters": "Filtres",
+    "results_one": "{{count}} document",
+    "results_other": "{{count}} documents",
     "sort": "Trier par",
     "recent": "Plus récents",
     "popular": "Plus populaires",
-    "bestRated": "Mieux notés"
+    "bestRated": "Mieux notés",
+    "viewMode": "Mode d'affichage",
+    "viewGrid": "Vue grille",
+    "viewList": "Vue liste"
   },
   "common": {
     "loading": "Chargement...",
@@ -542,7 +553,6 @@
     "save": "Enregistrer",
     "confirm": "Confirmer",
     "seeAll": "Voir tout",
-    "copyLink": "Copier le lien",
     "linkCopied": "Lien copié !",
     "share": "Partager",
     "shared": "Partagé !",
@@ -592,8 +602,8 @@
   },
   "tools": {
     "title": "Outils",
-    "subtitle": "Une boîte à outils gratuite pour les étudiants : calculs de moyenne, réseau, conversions et plus. Pas de compte requis, tout fonctionne dans ton navigateur.",
-    "metaDescription": "Outils gratuits pour étudiants : calculateur de moyenne pondérée, calculateur IPv4, convertisseur de bases, encodeur Base64 et décodeur JWT. Sans compte, dans le navigateur.",
+    "subtitle": "Une boîte à outils gratuite pour les étudiants : flashcards, QCM, Gantt, calculs de moyenne, réseau et plus. Pas de compte requis, tout fonctionne dans ton navigateur.",
+    "metaDescription": "Outils gratuits pour étudiants : flashcards avec répétition espacée, QCM à partager, diagramme de Gantt, calculateur de moyenne, calculateur IPv4/IPv6, convertisseur de bases et décodeur JWT. Sans compte, dans le navigateur.",
     "openTool": "Ouvrir l'outil",
     "allTools": "Tous les outils",
     "filterLabel": "Filtrer les outils par catégorie",
@@ -617,7 +627,7 @@
     "faqTitle": "Questions fréquentes",
     "indexAboutTitle": "Des outils pensés pour les études",
     "indexAbout": [
-      "Freenote regroupe des petits outils utiles au quotidien quand on est étudiant : calculer une moyenne avec coefficients, vérifier un sous-réseau pour un cours de réseau, convertir un nombre entre bases ou inspecter un token. Chacun a sa propre page, avec une explication et des exemples.",
+      "Freenote regroupe des outils utiles au quotidien quand on est étudiant : réviser en flashcards avec la répétition espacée (import Anki compris), créer des QCM à jouer et défier ta classe, planifier ton TFE sur un diagramme de Gantt, calculer ta moyenne avec coefficients, vérifier un sous-réseau pour un cours de réseau, convertir un nombre entre bases ou inspecter un token. Chacun a sa propre page, avec une explication et des exemples.",
       "Tous les calculs se font directement dans ton navigateur : rien n'est envoyé sur un serveur, c'est instantané et gratuit. Aucun compte n'est nécessaire pour les utiliser."
     ],
     "ipv4": {
@@ -755,7 +765,7 @@
       "name": "Calculateur IPv6 / sous-réseaux",
       "wrongVersion": "Ton adresse ressemble à du 192.168.x.x (IPv4) ?",
       "gotoIpv4": "Passer au calculateur IPv4",
-      "short": "Adresse compressée/étendue, préfixe réseau, plage d'adresses et portée à partir d'une IPv6 et d'un préfixe.",
+      "short": "Compresse, étend et analyse une adresse IPv6 et son préfixe.",
       "lead": "Saisis une adresse IPv6 et un préfixe pour obtenir sa forme compressée et étendue, l'adresse réseau, la première et la dernière adresse, le nombre total d'adresses et la portée (globale, lien-local, ULA…).",
       "seoTitle": "Calculateur IPv6 et sous-réseaux (préfixe)",
       "seoDescription": "Calculateur IPv6 gratuit : compression/expansion d'adresse, adresse réseau, plage d'adresses, nombre d'adresses et portée (globale, lien-local, ULA). Idéal pour les cours de réseau.",
@@ -806,7 +816,7 @@
     "truth": {
       "tab": "Table de vérité",
       "name": "Table de vérité & simplification booléenne",
-      "short": "Génère la table de vérité d'une expression logique et sa forme simplifiée (Quine-McCluskey).",
+      "short": "Table de vérité et simplification d'une expression logique.",
       "lead": "Entre une expression booléenne (ET, OU, NON, OU exclusif) : l'outil détecte les variables, construit la table de vérité complète et donne la forme canonique et la forme simplifiée (somme de produits).",
       "seoTitle": "Table de vérité en ligne & simplification booléenne",
       "seoDescription": "Générateur de table de vérité gratuit : saisis une expression logique (ET, OU, NON, XOR) et obtiens la table complète, les minterms et la forme simplifiée (Quine-McCluskey / Karnaugh). Pour les cours de logique.",
@@ -921,7 +931,7 @@
     "base": {
       "tab": "Convertisseur de bases",
       "name": "Convertisseur de bases (bin/oct/déc/hex)",
-      "short": "Convertis un nombre entre binaire, octal, décimal et hexadécimal, avec table ASCII.",
+      "short": "Binaire, octal, décimal, hexadécimal : convertis en un clic.",
       "lead": "Entre une valeur et choisis sa base : l'outil affiche instantanément sa conversion en binaire, octal, décimal et hexadécimal. Une table ASCII cliquable complète le tout.",
       "seoTitle": "Convertisseur binaire, octal, décimal, hexadécimal",
       "seoDescription": "Convertisseur de bases gratuit : binaire, octal, décimal et hexadécimal en un coup d'œil, avec table ASCII. Parfait pour l'informatique et l'électronique.",
@@ -962,7 +972,7 @@
     "base64": {
       "tab": "Base64",
       "name": "Encodeur / décodeur Base64",
-      "short": "Encode ou décode du texte en Base64, directement dans ton navigateur.",
+      "short": "Encode et décode du Base64, 100 % dans ton navigateur.",
       "lead": "Colle ou tape ton texte, puis encode-le en Base64 ou décode une chaîne Base64 vers du texte lisible. Tout se passe localement dans le navigateur.",
       "seoTitle": "Encodeur et décodeur Base64 en ligne",
       "seoDescription": "Encode et décode du Base64 gratuitement et en ligne. Gestion correcte de l'UTF-8, traitement 100 % local dans le navigateur, sans envoi de données.",
@@ -995,7 +1005,7 @@
     "jwt": {
       "tab": "JWT",
       "name": "Décodeur JWT (JSON Web Token)",
-      "short": "Décode l'en-tête et le contenu d'un JWT. 100 % local, rien n'est envoyé au serveur.",
+      "short": "Décode un JWT en local — rien ne quitte ton navigateur.",
       "lead": "Colle un JSON Web Token pour lire son en-tête, son contenu (claims) et vérifier ses dates d'émission et d'expiration. Le décodage est entièrement local.",
       "seoTitle": "Décodeur JWT en ligne (100 % local)",
       "seoDescription": "Décode un JSON Web Token (JWT) : en-tête, payload, dates d'émission et d'expiration. Outil 100 % local : le token n'est jamais envoyé à un serveur.",
@@ -1034,7 +1044,7 @@
     "grade": {
       "tab": "Moyenne pondérée",
       "name": "Calculateur de moyenne pondérée",
-      "short": "Calcule ta moyenne par cours avec coefficients, et la note finale du diplôme (TFE inclus).",
+      "short": "Ta moyenne pondérée et la note finale du diplôme, TFE inclus.",
       "lead": "Entre tes notes et leurs pondérations pour obtenir ta moyenne pondérée, avec un mode diplôme où le TFE (épreuve intégrée) compte pour deux tiers de la note finale.",
       "seoTitle": "Calculateur de moyenne pondérée (sur 20)",
       "seoDescription": "Calcule gratuitement ta moyenne pondérée par coefficients et ta note finale de diplôme (TFE = 2/3). Outil en ligne pour étudiants, sur 20 ou sur 100.",
@@ -1391,7 +1401,7 @@
   "about": {
     "metaTitle": "À propos de Freenote",
     "metaDescription": "Freenote est la plateforme gratuite de partage de cours, synthèses, exercices et TFE des étudiants de l'ISFCE. Découvre la mission, le fonctionnement et la vie privée du projet.",
-    "orgDescription": "Plateforme étudiante de partage de documents (cours, synthèses, exercices, TFE) pour l'ISFCE, à Charleroi.",
+    "orgDescription": "Plateforme étudiante de partage de documents (cours, synthèses, exercices, TFE) pour l'ISFCE, à Etterbeek (Bruxelles).",
     "title": "À propos de Freenote",
     "lead": "Freenote est une plateforme gratuite et indépendante qui rassemble les cours, synthèses, exercices et TFE des étudiants de l'ISFCE. L'objectif : que plus rien ne se perde et que chacun révise sur de bonnes bases.",
     "missionTitle": "Notre mission",
@@ -1484,7 +1494,14 @@
   },
   "userPublic": {
     "notFound": "Utilisateur introuvable.",
-    "editProfile": "Modifier mon profil"
+    "editProfile": "Modifier mon profil",
+    "statXp": "XP",
+    "statDocs": "Documents",
+    "statViews": "Vues cumulées",
+    "statAvgRating": "Note moyenne reçue",
+    "statXpHint": "Voir le classement",
+    "statDocsHint": "Voir ses documents",
+    "bestContribution": "Contribution la plus appréciée"
   },
   "notFound": {
     "title": "Page introuvable",

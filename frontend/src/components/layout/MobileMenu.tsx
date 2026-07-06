@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthPromptStore } from '@/stores/useAuthPromptStore';
 import { useThemeStore } from '@/stores/useThemeStore';
-import { useNotificationStore } from '@/stores/useNotificationStore';
+import { useMarkAllNotificationsRead, useUnreadNotificationsCount } from '@/hooks/useNotifications';
 import { NAV_LINKS } from './Navbar.data';
 import { DISCORD_INVITE_URL } from '@/lib/constants';
 import DevLoginButton from '@/components/common/DevLoginButton';
@@ -21,7 +21,8 @@ export default function MobileMenu() {
   const logout = useLogout();
   const promptLogin = useAuthPromptStore((s) => s.show);
   const { theme, toggle: toggleTheme } = useThemeStore();
-  const { unreadCount, markAllRead } = useNotificationStore();
+  const unread = useUnreadNotificationsCount();
+  const markAllRead = useMarkAllNotificationsRead();
 
   return (
     <>
@@ -62,9 +63,9 @@ export default function MobileMenu() {
               );
             })}
             {token && (
-              <ListItemButton onClick={() => { markAllRead(); setOpen(false); }}>
+              <ListItemButton onClick={() => { if (unread > 0) markAllRead.mutate(); setOpen(false); }}>
                 <ListItemIcon sx={{ minWidth: 36 }}>
-                  <MuiBadge badgeContent={unreadCount()} color="error" max={9}>
+                  <MuiBadge badgeContent={unread} color="error" max={9}>
                     <Notifications fontSize="small" />
                   </MuiBadge>
                 </ListItemIcon>
@@ -114,10 +115,11 @@ export default function MobileMenu() {
               </ListItemIcon>
               <ListItemText primary={t(theme === 'dark' ? 'nav.lightMode' : 'nav.darkMode')} />
             </ListItemButton>
-            <ListItemButton onClick={() => i18n.changeLanguage('fr')} selected={i18n.language === 'fr'}>
+            {/* startsWith : un navigateur fr-BE/fr-FR doit surligner « Français » (langue résolue ≠ code exact) */}
+            <ListItemButton onClick={() => i18n.changeLanguage('fr')} selected={i18n.language.startsWith('fr')}>
               <ListItemText primary="Français" />
             </ListItemButton>
-            <ListItemButton onClick={() => i18n.changeLanguage('en')} selected={i18n.language === 'en'}>
+            <ListItemButton onClick={() => i18n.changeLanguage('en')} selected={i18n.language.startsWith('en')}>
               <ListItemText primary="English" />
             </ListItemButton>
             <Divider sx={{ my: 1 }} />

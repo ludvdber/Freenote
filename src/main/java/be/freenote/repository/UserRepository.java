@@ -23,8 +23,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u JOIN u.profile p WHERE p.section.id = :sectionId ORDER BY u.xp DESC")
     List<User> findBySectionOrderByXpDesc(Long sectionId, Pageable pageable);
 
-    @Query("SELECT u FROM User u JOIN u.profile p WHERE p.showInCarousel = true")
-    List<User> findFeaturedProfiles();
+    /** Profils du carrousel d'accueil : JOIN FETCH (le mapper lit profile → sans FETCH, N+1) et
+     *  Pageable (la liste opt-in grossit avec les inscrits — jamais la table entière). */
+    @Query("SELECT u FROM User u JOIN FETCH u.profile p WHERE p.showInCarousel = true ORDER BY u.xp DESC")
+    List<User> findFeaturedProfiles(Pageable pageable);
+
+    /** Colonne trusted seule — évite de charger l'entité User complète à chaque appel rate-limité. */
+    @Query("SELECT u.trusted FROM User u WHERE u.id = :id")
+    Optional<Boolean> findTrustedById(Long id);
 
     @Query("SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%')) ORDER BY u.username")
     List<User> searchByUsername(String q, Pageable pageable);

@@ -128,6 +128,11 @@ export default function Upload() {
         // Server-side size cap (assembled PDF > 7 MB or request over the multipart limit).
         const msg = (err.response.data as { message?: string } | undefined)?.message;
         setError(msg || t('upload.tooLarge'));
+      } else if (axios.isAxiosError(err) && err.response?.status === 409) {
+        // Doublon exact (même hash PDF) — le backend nomme le doc existant, l'afficher aide
+        // bien plus qu'une erreur générique.
+        const msg = (err.response.data as { message?: string } | undefined)?.message;
+        setError(msg || t('upload.duplicate'));
       } else {
         setError(t('common.error'));
       }

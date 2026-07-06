@@ -7,9 +7,11 @@ import be.freenote.dto.request.UpdateUsernameRequest;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.ProfileCardResponse;
 import be.freenote.dto.response.UserResponse;
+import be.freenote.dto.response.UserStatsResponse;
 import be.freenote.security.JwtRevocationService;
 import be.freenote.security.JwtTokenProvider;
 import be.freenote.security.OAuth2LoginSuccessHandler;
+import be.freenote.security.ratelimit.RateLimit;
 import be.freenote.service.RecentDocsService;
 import be.freenote.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,7 +51,10 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
 
+    /** Le pseudo reste modifiable à tout moment (choix produit) — mais 3 changements par 24 h max,
+     *  pour éviter l'usurpation par rotation rapide et le squat de pseudos. */
     @PutMapping("/me/username")
+    @RateLimit(max = 3, window = 86400)
     public ResponseEntity<UserResponse> setUsername(Authentication authentication,
                                                     @Valid @RequestBody UpdateUsernameRequest request) {
         Long userId = SecurityUtils.currentUserId(authentication);
@@ -71,6 +76,12 @@ public class UserController {
     @GetMapping("/{id}/rank")
     public ResponseEntity<Integer> getUserRank(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getRank(id));
+    }
+
+    /** Tuiles du profil public : vues cumulées + note moyenne reçue (même contrat 404 que /rank). */
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<UserStatsResponse> getUserStats(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserStats(id));
     }
 
     @GetMapping("/featured")
@@ -99,7 +110,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Chaque appel peut déclencher un push vers l'API Discord — limité pour qu'un compte vérifié
+     *  ne puisse pas marteler l'API externe. */
     @PostMapping("/me/sync-discord-role")
+    @RateLimit(max = 3, window = 3600)
     public ResponseEntity<Void> syncDiscordRole(Authentication authentication) {
         Long userId = SecurityUtils.currentUserId(authentication);
         userService.syncDiscordRole(userId);

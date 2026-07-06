@@ -45,11 +45,16 @@ public class DocumentServiceImpl implements DocumentService {
 
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final String DL_BUFFER_PREFIX = "dl-buffer:";
+    /** Une vue (compteur + XP) n'est comptée qu'une fois par couple document/utilisateur par 24 h —
+     *  sans cette dédup, une boucle de fetch (ou deux comptes complices) gonflerait vues et XP. */
+    private static final String VIEW_DEDUP_PREFIX = "view:";
+    private static final java.time.Duration VIEW_DEDUP_TTL = java.time.Duration.ofHours(24);
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final ProfessorRepository professorRepository;
+    private final RatingRepository ratingRepository;
     private final DocumentMapper documentMapper;
     private final MinioService minioService;
     private final PdfValidationService pdfValidationService;
@@ -207,12 +212,36 @@ public class DocumentServiceImpl implements DocumentService {
             return new PageResponse<>(content, pageable.getPageNumber(), pageable.getPageSize(), total, totalPages);
         }
 
-        Page<Document> page = documentRepository.findFiltered(sectionId, courseId, cat, pageable);
+        Page<Document> page = documentRepository.findFiltered(sectionId, courseId, cat,
+                withDbSort(pageable, safeSort));
 
         List<DocumentResponse> content = page.getContent().stream()
                 .map(documentMapper::toResponse)
                 .toList();
         return PageResponse.from(page, content);
+    }
+
+    /** Traduit le tri whitelisté ("downloadCount:desc"…) en Sort JPA pour le chemin DB (sans `q`).
+     *  La requête garde `ORDER BY d.verified DESC` en tête (vérifiés d'abord, comme Meilisearch avec
+     *  verifiedRank) ; Spring Data ajoute ce Sort à la suite. Défaut : plus récents d'abord. */
+    private static Pageable withDbSort(Pageable pageable, String safeSort) {
+        String field = "createdAt";
+        org.springframework.data.domain.Sort.Direction direction = org.springframework.data.domain.Sort.Direction.DESC;
+        if (safeSort != null) {
+            String[] parts = safeSort.split(":");
+            field = parts[0];
+            direction = "asc".equals(parts[1])
+                    ? org.springframework.data.domain.Sort.Direction.ASC
+                    : org.springframework.data.domain.Sort.Direction.DESC;
+        }
+        var sort = org.springframework.data.domain.Sort.by(direction, field);
+        if (!"createdAt".equals(field)) {
+            // Départage stable des ex æquo (mêmes vues / même note) par fraîcheur.
+            sort = sort.and(org.springframework.data.domain.Sort.by(
+                    org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+        }
+        return org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(), pageable.getPageSize(), sort);
     }
 
     /** Sorts acceptés par la recherche — doit rester un sous-ensemble des attributs `sortable`
@@ -257,11 +286,25 @@ public class DocumentServiceImpl implements DocumentService {
             throw new ForbiddenException("You can only delete your own documents");
         }
 
+        publishXpRemoval(document);
         documentRepository.delete(document);
         cleanupStorageAfterCommit(document.getFileKey(), document.getId());
         statsService.invalidateCache();
         log.info("Document deleted: id={}, by user={}", documentId, userId);
         activityLogService.log(ActivityType.DOC_DELETE, userId, user.getUsername(), document.getTitle());
+    }
+
+    /** Supprimer un document reprend à son auteur l'XP que le doc avait rapporté (vérification +
+     *  notes ≥ 3). Les scores sont capturés AVANT le delete (la cascade efface les ratings). */
+    private void publishXpRemoval(Document document) {
+        if (document.getUser() == null) {
+            return; // doc anonymisé — plus d'auteur à débiter
+        }
+        eventPublisher.publishEvent(new XpEvent.DocumentDeleted(
+                document.getUser().getId(),
+                document.getId(),
+                document.isVerified(),
+                ratingRepository.findScoresByDocumentId(document.getId())));
     }
 
     /** Removes the stored PDF + search index entry only once the DB delete has committed. Doing it
@@ -331,6 +374,10 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional
     public DocumentResponse verify(Long documentId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
+        // Idempotent: a re-click on an already-verified doc must not re-grant XP nor re-announce on Discord.
+        if (document.isVerified()) {
+            return documentMapper.toResponse(document);
+        }
         document.setVerified(true);
         Document saved = documentRepository.save(document);
 
@@ -357,7 +404,8 @@ public class DocumentServiceImpl implements DocumentService {
             document.setCourse(course);
         }
         if (request.getCategory() != null) {
-            document.setCategory(Category.valueOf(request.getCategory()));
+            // parseCategory : 400 propre au lieu de « No enum constant be.freenote.enums.Category.X »
+            document.setCategory(parseCategory(request.getCategory()));
         }
         if (request.getLanguage() != null) {
             document.setLanguage(request.getLanguage());
@@ -365,8 +413,17 @@ public class DocumentServiceImpl implements DocumentService {
         if (request.getYear() != null) {
             document.setYear(request.getYear());
         }
-        if (request.getVerified() != null) {
+        if (request.getVerified() != null && request.getVerified() != document.isVerified()) {
             document.setVerified(request.getVerified());
+            // Symétrie XP : passer vérifié crédite l'auteur, retirer la vérification reprend le crédit —
+            // sans ça, un aller-retour unverify/verify doublerait l'XP (farming admin accidentel).
+            if (document.getUser() != null) {
+                Long authorId = document.getUser().getId();
+                eventPublisher.publishEvent(request.getVerified()
+                        ? new XpEvent.DocumentVerified(authorId, documentId, document.getTitle())
+                        : new XpEvent.DocumentUnverified(authorId, documentId));
+            }
+            statsService.invalidateCache();
         }
         if (request.getProfessorId() != null) {
             Professor professor = Repositories.findByIdOrThrow(professorRepository, request.getProfessorId(), "Professor");
@@ -381,6 +438,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional
     public void adminDelete(Long documentId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
+        publishXpRemoval(document);
         documentRepository.delete(document);
         cleanupStorageAfterCommit(document.getFileKey(), document.getId());
         statsService.invalidateCache();
@@ -389,24 +447,39 @@ public class DocumentServiceImpl implements DocumentService {
 
     // --- Download with Redis buffer ---
 
+    /** Write transaction (overrides the class-level readOnly): the XP listener runs synchronously in
+     *  THIS transaction — in a read-only tx its UPDATE was silently swallowed (flush MANUAL, no error)
+     *  and the download XP never existed in prod. */
     @Override
+    @Transactional
     public byte[] download(Long documentId, Long userId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
 
-        // Buffer in Redis — no DB write on each download
-        redisTemplate.opsForValue().increment(DL_BUFFER_PREFIX + documentId);
+        // First view of this document by this user in 24 h? (SETNX + TTL — atomic)
+        Boolean firstView = redisTemplate.opsForValue()
+                .setIfAbsent(VIEW_DEDUP_PREFIX + documentId + ":" + userId, "1", VIEW_DEDUP_TTL);
 
-        // Award 1 XP to author — skip if downloader is the author (anti-farming)
-        if (document.getUser() != null && !document.getUser().getId().equals(userId)) {
-            eventPublisher.publishEvent(new XpEvent.DocumentDownloaded(document.getUser().getId(), documentId));
+        if (Boolean.TRUE.equals(firstView)) {
+            // Buffer in Redis — no DB write on each download
+            redisTemplate.opsForValue().increment(DL_BUFFER_PREFIX + documentId);
+
+            // Award 1 XP to author — skip if downloader is the author (anti-farming)
+            if (document.getUser() != null && !document.getUser().getId().equals(userId)) {
+                eventPublisher.publishEvent(new XpEvent.DocumentDownloaded(document.getUser().getId(), documentId));
+            }
         }
 
         return minioService.download(document.getFileKey());
     }
 
     @Override
-    public PageResponse<DocumentResponse> getByUser(Long userId, Pageable pageable) {
-        Page<Document> page = documentRepository.findByUserIdAndVerifiedTrue(userId, pageable);
+    public PageResponse<DocumentResponse> getByUser(Long userId, Long callerId, Pageable pageable) {
+        // L'auteur voit TOUS ses documents (dont ceux en attente de vérification — sinon il en perd
+        // la trace) ; les autres profils publics ne montrent que les vérifiés.
+        boolean isOwner = callerId != null && callerId.equals(userId);
+        Page<Document> page = isOwner
+                ? documentRepository.findByUserIdWithAssociations(userId, pageable)
+                : documentRepository.findByUserIdAndVerifiedTrue(userId, pageable);
         List<DocumentResponse> content = page.getContent().stream()
                 .map(documentMapper::toResponse)
                 .toList();

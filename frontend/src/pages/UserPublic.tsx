@@ -1,10 +1,11 @@
-import { Typography, Box, Chip, Grid, Button } from '@mui/material';
-import { GitHub, LinkedIn, Language, Edit, School, EmojiEvents } from '@mui/icons-material';
+import type { ReactNode } from 'react';
+import { Typography, Box, Chip, Grid, Button, useTheme } from '@mui/material';
+import { GitHub, LinkedIn, Language, Edit, School, EmojiEvents, Bolt, Description, Visibility, Star } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getUserById, getDelegateHistory, getDocumentsByUser, getUserRank } from '@/api/endpoints';
+import { getUserById, getDelegateHistory, getDocumentsByUser, getUserRank, getUserStats } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
@@ -13,9 +14,47 @@ import OrbitalLoader from '@/components/ui/OrbitalLoader';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
 import DelegateMandates from '@/components/common/DelegateMandates';
+import LevelChip, { levelNameSx } from '@/components/common/LevelChip';
+
+/** Tuile de stat cliquable (ou non) — le corps du profil public était « 2 chiffres et une liste ». */
+function StatTile({ icon, label, value, extra, to, hint }: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  extra?: ReactNode;
+  to?: string;
+  hint?: string;
+}) {
+  const clickable = Boolean(to);
+  return (
+    <GlassCard
+      {...(clickable ? { component: RouterLink, to } : {})}
+      aria-label={hint}
+      sx={{
+        p: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0.5,
+        textDecoration: 'none',
+        color: 'inherit',
+        ...(clickable && { cursor: 'pointer', '&:hover': { borderColor: 'primary.main' } }),
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary', '& svg': { fontSize: 16 } }}>
+        {icon}
+        <Typography variant="caption">{label}</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Typography variant="h5" className="mono" sx={{ fontWeight: 800 }}>{value}</Typography>
+        {extra}
+      </Box>
+    </GlassCard>
+  );
+}
 
 export default function UserPublic() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
   const currentUser = useAuthStore((s) => s.user);
@@ -36,6 +75,13 @@ export default function UserPublic() {
   const { data: rank } = useQuery({
     queryKey: ['user-rank', userId],
     queryFn: () => getUserRank(userId),
+    enabled: !!user,
+  });
+
+  // Vues cumulées + note moyenne reçue — les tuiles ci-dessous (endpoint dédié, comme /rank).
+  const { data: stats } = useQuery({
+    queryKey: ['user-stats', userId],
+    queryFn: () => getUserStats(userId),
     enabled: !!user,
   });
 
@@ -67,6 +113,18 @@ export default function UserPublic() {
 
   const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
 
+  // « Contribution la plus appréciée » : son doc le mieux noté (parmi ceux ayant des votes),
+  // départagé par le nombre de votes — données déjà chargées, zéro requête en plus.
+  const ratedDocs = (docs?.content ?? []).filter((d) => d.ratingCount > 0);
+  const bestDoc = ratedDocs.length > 0
+    ? ratedDocs.reduce((best, d) =>
+        d.averageRating > best.averageRating
+          || (d.averageRating === best.averageRating && d.ratingCount > best.ratingCount)
+          ? d
+          : best)
+    : null;
+  const otherDocs = (docs?.content ?? []).filter((d) => d.id !== bestDoc?.id);
+
   return (
     <PageWrapper maxWidth="md">
       <GlassCard sx={{ p: { xs: 3, md: 4 }, mb: 3 }}>
@@ -74,7 +132,8 @@ export default function UserPublic() {
           <UserAvatar username={user.username} url={user.avatarUrl} size={64} />
           <Box sx={{ flex: 1, minWidth: 200 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+              {/* Le pseudo prend la couleur du palier céleste (dégradé pour Galaxie). */}
+              <Typography variant="h5" sx={{ fontWeight: 800, ...levelNameSx(user.xp, theme.palette.mode) }}>
                 {user.displayName}
               </Typography>
               {user.supporter && (
@@ -86,12 +145,10 @@ export default function UserPublic() {
                 @{user.username}
               </Typography>
             )}
-            <Typography variant="body2" color="text.secondary" className="mono">
-              {user.xp} XP · {user.documentCount} {t('stats.docs').toLowerCase()}
-            </Typography>
-            {/* Section ISFCE + rang + badges communautaires. « Ancien délégué » n'est PAS mis ici :
-                il apparaît dans l'encadré Délégués ci-dessous, avec les années début–fin. */}
+            {/* Section ISFCE + rang + palier + badges communautaires. « Ancien délégué » n'est PAS mis
+                ici : il apparaît dans l'encadré Délégués ci-dessous, avec les années début–fin. */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+              <LevelChip xp={user.xp} />
               {rank != null && (
                 <Chip
                   icon={<EmojiEvents sx={{ fontSize: 14 }} />}
@@ -100,6 +157,9 @@ export default function UserPublic() {
                   variant="outlined"
                   color="primary"
                   sx={{ fontSize: 11 }}
+                  component={RouterLink}
+                  to="/leaderboard"
+                  clickable
                 />
               )}
               {user.sectionName && (
@@ -196,15 +256,54 @@ export default function UserPublic() {
 
       </GlassCard>
 
+      {/* Rangée de stat-tiles : le corps du profil n'était que « XP · N docs » en petit. */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+        <StatTile
+          icon={<Bolt />}
+          label={t('userPublic.statXp')}
+          value={String(user.xp)}
+          extra={<LevelChip xp={user.xp} dense />}
+          to="/leaderboard"
+          hint={t('userPublic.statXpHint')}
+        />
+        <StatTile
+          icon={<Description />}
+          label={t('userPublic.statDocs')}
+          value={String(user.documentCount)}
+        />
+        <StatTile
+          icon={<Visibility />}
+          label={t('userPublic.statViews')}
+          value={stats ? String(stats.totalViews) : '—'}
+        />
+        <StatTile
+          icon={<Star />}
+          label={t('userPublic.statAvgRating')}
+          value={stats?.avgRatingReceived != null ? stats.avgRatingReceived.toFixed(1) : '—'}
+        />
+      </Box>
+
       <DelegateMandates history={delegateHistory} title={t('delegates.title')} />
 
-      {docs && docs.content.length > 0 && (
+      {/* Sa contribution la plus appréciée, mise en avant avec un halo. */}
+      {bestDoc && (
+        <>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+            {t('userPublic.bestContribution')}
+          </Typography>
+          <Box sx={{ mb: 3 }}>
+            <DocumentCard document={bestDoc} haloStrength={0.6} />
+          </Box>
+        </>
+      )}
+
+      {otherDocs.length > 0 && (
         <>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
             {t('profile.documents')}
           </Typography>
           <Grid container spacing={2}>
-            {docs.content.map((doc) => (
+            {otherDocs.map((doc) => (
               <Grid key={doc.id} size={{ xs: 12, sm: 6 }}>
                 <DocumentCard document={doc} />
               </Grid>

@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Skeleton } from '@mui/material';
+import { Box, Typography, Chip, Skeleton, useTheme } from '@mui/material';
 import { Visibility, Verified, EmojiEvents, FavoriteBorder } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import * as s from './PopularDocs.styles';
 
 export default function PopularDocs() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { token, user } = useAuthStore();
   const { data: docs, isLoading } = useQuery({
     queryKey: ['popular-docs', user?.sectionId ?? null],
@@ -73,7 +74,7 @@ export default function PopularDocs() {
                   <Chip
                     label={t(`categories.${doc.category}`)}
                     size="small"
-                    sx={s.categoryChip(categoryColor(doc.category))}
+                    sx={s.categoryChip(categoryColor(doc.category, theme.palette.mode))}
                   />
                   {doc.verified && <Verified sx={s.verifiedIcon} />}
                   <Box sx={s.dlCol}>

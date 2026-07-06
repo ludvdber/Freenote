@@ -29,6 +29,10 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         countQuery = "SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.category IN :categories")
     Page<Document> findPublicExcerpts(@Param("categories") Collection<Category> categories, Pageable pageable);
 
+    /** Titre seul d'un doc VÉRIFIÉ — statut public « existe mais réservé » d'un lien partagé. */
+    @Query("SELECT d.title FROM Document d WHERE d.id = :id AND d.verified = true")
+    Optional<String> findVerifiedTitleById(@Param("id") Long id);
+
     /** A single public teaser by id — present only if verified AND in an allowed public category. */
     @Query("""
         SELECT d FROM Document d
@@ -61,7 +65,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     /** Flexible filter: any combination of section / course / category. NULL params mean "no constraint".
      *  Returns BOTH verified and unverified documents (verification is a visual aid, not access control),
-     *  ordered verified-first then newest-first. Mapper associations fetch-joined (anti-N+1: without
+     *  always verified-first; the secondary sort (date/vues/note) comes from the Pageable — Spring Data
+     *  appends it to the ORDER BY below. Mapper associations fetch-joined (anti-N+1: without
      *  them, a 20-doc page fired up to 80 lazy SELECTs — course, section, uploader profile, professor). */
     @Query(value = """
         SELECT d FROM Document d
@@ -71,7 +76,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         WHERE (:sectionId IS NULL OR s.id = :sectionId)
           AND (:courseId IS NULL OR c.id = :courseId)
           AND (:category IS NULL OR d.category = :category)
-        ORDER BY d.verified DESC, d.createdAt DESC
+        ORDER BY d.verified DESC
         """,
         countQuery = """
         SELECT COUNT(d) FROM Document d
@@ -142,6 +147,19 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         countQuery = "SELECT COUNT(d) FROM Document d WHERE d.user.id = :userId AND d.verified = true")
     Page<Document> findByUserIdAndVerifiedTrue(@Param("userId") Long userId, Pageable pageable);
 
+    /** ALL docs of a user (y compris en attente de vérification) — réservé à l'auteur lui-même :
+     *  « Mes documents » doit lui montrer ses docs en attente, sinon il en perd la trace. */
+    @Query(value = """
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
+        LEFT JOIN FETCH d.professor
+        WHERE u.id = :userId
+        ORDER BY d.createdAt DESC
+        """,
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.user.id = :userId")
+    Page<Document> findByUserIdWithAssociations(@Param("userId") Long userId, Pageable pageable);
+
     /** Content-based duplicate check: an existing document with the same PDF hash, if any. */
     Optional<Document> findFirstByFileHash(String fileHash);
 
@@ -180,6 +198,10 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Query("SELECT COALESCE(SUM(d.downloadCount), 0) FROM Document d")
     long sumDownloadCount();
+
+    /** Vues cumulées de tous les documents d'un utilisateur (tuiles profil /users/:id). */
+    @Query("SELECT COALESCE(SUM(d.downloadCount), 0) FROM Document d WHERE d.user.id = :userId")
+    long sumDownloadCountByUserId(@Param("userId") Long userId);
 
     @Query("SELECT DISTINCT d FROM Document d " +
            "LEFT JOIN FETCH d.course c " +

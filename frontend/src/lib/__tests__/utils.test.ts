@@ -6,6 +6,8 @@ import {
   categoryColor,
   extractApiError,
   shareOrCopy,
+  isNewDoc,
+  isHotDoc,
 } from '../utils';
 
 describe('formatNumber', () => {
@@ -51,6 +53,24 @@ describe('formatRelativeDate', () => {
 
   it('falls back to an absolute date beyond a week', () => {
     expect(at('2026-05-01T12:00:00Z', 'fr')).toMatch(/\d/);
+  });
+});
+
+describe('isNewDoc / isHotDoc', () => {
+  const now = new Date('2026-06-16T12:00:00Z');
+
+  it('marks a doc "new" under 7 days, not beyond', () => {
+    expect(isNewDoc('2026-06-14T12:00:00Z', now)).toBe(true);
+    expect(isNewDoc('2026-06-01T12:00:00Z', now)).toBe(false);
+  });
+
+  it('marks a doc "hot" only with sustained views (≥2/day AND ≥20 total)', () => {
+    // 30 days old, 100 views → 3.3/day
+    expect(isHotDoc('2026-05-17T12:00:00Z', 100, now)).toBe(true);
+    // 30 days old, 30 views → 1/day: below the pace threshold
+    expect(isHotDoc('2026-05-17T12:00:00Z', 30, now)).toBe(false);
+    // 2 days old, 10 views → 5/day but under the 20-view floor
+    expect(isHotDoc('2026-06-14T12:00:00Z', 10, now)).toBe(false);
   });
 });
 

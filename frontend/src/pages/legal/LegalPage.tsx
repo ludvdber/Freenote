@@ -1,5 +1,8 @@
 import { Typography, Box, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { SITE_URL } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import type { LegalPage as LegalPageContent, Locale } from './legalContent';
@@ -15,11 +18,19 @@ interface Props {
  */
 export default function LegalPage({ getContent }: Props) {
   const { i18n } = useTranslation();
+  const { pathname } = useLocation();
   const locale: Locale = i18n.language.startsWith('fr') ? 'fr' : 'en';
   const content = getContent(locale);
+  // Pages publiques indexables (et regardées par la review AdSense) — title/meta obligatoires.
+  const description = content.sections[0]?.body[0]?.slice(0, 160) ?? '';
 
   return (
     <PageWrapper maxWidth="md">
+      <Helmet>
+        <title>{content.title} · Freenote</title>
+        {description && <meta name="description" content={description} />}
+        <link rel="canonical" href={`${SITE_URL}${pathname}`} />
+      </Helmet>
       <Typography variant="h3" sx={{ fontWeight: 800, mb: 1 }}>
         {content.title}
       </Typography>

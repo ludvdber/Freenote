@@ -4,6 +4,7 @@ import be.freenote.dto.request.UpdateProfileRequest;
 import be.freenote.dto.response.LeaderboardEntry;
 import be.freenote.dto.response.ProfileCardResponse;
 import be.freenote.dto.response.UserResponse;
+import be.freenote.dto.response.UserStatsResponse;
 
 import java.util.List;
 
@@ -18,6 +19,8 @@ public interface UserService {
     List<LeaderboardEntry> getLeaderboard(int size, Long sectionId);
     /** 1-based global leaderboard rank of a user (by XP). */
     int getRank(Long userId);
+    /** Stats agrégées pour les tuiles du profil public : vues cumulées + note moyenne reçue. */
+    UserStatsResponse getUserStats(Long userId);
     List<ProfileCardResponse> getFeaturedProfiles();
     void addXp(Long userId, int amount);
     void deleteAccount(Long userId);

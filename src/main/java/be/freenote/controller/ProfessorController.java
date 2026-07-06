@@ -24,7 +24,8 @@ public class ProfessorController {
     @GetMapping
     public ResponseEntity<List<ProfessorResponse>> getAll() {
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                // private : endpoint authentifié par cookie — jamais de cache partagé sur ces réponses.
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePrivate())
                 .body(professorService.getAll());
     }
 
@@ -32,7 +33,7 @@ public class ProfessorController {
     @GetMapping("/suggested")
     public ResponseEntity<List<ProfessorResponse>> getSuggested(@RequestParam Long courseId) {
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePrivate())
                 .body(professorService.getSuggestedForCourse(courseId));
     }
 

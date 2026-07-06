@@ -25,6 +25,24 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Sort de l'entrée les vendors intégralement chargés au boot (cache long terme : une
+        // release Freenote n'invalide plus React/Query/i18n chez les clients) — `advancedChunks` =
+        // l'API rolldown (Vite 8). MUI et framer-motion restent volontairement au découpage par
+        // défaut : les regrouper tirerait en EAGER leurs gros morceaux utilisés seulement par des
+        // pages lazy (admin, outils) et alourdirait le premier chargement (+120 kB gz mesurés).
+        advancedChunks: {
+          groups: [
+            { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/ },
+            { name: 'query', test: /node_modules[\\/]@tanstack[\\/]/ },
+            { name: 'i18n', test: /node_modules[\\/](i18next|react-i18next|i18next-browser-languagedetector)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -79,9 +97,10 @@ export default defineConfig(({ mode }) => ({
         'src/components/common/PdfViewer.tsx',
         'src/components/common/ScrollToTop.tsx',
         'src/components/common/TermsGate.tsx',
-        // Bootstrap / effect hooks (auth init, SSE notification stream) — e2e-covered
+        // Bootstrap / effect hooks (auth init, SSE notification stream, badge serveur) — e2e-covered
         'src/hooks/useAuthInit.ts',
         'src/hooks/useNotificationsStream.ts',
+        'src/hooks/useNotifications.ts',
         // Purely visual UI shells (the tested ones — GlassCard, StarRating — stay in)
         'src/components/ui/AdBanner.tsx',
         'src/components/ui/Divider.tsx',

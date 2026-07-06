@@ -160,7 +160,8 @@ public abstract class UserMapper {
         return full.isEmpty() ? username : full;
     }
 
-    protected String resolveAvatarUrl(UserProfile p, String username) {
+    /** Static : aussi utilisé par {@link DocumentMapper} pour l'avatar de l'uploader sur les cartes. */
+    public static String resolveAvatarUrl(UserProfile p, String username) {
         if (p == null) return null;
         AvatarSource source = p.getAvatarSource() != null ? p.getAvatarSource() : AvatarSource.AUTO;
         return switch (source) {

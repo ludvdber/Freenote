@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Pagination,
-  Chip, CircularProgress, Button, Alert,
+  Chip, CircularProgress, Button, Alert, ToggleButtonGroup, ToggleButton, Tooltip,
 } from '@mui/material';
-import { ArrowForward, Lock, Star } from '@mui/icons-material';
+import { ArrowForward, Lock, Star, ViewModule, ViewList } from '@mui/icons-material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -38,10 +38,30 @@ function FullBrowse() {
   const courseId: number | '' = searchParams.get('course') ? Number(searchParams.get('course')) : '';
   const page = Math.max(0, Number(searchParams.get('page') ?? '0') || 0);
   const urlQuery = searchParams.get('q') ?? '';
+  // Tri lisible dans l'URL (?sort=recent — le CTA de la home pointe dessus), traduit vers le
+  // paramètre API whitelisté. Défaut : récents.
+  const SORT_API: Record<string, string> = {
+    recent: 'createdAt:desc',
+    popular: 'downloadCount:desc',
+    bestRated: 'averageRating:desc',
+  };
+  const rawSort = searchParams.get('sort') ?? '';
+  const sort = rawSort in SORT_API ? rawSort : '';
 
   // Local, immediate text for the input; debounced into the URL so typing doesn't spam history.
   const [query, setQuery] = useState(urlQuery);
   const debouncedQuery = useDebounce(query, 400);
+
+  // Vue grille ou liste — préférence d'affichage locale (localStorage, pas l'URL : ce n'est pas
+  // un filtre à partager, juste un confort de lecture).
+  const [view, setView] = useState<'grid' | 'list'>(
+    () => (localStorage.getItem('freenote-browse-view') === 'list' ? 'list' : 'grid'),
+  );
+  const changeView = (v: 'grid' | 'list' | null) => {
+    if (!v) return; // ToggleButtonGroup exclusif renvoie null quand on re-clique l'option active
+    setView(v);
+    localStorage.setItem('freenote-browse-view', v);
+  };
 
   // Patch the URL params (replace: no extra history entry per filter tweak). Empty values are dropped
   // so the URL stays clean (?section=2 rather than ?q=&cat=&section=2).
@@ -74,13 +94,14 @@ function FullBrowse() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['search', debouncedQuery, sectionId, courseId, category, page],
+    queryKey: ['search', debouncedQuery, sectionId, courseId, category, sort, page],
     queryFn: () =>
       searchDocuments({
         q: debouncedQuery || undefined,
         sectionId: sectionId || undefined,
         courseId: courseId || undefined,
         category: category || undefined,
+        sort: sort ? SORT_API[sort] : undefined,
         page,
         size: 18,
       }),
@@ -147,6 +168,18 @@ function FullBrowse() {
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small" sx={s.filterControl}>
+          <InputLabel>{t('search.sort')}</InputLabel>
+          <Select
+            value={sort}
+            label={t('search.sort')}
+            onChange={(e) => patchParams({ sort: e.target.value, page: 0 })}
+          >
+            <MenuItem value="">{t('search.recent')}</MenuItem>
+            <MenuItem value="popular">{t('search.popular')}</MenuItem>
+            <MenuItem value="bestRated">{t('search.bestRated')}</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       <AdSlot width={728} height={90} sx={{ mb: 3 }} />
@@ -155,13 +188,73 @@ function FullBrowse() {
         <Shimmer count={6} />
       ) : data?.content.length ? (
         <>
-          <Grid container spacing={2}>
-            {data.content.map((doc) => (
-              <Grid key={doc.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <DocumentCard document={doc} />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Compteur de résultats + rappel des filtres actifs (chips supprimables) : avant, ni
+              l'un ni l'autre n'existait — impossible de savoir combien de docs matchent ni
+              pourquoi une liste est courte. */}
+          <Box sx={s.resultsBar}>
+            <Typography variant="body2" color="text.secondary" sx={s.resultsCount} className="mono">
+              {t('search.results', { count: data.totalElements })}
+            </Typography>
+            {sectionId !== '' && (
+              <Chip
+                size="small"
+                label={sections?.find((sec) => sec.id === sectionId)?.name ?? t('document.section')}
+                onDelete={() => patchParams({ section: '', course: '', page: 0 })}
+              />
+            )}
+            {courseId !== '' && (
+              <Chip
+                size="small"
+                label={courses?.find((c) => c.id === courseId)?.name ?? t('document.course')}
+                onDelete={() => patchParams({ course: '', page: 0 })}
+              />
+            )}
+            {category && (
+              <Chip
+                size="small"
+                label={t(`categories.${category}`)}
+                onDelete={() => patchParams({ cat: '', page: 0 })}
+              />
+            )}
+            {urlQuery && (
+              <Chip
+                size="small"
+                label={`« ${urlQuery} »`}
+                onDelete={() => setQuery('')}
+              />
+            )}
+            <ToggleButtonGroup
+              value={view}
+              exclusive
+              onChange={(_, v) => changeView(v)}
+              size="small"
+              sx={{ ml: 'auto' }}
+              aria-label={t('search.viewMode')}
+            >
+              <ToggleButton value="grid" aria-label={t('search.viewGrid')}>
+                <Tooltip title={t('search.viewGrid')}><ViewModule fontSize="small" /></Tooltip>
+              </ToggleButton>
+              <ToggleButton value="list" aria-label={t('search.viewList')}>
+                <Tooltip title={t('search.viewList')}><ViewList fontSize="small" /></Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {view === 'list' ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {data.content.map((doc) => (
+                <DocumentCard key={doc.id} document={doc} variant="row" />
+              ))}
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {data.content.map((doc) => (
+                <Grid key={doc.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                  <DocumentCard document={doc} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
 
           {data.totalPages > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

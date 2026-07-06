@@ -35,7 +35,7 @@ class DocumentControllerTest {
 
     private static final DocumentResponse DOC = new DocumentResponse(
             1L, "Test Doc", 1L, "Java", "Info", "SYNTHESE", "Alice", 7L,
-            true, false, "FR", "2025", null, 4.5, 10,
+            true, false, "FR", "2025", null, 4.5, 3, 10, null,
             LocalDateTime.now()
     );
 

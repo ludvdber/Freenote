@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Skeleton, Button } from '@mui/material';
+import { Box, Typography, Chip, Skeleton, Button, useTheme } from '@mui/material';
 import { Star, ArrowForward, Lock } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +21,7 @@ const FEATURED = ['flashcards', 'quiz', 'calculateur-moyenne', 'calculateur-ip',
  */
 export default function PublicDocsPreview() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { data, isLoading } = useQuery({
     queryKey: ['public-documents', 'home'],
     queryFn: () => listPublicDocuments({ size: 6 }),
@@ -68,7 +69,7 @@ export default function PublicDocsPreview() {
                       {[d.courseName, d.sectionName].filter(Boolean).join(' · ')}
                     </Typography>
                   </Box>
-                  <Chip label={t(`categories.${d.category}`)} size="small" sx={ps.categoryChip(categoryColor(d.category))} />
+                  <Chip label={t(`categories.${d.category}`)} size="small" sx={ps.categoryChip(categoryColor(d.category, theme.palette.mode))} />
                   {d.ratingCount > 0 && (
                     <Box sx={ps.dlCol}>
                       <Star sx={{ fontSize: 14, color: 'warning.main' }} />

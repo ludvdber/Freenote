@@ -38,7 +38,7 @@ export default function GuidesIndex() {
   };
 
   const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', {
+    new Date(iso).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', {
       day: 'numeric', month: 'short', year: 'numeric',
     });
 

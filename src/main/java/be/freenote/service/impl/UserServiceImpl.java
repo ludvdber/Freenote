@@ -4,6 +4,7 @@ import be.freenote.dto.request.UpdateProfileRequest;
 import be.freenote.dto.response.LeaderboardEntry;
 import be.freenote.dto.response.ProfileCardResponse;
 import be.freenote.dto.response.UserResponse;
+import be.freenote.dto.response.UserStatsResponse;
 import be.freenote.entity.Ban;
 import be.freenote.entity.Section;
 import be.freenote.entity.User;
@@ -17,6 +18,7 @@ import be.freenote.mapper.UserMapper;
 import be.freenote.repository.BanRepository;
 import be.freenote.repository.DelegateHistoryRepository;
 import be.freenote.repository.DocumentRepository;
+import be.freenote.repository.RatingRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.ReportRepository;
 import be.freenote.repository.SectionRepository;
@@ -25,7 +27,6 @@ import be.freenote.repository.UserRepository;
 import be.freenote.service.ActivityLogService;
 import be.freenote.service.DiscordRoleService;
 import be.freenote.service.UserService;
-import be.freenote.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -45,6 +46,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
+    private final RatingRepository ratingRepository;
     private final ReportRepository reportRepository;
     private final SectionRepository sectionRepository;
     private final UserOauthLinkRepository oauthLinkRepository;
@@ -80,11 +82,14 @@ public class UserServiceImpl implements UserService {
             user.setProfile(profile);
         }
 
-        profile.setBio(HtmlSanitizer.escape(request.getBio()));
-        profile.setWebsite(HtmlSanitizer.escape(request.getWebsite()));
-        profile.setGithub(HtmlSanitizer.escape(request.getGithub()));
-        profile.setLinkedin(HtmlSanitizer.escape(request.getLinkedin()));
-        profile.setDiscord(HtmlSanitizer.escape(request.getDiscord()));
+        // Stockage BRUT (trim seul) — même politique que les titres de documents : React échappe au
+        // rendu. L'échappement à l'écriture corrompait l'affichage (« l&#x27;apostrophe ») et se
+        // cumulait à chaque re-save du formulaire (V10 a nettoyé les valeurs existantes).
+        profile.setBio(normalize(request.getBio()));
+        profile.setWebsite(normalize(request.getWebsite()));
+        profile.setGithub(normalize(request.getGithub()));
+        profile.setLinkedin(normalize(request.getLinkedin()));
+        profile.setDiscord(normalize(request.getDiscord()));
         profile.setProfilePublic(request.isProfilePublic());
         // Verified users (and admins) can opt in/out of the homepage carousel themselves.
         // Unverified accounts cannot — keeps the carousel away from throwaway accounts.
@@ -94,8 +99,8 @@ public class UserServiceImpl implements UserService {
         if (request.getAvatarSource() != null) {
             profile.setAvatarSource(AvatarSource.valueOf(request.getAvatarSource()));
         }
-        profile.setFirstName(HtmlSanitizer.escape(request.getFirstName()));
-        profile.setLastName(HtmlSanitizer.escape(request.getLastName()));
+        profile.setFirstName(normalize(request.getFirstName()));
+        profile.setLastName(normalize(request.getLastName()));
         profile.setDisplayRealName(request.isDisplayRealName());
         if (request.getStudyStartYear() != null && request.getStudyEndYear() != null
                 && request.getStudyEndYear() < request.getStudyStartYear()) {
@@ -179,8 +184,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserStatsResponse getUserStats(Long userId) {
+        // 404 si le compte n'existe pas — même contrat que getRank.
+        Repositories.findByIdOrThrow(userRepository, userId, "User");
+        long totalViews = documentRepository.sumDownloadCountByUserId(userId);
+        Double avgRating = ratingRepository.avgScoreReceivedByUserId(userId);
+        return new UserStatsResponse(totalViews, avgRating);
+    }
+
+    @Override
     public List<ProfileCardResponse> getFeaturedProfiles() {
-        return userRepository.findFeaturedProfiles().stream()
+        return userRepository.findFeaturedProfiles(PageRequest.of(0, 24)).stream()
                 .map(userMapper::toProfileCard)
                 .toList();
     }
@@ -189,7 +203,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void addXp(Long userId, int amount) {
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
-        user.setXp(user.getXp() + amount);
+        // Les retraits (suppression de doc, unverify, re-notation à la baisse) ne descendent jamais
+        // sous zéro — l'XP retiré peut dépasser l'XP restant si des gains ont été purgés entre-temps.
+        user.setXp(Math.max(0, user.getXp() + amount));
         userRepository.save(user);
     }
 
@@ -215,7 +231,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void banUser(Long targetUserId, String reason, Long adminId) {
         User user = Repositories.findByIdOrThrow(userRepository, targetUserId, "User");
-        String safeReason = (reason == null || reason.isBlank()) ? null : HtmlSanitizer.escape(reason.trim());
+        // Raison stockée brute (trim) — rendue uniquement par React (panel admin), qui échappe au rendu.
+        String safeReason = normalize(reason);
 
         // Blacklist the verified ISFCE email (blocks re-verification with the same address).
         if (user.getEmailHash() != null) {
@@ -344,11 +361,22 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
         if (role.equals("VERIFIED") || role.equals("ADMIN")) {
             user.setVerified(true);
+        } else {
+            // Cohérence du modèle : USER ⇔ non vérifié (miroir de adminUnverifyUser). Sans ça, un
+            // rétrogradé affichait « USER » dans le panel tout en gardant verified=true en base.
+            user.setVerified(false);
         }
         User saved = userRepository.save(user);
         long docCount = documentRepository.countByUserId(userId);
         log.info("Admin updated role for user: id={}, role={}", userId, role);
         return userMapper.toResponse(saved, docCount);
+    }
+
+    /** Trim + null si vide — les champs texte du profil sont stockés bruts (React échappe au rendu). */
+    private static String normalize(String input) {
+        if (input == null) return null;
+        String trimmed = input.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /** Fetches document counts for a list of users in a single query. */

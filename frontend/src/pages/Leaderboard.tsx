@@ -10,8 +10,11 @@ import {
   Box,
   Skeleton,
   Chip,
-  ToggleButton,
-  ToggleButtonGroup,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  useTheme,
 } from '@mui/material';
 import { EmojiEvents } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +22,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { motion, useReducedMotion } from 'framer-motion';
-import { getLeaderboard, getUserById } from '@/api/endpoints';
+import { getLeaderboard, getUserById, getUserRank, getSections } from '@/api/endpoints';
+import { STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
@@ -27,6 +31,8 @@ import AdSlot from '@/components/ui/AdSlot';
 import Divider from '@/components/ui/Divider';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
+import LevelChip, { levelNameSx } from '@/components/common/LevelChip';
+import LevelProgress from '@/components/common/LevelProgress';
 import type { LeaderboardEntry } from '@/types';
 import * as s from './Leaderboard.styles';
 
@@ -40,10 +46,13 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
+  const theme = useTheme();
   const currentUser = useAuthStore((st) => st.user);
-  const [scope, setScope] = useState<'all' | 'mine'>('all');
-  const mySectionId = currentUser?.sectionId ?? undefined;
-  const filterSection = scope === 'mine' ? mySectionId : undefined;
+  // Select de section (remplace le toggle « Toutes / Ma section ») : l'API acceptait déjà
+  // n'importe quel sectionId, seul le frontend limitait à SA section.
+  const [sectionFilter, setSectionFilter] = useState<number | ''>('');
+  const filterSection = sectionFilter === '' ? undefined : sectionFilter;
+  const { data: sections } = useQuery({ queryKey: ['sections'], queryFn: getSections, staleTime: STALE_15M });
   const { data: entries } = useQuery({
     queryKey: ['leaderboard', 100, filterSection ?? null],
     queryFn: () => getLeaderboard(100, filterSection),
@@ -59,6 +68,15 @@ export default function Leaderboard() {
   const myEntry = currentUser
     ? entries?.find((e) => e.userId === currentUser.id) ?? null
     : null;
+
+  // Au-delà du top 100 chargé, « Ta position » disparaissait — fallback sur le rang global exact
+  // (une seule requête COUNT côté serveur). Uniquement en portée « Toutes » : le rang renvoyé est
+  // global, il serait faux face à un classement filtré par section.
+  const { data: fallbackRank } = useQuery({
+    queryKey: ['user-rank', currentUser?.id],
+    queryFn: () => getUserRank(currentUser!.id),
+    enabled: !!currentUser && !!entries && !myEntry && filterSection === undefined,
+  });
 
   // TanStack Query dedupes identical prefetches and serves from cache, so calling this on every
   // hover is cheap — the network request only fires the first time per user.
@@ -90,18 +108,22 @@ export default function Leaderboard() {
         {t('leaderboard.title')}
       </Typography>
 
-      {mySectionId && (
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={scope}
-          onChange={(_, v) => v && setScope(v)}
-          sx={{ mb: 3 }}
+      <FormControl size="small" sx={{ mb: 3, minWidth: 220 }}>
+        <InputLabel>{t('leaderboard.sectionFilter')}</InputLabel>
+        <Select
+          value={sectionFilter}
+          label={t('leaderboard.sectionFilter')}
+          onChange={(e) => setSectionFilter(e.target.value as number | '')}
         >
-          <ToggleButton value="all">{t('leaderboard.scopeAll')}</ToggleButton>
-          <ToggleButton value="mine">{t('leaderboard.scopeMine')}</ToggleButton>
-        </ToggleButtonGroup>
-      )}
+          <MenuItem value="">{t('leaderboard.scopeAll')}</MenuItem>
+          {sections?.map((sec) => (
+            <MenuItem key={sec.id} value={sec.id}>
+              {sec.name}
+              {currentUser?.sectionId === sec.id ? ` — ${t('leaderboard.scopeMine').toLowerCase()}` : ''}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       {/* PODIUM TOP 3 — order is 2-1-3 visually on desktop, 1-2-3 on mobile via CSS order */}
       {top3.length === 3 && (
@@ -139,11 +161,14 @@ export default function Leaderboard() {
                 />
                 <Typography sx={s.podiumRank(rank)}>#{rank}</Typography>
                 <UserAvatar username={e.username} url={e.avatarUrl} size={s.podiumAvatarSize(rank)} />
-                <Typography sx={{ fontWeight: 700, mt: 0.5 }}>{e.displayName}</Typography>
+                <Typography sx={{ fontWeight: 700, mt: 0.5, ...levelNameSx(e.xp, theme.palette.mode) }}>
+                  {e.displayName}
+                </Typography>
                 <Typography variant="body2" color="text.secondary" className="mono">
                   {e.xp} XP · {e.documentCount} {t('stats.docs').toLowerCase()}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center', mt: 0.5 }}>
+                  <LevelChip xp={e.xp} dense />
                   <UserBadges
                     graduated={e.graduated}
                     studyEndYear={e.studyEndYear}
@@ -206,9 +231,10 @@ export default function Leaderboard() {
                       <TableCell>
                         <Box sx={s.userCell}>
                           <UserAvatar username={entry.username} url={entry.avatarUrl} size={s.ROW_AVATAR_SIZE} />
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, ...levelNameSx(entry.xp, theme.palette.mode) }}>
                             {entry.displayName}
                           </Typography>
+                          <LevelChip xp={entry.xp} dense />
                           {isMe && (
                             <Chip label={t('leaderboard.you')} size="small" color="primary" sx={{ ml: 1 }} />
                           )}
@@ -246,7 +272,7 @@ export default function Leaderboard() {
         </Box>
 
         <Box sx={s.sidebar}>
-          {myEntry && (
+          {myEntry ? (
             <GlassCard sx={s.yourRankCard}>
               <Typography variant="caption" color="text.secondary">
                 {t('leaderboard.yourRank')}
@@ -262,8 +288,27 @@ export default function Leaderboard() {
               <Typography variant="body2" className="mono">
                 {myEntry.xp} XP · {myEntry.documentCount} {t('stats.docs').toLowerCase()}
               </Typography>
+              {/* Palier + progression vers le suivant — la carte n'était qu'un rang sec. */}
+              <Box sx={{ mt: 1.5 }}>
+                <LevelProgress xp={myEntry.xp} />
+              </Box>
             </GlassCard>
-          )}
+          ) : currentUser && fallbackRank ? (
+            <GlassCard sx={s.yourRankCard}>
+              <Typography variant="caption" color="text.secondary">
+                {t('leaderboard.yourRank')}
+              </Typography>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main' }} className="mono">
+                #{fallbackRank}
+              </Typography>
+              <Typography variant="body2" className="mono">
+                {currentUser.xp} XP
+              </Typography>
+              <Box sx={{ mt: 1.5 }}>
+                <LevelProgress xp={currentUser.xp} />
+              </Box>
+            </GlassCard>
+          ) : null}
           <AdSlot width={300} height={250} />
         </Box>
       </Box>
@@ -285,6 +330,7 @@ interface MobileCardProps {
 }
 
 function LeaderboardMobileCard({ entry, isMe, onSelect, onPrefetch, t }: MobileCardProps) {
+  const theme = useTheme();
   return (
     <GlassCard
       role="button"
@@ -314,7 +360,7 @@ function LeaderboardMobileCard({ entry, isMe, onSelect, onPrefetch, t }: MobileC
           <Typography variant="body2" className="mono" sx={{ fontWeight: 700, color: 'primary.main' }}>
             #{entry.rank}
           </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
+          <Typography variant="body2" sx={{ fontWeight: 700, ...levelNameSx(entry.xp, theme.palette.mode) }} noWrap>
             {entry.displayName}
           </Typography>
           {isMe && <Chip label={t('leaderboard.you')} size="small" color="primary" />}
@@ -323,6 +369,7 @@ function LeaderboardMobileCard({ entry, isMe, onSelect, onPrefetch, t }: MobileC
           {entry.xp} XP · {entry.documentCount} {t('stats.docs').toLowerCase()}
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+          <LevelChip xp={entry.xp} dense />
           <UserBadges
             graduated={entry.graduated}
             studyEndYear={entry.studyEndYear}

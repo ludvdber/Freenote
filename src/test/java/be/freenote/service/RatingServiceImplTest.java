@@ -134,7 +134,9 @@ class RatingServiceImplTest {
     }
 
     @Test
-    void shouldNotAddXpOnUpdatedRating() {
+    void shouldPublishDeltaEventOnUpdatedRating() {
+        // Re-noter publie l'événement avec l'ancienne note : le listener ajuste l'XP par DELTA
+        // (5★→2★ reprend la récompense) au lieu de l'empiler — anti-farming conservé.
         User voter = testUser(2L);
         Document doc = testDocument(testUser(1L));
         doc.setAverageRating(new BigDecimal("3.00"));
@@ -147,6 +149,25 @@ class RatingServiceImplTest {
         when(ratingRepository.findByDocumentIdAndUserId(100L, 2L)).thenReturn(Optional.of(existing));
 
         ratingService.rate(2L, 100L, 5);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        XpEvent.DocumentRated event = (XpEvent.DocumentRated) captor.getValue();
+        assertThat(event.score()).isEqualTo(5);
+        assertThat(event.previousScore()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldNotPublishEventWhenScoreUnchanged() {
+        User voter = testUser(2L);
+        Document doc = testDocument(testUser(1L));
+        Rating existing = Rating.builder().id(10L).document(doc).user(voter).score(4).build();
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(voter));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(ratingRepository.findByDocumentIdAndUserId(100L, 2L)).thenReturn(Optional.of(existing));
+
+        ratingService.rate(2L, 100L, 4);
 
         verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
     }

@@ -15,7 +15,9 @@ public interface DocumentMapper {
     @Mapping(target = "authorId", expression = "java(mapAuthorId(document))")
     @Mapping(target = "professorName", source = "professor.name")
     @Mapping(target = "averageRating", expression = "java(document.getAverageRating().doubleValue())")
+    @Mapping(target = "ratingCount", source = "ratingCount")
     @Mapping(target = "downloadCount", source = "downloadCount")
+    @Mapping(target = "authorAvatarUrl", expression = "java(mapAuthorAvatarUrl(document))")
     DocumentResponse toResponse(Document document);
 
     default String mapAuthorName(Document document) {
@@ -33,5 +35,15 @@ public interface DocumentMapper {
             return null;
         }
         return document.getUser().getId();
+    }
+
+    /** Avatar résolu de l'uploader (null pour anonyme / avatar lettre). Le profile est déjà
+     *  fetch-joiné par les requêtes listant des documents (mapAuthorName y accède aussi) — pas de N+1. */
+    default String mapAuthorAvatarUrl(Document document) {
+        if (document.isAnonymous() || document.getUser() == null) {
+            return null;
+        }
+        var user = document.getUser();
+        return UserMapper.resolveAvatarUrl(user.getProfile(), user.getUsername());
     }
 }

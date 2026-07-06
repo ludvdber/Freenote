@@ -73,18 +73,20 @@ export default function Navbar() {
               </IconButton>
             </Tooltip>
 
+            {/* startsWith : un navigateur fr-BE/fr-FR garde i18n.language = « fr-BE » (seul
+                resolvedLanguage est normalisé) — la comparaison stricte laissait FR non surligné. */}
             <Box sx={s.langToggle}>
               <Box
                 component="button"
                 onClick={() => i18n.changeLanguage('fr')}
-                sx={s.langOption(i18n.language === 'fr')}
+                sx={s.langOption(i18n.language.startsWith('fr'))}
               >
                 FR
               </Box>
               <Box
                 component="button"
                 onClick={() => i18n.changeLanguage('en')}
-                sx={s.langOption(i18n.language === 'en')}
+                sx={s.langOption(i18n.language.startsWith('en'))}
               >
                 EN
               </Box>

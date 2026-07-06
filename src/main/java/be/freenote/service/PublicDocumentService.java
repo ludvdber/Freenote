@@ -13,4 +13,7 @@ public interface PublicDocumentService {
     PageResponse<PublicDocumentSummary> listExcerpts(Pageable pageable);
 
     PublicDocumentSummary getExcerpt(Long id);
+
+    /** « Existe mais réservé » (titre seul, docs vérifiés uniquement) ou inconnu — jamais de 404. */
+    be.freenote.dto.response.PublicDocumentStatus getStatus(Long id);
 }

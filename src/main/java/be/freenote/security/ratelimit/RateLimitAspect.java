@@ -1,6 +1,5 @@
 package be.freenote.security.ratelimit;
 
-import be.freenote.entity.User;
 import be.freenote.exception.RateLimitExceededException;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.RateLimitService;
@@ -27,9 +26,7 @@ public class RateLimitAspect {
 
     @Around("@annotation(rateLimit)")
     public Object enforce(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
-        // Admins and "trusted" uploaders bypass rate limits entirely. Trusted is read live from the DB
-        // (roles come from the JWT claims, so a freshly-granted flag would otherwise need a re-login).
-        if (isExempt()) {
+        if (isExempt(rateLimit)) {
             return joinPoint.proceed();
         }
         String key = resolveKey(joinPoint);
@@ -41,7 +38,12 @@ public class RateLimitAspect {
         return joinPoint.proceed();
     }
 
-    private boolean isExempt() {
+    /** Admins bypass every rate limit (authorities check, no DB hit). The "trusted" flag only
+     *  bypasses limits that opt in via {@code exemptTrusted} (today: document upload) — it is read
+     *  live from the DB through a single-column projection (roles come from the JWT claims, so a
+     *  freshly-granted flag would otherwise need a re-login; the projection avoids loading the full
+     *  User entity on every rate-limited call). */
+    private boolean isExempt(RateLimit rateLimit) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) {
             return false;
@@ -50,8 +52,8 @@ public class RateLimitAspect {
         if (admin) {
             return true;
         }
-        if (auth.getPrincipal() instanceof Long userId) {
-            return userRepository.findById(userId).map(User::isTrusted).orElse(false);
+        if (rateLimit.exemptTrusted() && auth.getPrincipal() instanceof Long userId) {
+            return userRepository.findTrustedById(userId).orElse(false);
         }
         return false;
     }

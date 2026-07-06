@@ -19,8 +19,8 @@
     "goHome": "Back to home"
   },
   "hero": {
-    "title": "Learn faster",
-    "titleHighlight": "together.",
+    "title": "Light up",
+    "titleHighlight": "your class.",
     "subtitle": "Summaries, exercises, course notes: every shared document helps the next class succeed.",
     "cta": "Browse courses",
     "ctaSecondary": "Share a doc",
@@ -29,12 +29,11 @@
     "restricted": "Reserved for ISFCE students"
   },
   "stats": {
-    "title": "By the numbers",
     "docs": "Documents",
     "downloads": "Views",
-    "contributors": "Contributors",
+    "contributors": "Students",
     "courses": "Courses",
-    "weekUploads": "docs added this week"
+    "weekUploads": "docs added in the last 7 days"
   },
   "popular": {
     "title": "Popular documents",
@@ -51,17 +50,29 @@
     "empty": "The podium is wide open. Claim it.",
     "you": "You",
     "yourRank": "Your rank",
-    "scopeAll": "All",
-    "scopeMine": "My section"
+    "scopeAll": "All sections",
+    "scopeMine": "My section",
+    "sectionFilter": "Section"
   },
   "badges": {
     "delegate": "Delegate",
     "formerDelegate": "Former delegate"
   },
+  "levels": {
+    "stardust": "Stardust",
+    "meteor": "Meteor",
+    "comet": "Comet",
+    "star": "Star",
+    "supernova": "Supernova",
+    "constellation": "Constellation",
+    "galaxy": "Galaxy",
+    "tooltipNext": "{{remaining}} XP to go before {{next}}",
+    "tooltipMax": "Top tier. You light up the galaxy.",
+    "progressTo": "Next tier: {{next}}"
+  },
   "delegates": {
     "title": "Delegates",
     "section": "Section",
-    "members": "Members",
     "since": "Since",
     "ongoing": "present",
     "formerToggle": "Former delegates",
@@ -78,11 +89,12 @@
     "back": "Back to news",
     "source": "Read on the ISFCE blog",
     "notFound": "News item not found.",
-    "readTime": "{{count}} min read"
+    "readTime": "{{count}} min read",
+    "readNext": "Read next"
   },
   "guides": {
     "title": "Guides",
-    "intro": "Clear tutorials on programming, networking and tools, written for ISFCE students and open to everyone.",
+    "intro": "Clear tutorials on programming, networking and tools — explained step by step, with examples.",
     "metaDescription": "Free guides and tutorials: Java programming, networking, IT tools. Step-by-step explanations for ISFCE students.",
     "empty": "No guide published yet, check back soon.",
     "read": "Read the guide",
@@ -99,8 +111,9 @@
     "loginCta": "Sign in",
     "empty": "No public resource yet.",
     "preview": "Preview",
-    "backToList": "Back to resources",
-    "notFound": "Resource not found.",
+    "backToList": "Back to browse",
+    "reservedTitle": "This document is for ISFCE students.",
+    "reservedBody": "Sign in with your verified @isfce.be address to open it — access is free.",
     "course": "Course",
     "section": "Section",
     "category": "Category",
@@ -116,13 +129,10 @@
     "carousel": "Community",
     "empty": "The community's waiting for you.",
     "pauseCarousel": "Pause carousel",
-    "playCarousel": "Resume carousel",
-    "discordRoles": "Create an account on the site to get the Verified role on Discord and access course discussions. Other roles are granted based on your XP.",
-    "discordRolesShort": "Discord roles linked to your XP"
+    "playCarousel": "Resume carousel"
   },
   "ad": {
-    "disclaimer": "Ad. Support Freenote to hide these.",
-    "loginHint": "Log in so your donation disables ads."
+    "disclaimer": "Ad — one coffee = 30 days ad-free."
   },
   "links": {
     "title": "Useful links",
@@ -141,7 +151,6 @@
     "course": "Course",
     "section": "Section",
     "category": "Category",
-    "author": "Author",
     "anonymous": "Anonymous",
     "verified": "Verified",
     "aiGenerated": "AI Generated",
@@ -149,22 +158,28 @@
     "year": "Year",
     "professor": "Professor",
     "rating": "Rating",
+    "myRating": "Your rating",
+    "ratingSaved": "Rating saved, thanks!",
+    "reportThanks": "Report sent, thanks. An admin will take a look.",
+    "pending": "Pending review",
+    "badgeNew": "New",
+    "badgeHot": "Trending lately",
+    "votes_one": "{{count}} vote",
+    "votes_other": "{{count}} votes",
+    "noVotesYet": "No rating yet — be the first to vote.",
+    "moreActions": "More actions",
     "downloads": "Views",
     "publishedAt": "Published on",
-    "summary": "AI Summary",
     "upload": "Share a document",
     "delete": "Delete",
     "download": "Download",
     "pdfError": "This PDF preview couldn't be displayed.",
     "openInTab": "Open the PDF",
-    "prevPage": "Previous page",
-    "nextPage": "Next page",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "pdfPageAria": "{{title}}, page {{page}}",
     "report": "Report",
     "noResults": "No documents found. Try different keywords.",
-    "favorite": "Favorite",
     "addFavorite": "Add to favorites",
     "removeFavorite": "Remove from favorites",
     "reportPlaceholder": "Reason...",
@@ -213,7 +228,6 @@
     },
     "docs": {
       "pending": "Pending documents",
-      "noPending": "No documents pending verification.",
       "verify": "Verify",
       "view": "View document",
       "all": "All documents",
@@ -232,8 +246,6 @@
       "delete": "Delete",
       "deleteTitle": "Delete section",
       "deleteConfirm": "Delete \"{{name}}\" and {{count}} linked document(s)? Files will be permanently lost.",
-      "approve": "Approve",
-      "pending": "Pending",
       "docCount_one": "{{count}} document",
       "docCount_other": "{{count}} documents"
     },
@@ -247,14 +259,9 @@
       "delete": "Delete",
       "deleteTitle": "Delete course",
       "deleteConfirm": "Delete \"{{name}}\" and {{count}} linked document(s)? Files will be permanently lost.",
-      "pending": "Pending",
-      "approved": "Approved",
       "all": "All",
-      "approve": "Approve",
       "filterSection": "Filter by section",
-      "filterStatus": "Status",
       "allSections": "All sections",
-      "noPending": "No courses pending approval.",
       "docCount_one": "{{count}} document",
       "docCount_other": "{{count}} documents"
     },
@@ -319,7 +326,12 @@
       "sectionAll": "All sections",
       "ban": "Ban",
       "banTitle": "Ban user",
-      "banConfirm": "Permanently ban \"{{username}}\"? Their ISFCE email and Discord account will be blacklisted: they can't return unless they get a new @isfce.be address AND a new Discord. The account is deleted."
+      "banConfirm": "Permanently ban \"{{username}}\"? Their ISFCE email and Discord account will be blacklisted: they can't return unless they get a new @isfce.be address AND a new Discord. The account is deleted.",
+      "banReasonLabel": "Reason (optional)",
+      "banReasonHint": "Kept in the ban registry, visible to admins only.",
+      "roleTitle": "Change role",
+      "roleConfirm": "Set \"{{username}}\" to the {{role}} role?",
+      "roleConfirmUnverify": "Warning: the USER role also removes email verification — the account loses document access until re-verified."
     },
     "donations": {
       "title": "Donations & ad-free",
@@ -389,13 +401,13 @@
     "submit": "Share",
     "success": "Doc shared, thanks for your class!",
     "successMessage": "Your document is live! It will be reviewed by a moderator within 24-48h. You'll earn XP after approval.",
-    "pdfOnly": "PDFs only for now: convert and try again.",
     "titleCounter": "{{count}}/{{max}}",
     "titleDupWarning": "A document with the same title already exists in this course (you can still upload it).",
     "anonymousHelp": "Hide your username on the document page: other students will see \"Anonymous\" as the author. You still earn XP and contributions on your profile.",
     "aiGeneratedHelp": "Check if the content was written or heavily generated by an AI (ChatGPT, Claude, etc.). An \"AI\" badge will be shown on the document.",
-    "rateLimited": "Upload limit reached (5 documents per hour). Try again in {{time}}.",
-    "rateLimitedNoTime": "Upload limit reached (5 documents per hour). Try again a bit later.",
+    "rateLimited": "Easy there! 3 uploads per minute max. Try again in {{time}}.",
+    "rateLimitedNoTime": "Easy there! 3 uploads per minute max. Try again in a moment.",
+    "duplicate": "This document already exists on Freenote (identical file).",
     "professorSuggested": "Suggested",
     "professorAll": "All professors"
   },
@@ -425,8 +437,6 @@
       "sinceYear": "At ISFCE since {{year}}"
     },
     "documents": "My documents",
-    "settings": "Settings",
-    "theme": "Theme",
     "deleteAccount": "Delete my account",
     "deleteConfirm": "This is permanent. Your docs stay online, your account doesn't. Confirm?",
     "save": "Save",
@@ -448,7 +458,6 @@
     "delegationSection": "Delegate mandates",
     "dangerZone": "Danger zone",
     "dangerZoneHelp": "This is permanent. Your docs stay online but will be shown as \"Anonymous\".",
-    "memberSince": "Member since",
     "documentsPublished": "Documents published",
     "supporter": "Supporter",
     "verified": "Verified",
@@ -475,7 +484,6 @@
     "displayRealNameHelp": "When enabled, others see \"First Last\" instead of your username."
   },
   "auth": {
-    "confirm": "Confirm",
     "verificationRequired": "Verification required",
     "verifyEmailMessage": "Verify your @isfce.be email to unlock this feature.",
     "loginRequired": "Log in to access this content",
@@ -505,11 +513,11 @@
     },
     "tools": {
       "title": "Tools",
-      "subtitle": "Flashcards, quizzes, calculators and diagrams to revise and code.",
       "viewAll": "All tools"
     },
     "how": {
       "title": "How it works",
+      "tagline": "What last year's class wished they had.",
       "step1Title": "Sign in with Discord",
       "step1Desc": "One click, no password to remember.",
       "step2Title": "Verify your @isfce.be email",
@@ -520,18 +528,21 @@
     },
     "publicDocs": {
       "title": "Catalogue preview",
-      "subtitle": "A public sample. Sign in to read everything.",
       "viewAll": "Browse",
       "loginCta": "Sign in to see everything"
     }
   },
   "search": {
     "placeholder": "Search documents...",
-    "filters": "Filters",
+    "results_one": "{{count}} document",
+    "results_other": "{{count}} documents",
     "sort": "Sort by",
     "recent": "Most recent",
     "popular": "Most popular",
-    "bestRated": "Best rated"
+    "bestRated": "Best rated",
+    "viewMode": "Display mode",
+    "viewGrid": "Grid view",
+    "viewList": "List view"
   },
   "common": {
     "loading": "Loading...",
@@ -542,7 +553,6 @@
     "save": "Save",
     "confirm": "Confirm",
     "seeAll": "See all",
-    "copyLink": "Copy link",
     "linkCopied": "Link copied!",
     "share": "Share",
     "shared": "Shared!",
@@ -592,8 +602,8 @@
   },
   "tools": {
     "title": "Tools",
-    "subtitle": "A free toolbox for students: grade averages, networking, conversions and more. No account needed: everything runs in your browser.",
-    "metaDescription": "Free tools for students: weighted grade calculator, IPv4 subnet calculator, base converter, Base64 encoder and JWT decoder. No account, runs in your browser.",
+    "subtitle": "A free toolbox for students: flashcards, quizzes, Gantt charts, grade averages, networking and more. No account needed: everything runs in your browser.",
+    "metaDescription": "Free tools for students: spaced-repetition flashcards, shareable quizzes, Gantt chart, grade calculator, IPv4/IPv6 subnet calculators, base converter and JWT decoder. No account, runs in your browser.",
     "openTool": "Open tool",
     "allTools": "All tools",
     "filterLabel": "Filter tools by category",
@@ -617,7 +627,7 @@
     "faqTitle": "Frequently asked questions",
     "indexAboutTitle": "Tools made for studying",
     "indexAbout": [
-      "Freenote gathers small tools that come in handy as a student: compute a weighted average, check a subnet for a networking class, convert a number between bases or inspect a token. Each one has its own page, with an explanation and worked examples.",
+      "Freenote gathers tools that come in handy as a student: study with spaced-repetition flashcards (Anki import included), build quizzes to play and challenge your class, plan your thesis on a Gantt chart, compute a weighted average, check a subnet for a networking class, convert a number between bases or inspect a token. Each one has its own page, with an explanation and worked examples.",
       "Every calculation runs directly in your browser: nothing is sent to a server, it is instant and free. No account is required to use them."
     ],
     "ipv4": {
@@ -755,7 +765,7 @@
       "name": "IPv6 / subnet calculator",
       "wrongVersion": "Does your address look like 192.168.x.x (IPv4)?",
       "gotoIpv4": "Switch to the IPv4 calculator",
-      "short": "Compressed/expanded address, network prefix, address range and scope from an IPv6 and a prefix.",
+      "short": "Compress, expand and analyse an IPv6 address and its prefix.",
       "lead": "Enter an IPv6 address and a prefix to get its compressed and expanded form, the network address, the first and last address, the total number of addresses and the scope (global, link-local, ULA…).",
       "seoTitle": "IPv6 and subnet calculator (prefix)",
       "seoDescription": "Free IPv6 calculator: address compression/expansion, network address, address range, address count and scope (global, link-local, ULA). Ideal for networking courses.",
@@ -806,7 +816,7 @@
     "truth": {
       "tab": "Truth table",
       "name": "Truth table & boolean simplification",
-      "short": "Generate the truth table of a logic expression and its simplified form (Quine-McCluskey).",
+      "short": "Truth table and simplification of a logic expression.",
       "lead": "Enter a boolean expression (AND, OR, NOT, XOR): the tool detects the variables, builds the full truth table and gives the canonical and the simplified form (sum of products).",
       "seoTitle": "Online truth table & boolean simplification",
       "seoDescription": "Free truth table generator: enter a logic expression (AND, OR, NOT, XOR) and get the full table, the minterms and the simplified form (Quine-McCluskey / Karnaugh). For logic courses.",
@@ -921,7 +931,7 @@
     "base": {
       "tab": "Base Converter",
       "name": "Base converter (bin/oct/dec/hex)",
-      "short": "Convert a number between binary, octal, decimal and hexadecimal, with an ASCII table.",
+      "short": "Binary, octal, decimal, hexadecimal: convert in one click.",
       "lead": "Enter a value and pick its base: the tool instantly shows its conversion to binary, octal, decimal and hexadecimal. A clickable ASCII table rounds it out.",
       "seoTitle": "Binary, octal, decimal, hexadecimal converter",
       "seoDescription": "Free base converter: binary, octal, decimal and hexadecimal at a glance, with an ASCII table. Perfect for computer science and electronics.",
@@ -962,7 +972,7 @@
     "base64": {
       "tab": "Base64",
       "name": "Base64 encoder / decoder",
-      "short": "Encode or decode text to and from Base64, right in your browser.",
+      "short": "Encode and decode Base64, 100% in your browser.",
       "lead": "Paste or type your text, then encode it to Base64 or decode a Base64 string back to readable text. Everything happens locally in your browser.",
       "seoTitle": "Online Base64 encoder and decoder",
       "seoDescription": "Encode and decode Base64 for free, online. Correct UTF-8 handling, 100% local processing in your browser, no data is ever sent.",
@@ -995,7 +1005,7 @@
     "jwt": {
       "tab": "JWT",
       "name": "JWT decoder (JSON Web Token)",
-      "short": "Decode a JWT's header and payload. 100% local, nothing is sent to the server.",
+      "short": "Decode a JWT locally — nothing leaves your browser.",
       "lead": "Paste a JSON Web Token to read its header, payload (claims) and check its issued and expiry dates. Decoding is entirely local.",
       "seoTitle": "Online JWT decoder (100% local)",
       "seoDescription": "Decode a JSON Web Token (JWT): header, payload, issued and expiry dates. A 100% local tool: the token is never sent to a server.",
@@ -1034,7 +1044,7 @@
     "grade": {
       "tab": "Weighted average",
       "name": "Weighted grade calculator",
-      "short": "Compute your course average with coefficients, and the final diploma grade (TFE included).",
+      "short": "Your weighted average and final diploma grade, thesis included.",
       "lead": "Enter your grades and their weights to get your weighted average, with a diploma mode where the final project (TFE) counts for two thirds of the final grade.",
       "seoTitle": "Weighted grade calculator (out of 20)",
       "seoDescription": "Compute your weighted grade average with coefficients and your final diploma grade (TFE = 2/3) for free. Online tool for students, out of 20 or 100.",
@@ -1391,7 +1401,7 @@
   "about": {
     "metaTitle": "About Freenote",
     "metaDescription": "Freenote is the free platform where ISFCE students share course notes, summaries, exercises and final projects. Discover the project's mission, how it works and its privacy stance.",
-    "orgDescription": "Student platform for sharing documents (course notes, summaries, exercises, final projects) for ISFCE, in Charleroi, Belgium.",
+    "orgDescription": "Student platform for sharing documents (course notes, summaries, exercises, final projects) for ISFCE, in Etterbeek (Brussels), Belgium.",
     "title": "About Freenote",
     "lead": "Freenote is a free, independent platform that gathers the course notes, summaries, exercises and final projects of ISFCE students. The goal: that nothing gets lost and everyone revises from solid material.",
     "missionTitle": "Our mission",
@@ -1484,7 +1494,14 @@
   },
   "userPublic": {
     "notFound": "User not found.",
-    "editProfile": "Edit my profile"
+    "editProfile": "Edit my profile",
+    "statXp": "XP",
+    "statDocs": "Documents",
+    "statViews": "Total views",
+    "statAvgRating": "Average rating received",
+    "statXpHint": "See the leaderboard",
+    "statDocsHint": "See their documents",
+    "bestContribution": "Most appreciated contribution"
   },
   "notFound": {
     "title": "Page not found",

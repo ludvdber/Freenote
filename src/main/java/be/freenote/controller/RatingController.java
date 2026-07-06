@@ -32,4 +32,12 @@ public class RatingController {
         Double avg = ratingService.getAverageRating(docId);
         return ResponseEntity.ok(avg != null ? avg : 0.0);
     }
+
+    /** Ma note sur ce document (0 = pas encore noté) — permet au viewer d'afficher « Ta note »
+     *  séparément de la moyenne, au lieu d'un seul contrôle ambigu qui mélange les deux. */
+    @GetMapping("/mine")
+    public ResponseEntity<Integer> getMine(Authentication authentication, @PathVariable Long docId) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(ratingService.getUserScore(userId, docId));
+    }
 }

@@ -42,4 +42,14 @@ public class PublicDocumentController {
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
                 .body(service.getExcerpt(id));
     }
+
+    /** Statut minimal pour un lien partagé hors catégories publiques : « existe mais réservé »
+     *  (titre seul, doc vérifié) ou inconnu. Toujours 200 — la page anonyme s'en sert pour afficher
+     *  un CTA de connexion au lieu d'un faux « introuvable ». */
+    @GetMapping("/{id}/status")
+    public ResponseEntity<be.freenote.dto.response.PublicDocumentStatus> status(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
+                .body(service.getStatus(id));
+    }
 }

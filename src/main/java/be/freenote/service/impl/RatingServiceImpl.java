@@ -41,9 +41,9 @@ public class RatingServiceImpl implements RatingService {
         }
 
         Optional<Rating> existing = ratingRepository.findByDocumentIdAndUserId(documentId, userId);
-        boolean isNew = existing.isEmpty();
+        Integer previousScore = existing.map(Rating::getScore).orElse(null);
 
-        if (isNew) {
+        if (existing.isEmpty()) {
             ratingRepository.save(Rating.builder()
                     .document(document)
                     .user(user)
@@ -58,9 +58,11 @@ public class RatingServiceImpl implements RatingService {
         // atomic under concurrent votes, unlike the previous read-modify-write on a rounded value.
         documentRepository.recalcRatingStats(documentId);
 
-        // XP only on a first-time rating — re-rating must not farm XP for the author.
-        if (isNew && authorId != null) {
-            eventPublisher.publishEvent(new XpEvent.DocumentRated(authorId, documentId, score));
+        // XP : le listener calcule le DELTA entre nouvelle et ancienne note (previousScore null =
+        // première note). Re-noter ajuste donc l'XP au lieu de l'empiler (anti-farming), et une note
+        // < 3 ne rapporte rien (un doc médiocre ne récompense pas son auteur).
+        if (authorId != null && !Integer.valueOf(score).equals(previousScore)) {
+            eventPublisher.publishEvent(new XpEvent.DocumentRated(authorId, documentId, score, previousScore));
         }
     }
 
@@ -68,6 +70,13 @@ public class RatingServiceImpl implements RatingService {
     public Double getAverageRating(Long documentId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
         return document.getAverageRating().doubleValue();
+    }
+
+    @Override
+    public int getUserScore(Long userId, Long documentId) {
+        return ratingRepository.findByDocumentIdAndUserId(documentId, userId)
+                .map(Rating::getScore)
+                .orElse(0);
     }
 
 }

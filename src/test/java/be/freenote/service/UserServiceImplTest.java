@@ -30,6 +30,7 @@ class UserServiceImplTest {
 
     @Mock private UserRepository userRepository;
     @Mock private DocumentRepository documentRepository;
+    @Mock private be.freenote.repository.RatingRepository ratingRepository;
     @Mock private ReportRepository reportRepository;
     @Mock private be.freenote.repository.DelegateHistoryRepository delegateHistoryRepository;
     @Mock private UserMapper userMapper;
@@ -65,6 +66,18 @@ class UserServiceImplTest {
 
         assertThatThrownBy(() -> userService.addXp(999L, 10))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void shouldClampXpAtZeroOnRemoval() {
+        // Un retrait (suppression de doc, unverify) plus grand que le solde ne rend pas l'XP négatif.
+        User user = userWithProfile(); // xp = 50
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        userService.addXp(1L, -80);
+
+        assertThat(user.getXp()).isZero();
     }
 
     // ---- deleteAccount ----
@@ -276,6 +289,44 @@ class UserServiceImplTest {
 
         assertThat(user.getRole()).isEqualTo("ADMIN");
         assertThat(user.isVerified()).isTrue();
+    }
+
+    @Test
+    void adminUpdateRole_shouldClearVerifiedWhenDemotingToUser() {
+        // Cohérence du modèle : USER ⇔ non vérifié (miroir de adminUnverifyUser) — sinon le panel
+        // affiche USER alors que le compte garde l'accès VERIFIED.
+        User user = userWithProfile();
+        user.setRole("ADMIN");
+        user.setVerified(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+
+        userService.adminUpdateRole(1L, "USER");
+
+        assertThat(user.getRole()).isEqualTo("USER");
+        assertThat(user.isVerified()).isFalse();
+    }
+
+    @Test
+    void updateProfile_shouldStoreTextRawNotHtmlEscaped() {
+        // Politique 2026-07-06 : stockage brut, React échappe au rendu — l'échappement à l'écriture
+        // corrompait l'affichage (« l&#x27;apostrophe ») et se cumulait à chaque re-save.
+        User user = userWithProfile();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(documentRepository.countByUserId(1L)).thenReturn(0L);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+
+        UpdateProfileRequest req = new UpdateProfileRequest();
+        req.setBio("  Test & l'apostrophe <b>gras</b>  ");
+        req.setFirstName("Anne-Lise d'Arc");
+
+        userService.updateProfile(1L, req);
+
+        assertThat(user.getProfile().getBio()).isEqualTo("Test & l'apostrophe <b>gras</b>");
+        assertThat(user.getProfile().getBio()).doesNotContain("&amp;").doesNotContain("&#x27;");
+        assertThat(user.getProfile().getFirstName()).isEqualTo("Anne-Lise d'Arc");
     }
 
     private static UserResponse stubResponse() {

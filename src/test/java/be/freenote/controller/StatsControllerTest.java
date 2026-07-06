@@ -29,7 +29,7 @@ class StatsControllerTest {
 
     @Test
     void getStats_shouldReturnData() throws Exception {
-        when(statsService.getStats()).thenReturn(new StatsResponse(42, 500, 15, 8, 5));
+        when(statsService.getStats()).thenReturn(new StatsResponse(42, 500, 15, 8, 5, java.util.List.of()));
 
         mockMvc.perform(get("/api/stats"))
                 .andExpect(status().isOk())

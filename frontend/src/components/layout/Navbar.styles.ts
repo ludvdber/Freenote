@@ -36,6 +36,9 @@ export const actionsRow: Sx = {
 };
 
 export const navButton = (active: boolean): Sx => ({
+  // MUI impose min-width: 64px aux Buttons — les libellés courts (« Guides », « Outils »)
+  // gonflaient de padding invisible et créaient des trous inégaux entre les liens.
+  minWidth: 'auto',
   fontWeight: active ? 800 : 600,
   color: active ? 'primary.main' : 'inherit',
   position: 'relative',

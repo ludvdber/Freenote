@@ -31,7 +31,7 @@ export default function GuideDetail() {
   const readMinutes = words ? Math.max(1, Math.round(words / 200)) : 0;
 
   const fullDate = guide?.createdAt
-    ? new Date(guide.createdAt).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', {
+    ? new Date(guide.createdAt).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', {
         day: 'numeric', month: 'long', year: 'numeric',
       })
     : '';

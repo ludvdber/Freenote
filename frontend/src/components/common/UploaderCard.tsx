@@ -7,6 +7,7 @@ import { getUserById, getUserRank, getDelegateHistory } from '@/api/endpoints';
 import GlassCard from '@/components/ui/GlassCard';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
+import LevelChip from '@/components/common/LevelChip';
 
 /**
  * Compact "shared by" card on the document page: surfaces the uploader's identity and
@@ -72,6 +73,7 @@ export default function UploaderCard({ authorId }: { authorId: number }) {
             <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Bolt sx={{ fontSize: 14 }} /> {u.xp} XP
             </Typography>
+            <LevelChip xp={u.xp} dense />
             <Typography variant="caption" color="text.secondary" className="mono">
               {u.documentCount} {t('stats.docs').toLowerCase()}
             </Typography>

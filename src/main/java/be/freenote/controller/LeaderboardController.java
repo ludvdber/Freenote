@@ -23,7 +23,9 @@ public class LeaderboardController {
             @RequestParam(required = false) Long sectionId) {
         int clamped = Math.max(1, Math.min(size, 100));
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                // private : endpoint authentifié par cookie — un cache partagé (Cloudflare/proxy)
+                // ne doit jamais stocker une réponse à cookie (convention DocumentController.getPopular).
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePrivate())
                 .body(userService.getLeaderboard(clamped, sectionId));
     }
 }

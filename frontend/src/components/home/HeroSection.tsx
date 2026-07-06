@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
 import { Box, Typography, Button, Container, useMediaQuery } from '@mui/material';
 import { Explore, CloudUpload, KeyboardArrowDown } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { DISCORD_OAUTH_URL } from '@/lib/constants';
 // OrbsFallback is a pure-CSS component (no Three.js import), so referencing it here does NOT pull
 // the heavy @react-three/fiber + three bundle into the entry chunk.
 import OrbsFallback from '@/components/three/ParticleField/OrbsFallback';
+import SectionConstellation from '@/components/home/SectionConstellation';
 
 const HeroBackground = lazy(() => import('@/components/three/ParticleField'));
 import * as s from './HeroSection.styles';
@@ -19,7 +20,6 @@ export default function HeroSection() {
   const { t } = useTranslation();
   const { token } = useAuthStore();
   const theme = useThemeStore((st) => st.theme);
-  const scrolledRef = useRef(false);
   const [showBackground, setShowBackground] = useState(false);
   // noSsr so the first render already reflects the real viewport — on mobile we must NOT even
   // mount <HeroBackground/>, otherwise React.lazy would fetch the ~230 KB gz Three.js chunk that
@@ -52,20 +52,9 @@ export default function HeroSection() {
     window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
   }, []);
 
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      if (scrolledRef.current) return;
-      if (window.scrollY > 50) return;
-      if (e.deltaY > 0) {
-        scrolledRef.current = true;
-        e.preventDefault();
-        handleScrollDown();
-        setTimeout(() => { scrolledRef.current = false; }, 1000);
-      }
-    };
-    window.addEventListener('wheel', onWheel, { passive: false });
-    return () => window.removeEventListener('wheel', onWheel);
-  }, [handleScrollDown]);
+  // NB : plus de wheel-jacking ici (l'ancien listener `wheel` passive:false + preventDefault
+  // détournait le premier coup de molette — déroutant au trackpad et coûteux en main-thread).
+  // Le scroll est laissé au navigateur ; l'ancre cliquable ci-dessous suffit.
 
   return (
     <motion.section initial="hidden" animate="show" variants={s.staggerVariants}>
@@ -81,7 +70,22 @@ export default function HeroSection() {
             </Suspense>
           )
         )}
+        {/* Deux nébuleuses CSS supplémentaires derrière le titre — densifient la scène pour un
+            coût nul (le fond était à 60 % de noir vide en dark). */}
+        <Box aria-hidden="true" sx={s.nebulaA} />
+        <Box aria-hidden="true" sx={s.nebulaB} />
+        {/* La constellation des sections : chaque étoile = une section ISFCE, pulsant à l'échelle
+            de son activité réelle. */}
+        <SectionConstellation />
         <Container maxWidth="md" sx={s.inner}>
+          {/* Le chip ISFCE en eyebrow AU-DESSUS du titre : c'est LE différenciateur, il était
+              perdu sous le sous-titre. */}
+          <motion.div variants={s.fadeUpVariants}>
+            <Typography variant="body2" sx={s.restrictedBadge}>
+              {t('hero.restricted')}
+            </Typography>
+          </motion.div>
+
           <motion.div variants={s.titleVariants}>
             <Typography variant="h1" sx={s.title}>
               {t('hero.title')}
@@ -95,12 +99,6 @@ export default function HeroSection() {
           <motion.div variants={s.fadeUpVariants}>
             <Typography variant="h6" component="p" color="text.secondary" sx={s.subtitle}>
               {t('hero.subtitle')}
-            </Typography>
-          </motion.div>
-
-          <motion.div variants={s.fadeUpVariants}>
-            <Typography variant="body2" sx={s.restrictedBadge}>
-              {t('hero.restricted')}
             </Typography>
           </motion.div>
 

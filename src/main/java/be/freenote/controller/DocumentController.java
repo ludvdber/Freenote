@@ -37,7 +37,7 @@ public class DocumentController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RateLimit(max = 3, window = 60)
+    @RateLimit(max = 3, window = 60, exemptTrusted = true)
     public ResponseEntity<DocumentResponse> create(Authentication authentication,
                                                     @Valid @RequestPart("data") CreateDocumentRequest request,
                                                     @RequestPart(value = "file", required = false) MultipartFile file,
@@ -100,8 +100,10 @@ public class DocumentController {
     public ResponseEntity<PageResponse<DocumentResponse>> getByUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "6") int size) {
-        return ResponseEntity.ok(documentService.getByUser(userId, pageable(page, size)));
+            @RequestParam(defaultValue = "6") int size,
+            Authentication authentication) {
+        Long callerId = authentication != null ? SecurityUtils.currentUserId(authentication) : null;
+        return ResponseEntity.ok(documentService.getByUser(userId, callerId, pageable(page, size)));
     }
 
     @DeleteMapping("/{id}")

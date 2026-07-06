@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink } from '@mui/material';
-import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined, NavigateNext } from '@mui/icons-material';
+import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, useTheme } from '@mui/material';
+import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined, NavigateNext, MoreHoriz } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,11 +10,13 @@ import {
   toggleFavorite,
   reportDocument,
   getAverageRating,
+  getMyRating,
   recordDocVisit,
   getFavoriteStatus,
   deleteDocument,
   renameDocument,
 } from '@/api/endpoints';
+import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { categoryColor, formatDate, shareOrCopy } from '@/lib/utils';
@@ -33,6 +35,7 @@ export default function DocumentView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const { token, isVerified, user } = useAuthStore();
   const queryClient = useQueryClient();
   const [reportReason, setReportReason] = useState('');
@@ -41,6 +44,7 @@ export default function DocumentView() {
   const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -52,6 +56,14 @@ export default function DocumentView() {
     queryKey: ['rating', id],
     queryFn: () => getAverageRating(Number(id)),
     enabled: !!id,
+  });
+
+  // Ma note (0 = pas encore voté) — affichée séparément de la moyenne : avant, le même contrôle
+  // affichait la moyenne ET servait de saisie, illisible.
+  const { data: myRating } = useQuery({
+    queryKey: ['my-rating', id],
+    queryFn: () => getMyRating(Number(id)),
+    enabled: !!id && isVerified,
   });
 
   // Hydrate the heart icon at load — without this, the button always says "Add to favorites"
@@ -86,15 +98,26 @@ export default function DocumentView() {
     queryClient.invalidateQueries({ queryKey: ['recent-docs'] });
   }, [token, doc?.id, doc?.verified, queryClient]);
 
+  const [ratingFeedback, setRatingFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
+
   const rateMutation = useMutation({
     mutationFn: (score: number) => rateDocument(Number(id), { score }),
     onSuccess: () => {
       // Refresh the new average everywhere the doc's rating shows: the viewer itself, the
       // explorer list cards and the home "popular" rail — otherwise they stay stale until a reload.
       queryClient.invalidateQueries({ queryKey: ['rating', id] });
+      queryClient.invalidateQueries({ queryKey: ['my-rating', id] });
       queryClient.invalidateQueries({ queryKey: ['document', id] });
       queryClient.invalidateQueries({ queryKey: ['search'] });
       queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+      setRatingFeedback({ severity: 'success', message: t('document.ratingSaved') });
+    },
+    onError: (err) => {
+      // Avant : échec 100 % silencieux — l'étoile semblait prise mais rien n'était persisté.
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      setRatingFeedback({ severity: 'error', message: msg || t('common.error') });
     },
   });
 
@@ -133,6 +156,14 @@ export default function DocumentView() {
     onSuccess: () => {
       setShowReport(false);
       setReportReason('');
+      // Avant : aucun retour — impossible de savoir si le signalement était parti.
+      setRatingFeedback({ severity: 'success', message: t('document.reportThanks') });
+    },
+    onError: (err) => {
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      setRatingFeedback({ severity: 'error', message: msg || t('common.error') });
     },
   });
 
@@ -185,7 +216,7 @@ export default function DocumentView() {
           <Chip
             size="small"
             label={t(`categories.${doc.category}`)}
-            sx={s.categoryChip(categoryColor(doc.category))}
+            sx={s.categoryChip(categoryColor(doc.category, theme.palette.mode))}
           />
           {doc.verified && (
             <Chip
@@ -272,77 +303,125 @@ export default function DocumentView() {
 
       {doc.authorId && <UploaderCard authorId={doc.authorId} />}
 
+      {/* Moyenne (lecture seule, avec compteur) et « Ta note » (saisie) séparées — l'ancien
+          contrôle unique affichait la moyenne ET la modifiait au clic, illisible. */}
       <Box sx={s.ratingRow}>
         <Box sx={s.ratingInner}>
           <Typography variant="body2" color="text.secondary">
             {t('document.rating')}:
           </Typography>
-          <StarRating
-            value={avgRating ?? doc.averageRating}
-            readOnly={!isVerified || isOwner}
-            onChange={(v) => rateMutation.mutate(v)}
-          />
+          {doc.ratingCount > 0 ? (
+            <>
+              <StarRating value={avgRating ?? doc.averageRating} readOnly />
+              <Typography variant="caption" color="text.secondary" className="mono">
+                {(avgRating ?? doc.averageRating ?? 0).toFixed(1)} · {t('document.votes', { count: doc.ratingCount })}
+              </Typography>
+            </>
+          ) : (
+            // Pas d'étoiles vides « note 0 » quand personne n'a voté.
+            <Typography variant="caption" color="text.secondary">
+              {t('document.noVotesYet')}
+            </Typography>
+          )}
         </Box>
+        {isVerified && !isOwner && (
+          <Box sx={s.ratingInner}>
+            <Typography variant="body2" color="text.secondary">
+              {t('document.myRating')}:
+            </Typography>
+            <StarRating
+              value={myRating ?? 0}
+              onChange={(v) => rateMutation.mutate(v)}
+            />
+          </Box>
+        )}
       </Box>
 
+      {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage/favori en
+          icônes ; le reste (signaler, renommer, supprimer) vit dans le menu « ⋯ » — avant,
+          6 boutons de même poids se disputaient l'attention. Signaler est masqué sur son
+          propre doc (le backend le refuse déjà). */}
       <Box sx={s.actionsRow}>
         {isVerified && pdfSrc && (
           <Button variant="contained" startIcon={<Download />} onClick={handleDownload}>
             {t('document.download')}
           </Button>
         )}
-        <Button
-          variant="outlined"
-          startIcon={<Share />}
-          onClick={async () => {
-            const result = await shareOrCopy({
-              title: doc?.title,
-              text: doc?.title,
-              url: window.location.href,
-            });
-            if (result !== 'error') setShareStatus(result);
-          }}
-        >
-          {t('common.share')}
-        </Button>
-        {token && (
-          <Button
-            variant="outlined"
-            color={isFav ? 'error' : 'primary'}
-            startIcon={isFav ? <Favorite /> : <FavoriteBorder />}
-            onClick={() => favMutation.mutate()}
+        <Tooltip title={t('common.share')}>
+          <IconButton
+            aria-label={t('common.share')}
+            onClick={async () => {
+              const result = await shareOrCopy({
+                title: doc?.title,
+                text: doc?.title,
+                url: window.location.href,
+              });
+              if (result !== 'error') setShareStatus(result);
+            }}
           >
-            {isFav ? t('document.removeFavorite') : t('document.addFavorite')}
-          </Button>
+            <Share />
+          </IconButton>
+        </Tooltip>
+        {token && (
+          <Tooltip title={isFav ? t('document.removeFavorite') : t('document.addFavorite')}>
+            <IconButton
+              aria-label={isFav ? t('document.removeFavorite') : t('document.addFavorite')}
+              color={isFav ? 'error' : 'default'}
+              onClick={() => favMutation.mutate()}
+            >
+              {isFav ? <Favorite /> : <FavoriteBorder />}
+            </IconButton>
+          </Tooltip>
         )}
-        {isVerified && (
-          <Button variant="outlined" color="error" startIcon={<Flag />} onClick={() => setShowReport(!showReport)}>
-            {t('document.report')}
-          </Button>
-        )}
-        {isOwner && (
+        {((isVerified && !isOwner) || isOwner) && (
           <>
-            <Button
-              variant="outlined"
-              startIcon={<Edit />}
-              onClick={() => {
-                setRenameValue(doc.title);
-                setShowRename((v) => !v);
-              }}
-            >
-              {t('document.rename')}
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteOutlined />}
-              disabled={deleteMutation.isPending}
-              onClick={() => {
-                if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
-              }}
-            >
-              {t('document.delete')}
-            </Button>
+            <Tooltip title={t('document.moreActions')}>
+              <IconButton
+                aria-label={t('document.moreActions')}
+                aria-haspopup="menu"
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+              >
+                <MoreHoriz />
+              </IconButton>
+            </Tooltip>
+            <Menu anchorEl={menuAnchor} open={menuAnchor !== null} onClose={() => setMenuAnchor(null)}>
+              {isVerified && !isOwner && (
+                <MenuItem
+                  onClick={() => {
+                    setMenuAnchor(null);
+                    setShowReport(true);
+                  }}
+                >
+                  <ListItemIcon><Flag fontSize="small" /></ListItemIcon>
+                  {t('document.report')}
+                </MenuItem>
+              )}
+              {isOwner && (
+                <MenuItem
+                  onClick={() => {
+                    setMenuAnchor(null);
+                    setRenameValue(doc.title);
+                    setShowRename(true);
+                  }}
+                >
+                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                  {t('document.rename')}
+                </MenuItem>
+              )}
+              {isOwner && (
+                <MenuItem
+                  disabled={deleteMutation.isPending}
+                  onClick={() => {
+                    setMenuAnchor(null);
+                    if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
+                  }}
+                  sx={{ color: 'error.main' }}
+                >
+                  <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
+                  {t('document.delete')}
+                </MenuItem>
+              )}
+            </Menu>
           </>
         )}
       </Box>
@@ -350,6 +429,12 @@ export default function DocumentView() {
       <Snackbar open={shareStatus !== null} autoHideDuration={2000} onClose={() => setShareStatus(null)}>
         <Alert severity="success" onClose={() => setShareStatus(null)}>
           {shareStatus === 'shared' ? t('common.shared') : t('common.linkCopied')}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={ratingFeedback !== null} autoHideDuration={3000} onClose={() => setRatingFeedback(null)}>
+        <Alert severity={ratingFeedback?.severity ?? 'success'} onClose={() => setRatingFeedback(null)}>
+          {ratingFeedback?.message}
         </Alert>
       </Snackbar>
 

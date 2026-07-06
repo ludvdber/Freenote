@@ -18,7 +18,6 @@ import be.freenote.service.CourseService;
 import be.freenote.service.MeilisearchService;
 import be.freenote.service.MinioService;
 import be.freenote.service.StatsService;
-import be.freenote.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -133,26 +132,46 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public void adminDelete(Long id) {
         Course course = Repositories.findByIdOrThrow(courseRepository, id, "Course");
-        for (Document doc : course.getDocuments()) {
-            if (doc.getFileKey() != null) {
-                minioService.delete(doc.getFileKey());
-            }
-            meilisearchService.deleteDocument(doc.getId());
-        }
+        // Capturer les clés AVANT le delete, nettoyer APRÈS le commit (même pattern que
+        // DocumentServiceImpl.cleanupStorageAfterCommit) : un rollback ne doit jamais laisser des
+        // lignes vivantes pointant vers des fichiers déjà supprimés.
+        List<String> fileKeys = course.getDocuments().stream()
+                .map(Document::getFileKey).filter(java.util.Objects::nonNull).toList();
+        List<Long> docIds = course.getDocuments().stream().map(Document::getId).toList();
         courseRepository.delete(course);
+        cleanupStorageAfterCommit(fileKeys, docIds);
         statsService.invalidateCache();
         log.info("Course deleted by admin: id={}, name={}", id, course.getName());
     }
 
+    private void cleanupStorageAfterCommit(List<String> fileKeys, List<Long> docIds) {
+        Runnable cleanup = () -> {
+            fileKeys.forEach(minioService::delete);
+            docIds.forEach(meilisearchService::deleteDocument);
+        };
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            cleanup.run(); // pas de tx active (tests unitaires Mockito) : nettoyer tout de suite
+            return;
+        }
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        cleanup.run();
+                    }
+                });
+    }
+
+    /** Nom stocké brut (trim seul) — React échappe au rendu, comme les titres de documents. */
     private static String requireName(String input) {
-        String sanitized = HtmlSanitizer.escape(input);
-        if (sanitized == null || sanitized.isEmpty()) {
+        String trimmed = input == null ? "" : input.trim();
+        if (trimmed.isEmpty()) {
             throw new IllegalArgumentException("Name is required");
         }
-        if (sanitized.length() > 200) {
+        if (trimmed.length() > 200) {
             throw new IllegalArgumentException("Name too long (max 200)");
         }
-        return sanitized;
+        return trimmed;
     }
 
 }

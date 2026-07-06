@@ -47,6 +47,7 @@ import {
   getFavorites,
   getDocumentsByUser,
   syncDiscordRole,
+  getUserStats,
 } from '@/api/endpoints';
 import { extractApiError } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
@@ -55,6 +56,8 @@ import PageWrapper from '@/components/layout/PageWrapper';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
 import DelegateMandates from '@/components/common/DelegateMandates';
+import LevelChip from '@/components/common/LevelChip';
+import LevelProgress from '@/components/common/LevelProgress';
 import { useLogout } from '@/hooks/useLogout';
 import type { AvatarSource } from '@/types';
 import * as s from './Profile.styles';
@@ -73,6 +76,12 @@ export default function Profile() {
   const { data: delegateHistory } = useQuery({
     queryKey: ['delegate-history', user?.id],
     queryFn: () => getDelegateHistory(user!.id),
+    enabled: !!user?.id,
+  });
+  // Vues cumulées de mes documents — même endpoint que les tuiles du profil public.
+  const { data: myStats } = useQuery({
+    queryKey: ['user-stats', user?.id],
+    queryFn: () => getUserStats(user!.id),
     enabled: !!user?.id,
   });
   const { data: favorites } = useQuery({
@@ -177,6 +186,9 @@ export default function Profile() {
     },
     onSuccess: (u) => {
       queryClient.setQueryData(['me'], u);
+      // Le profil PUBLIC (/users/:id) vit sous sa propre clé, avec staleTime 2 min : sans
+      // invalidation, une bio fraîchement enregistrée n'apparaissait pas en visitant sa page.
+      queryClient.invalidateQueries({ queryKey: ['user', u.id] });
       setUser(u);
       setSaveError('');
       setSaved(true);
@@ -504,9 +516,12 @@ export default function Profile() {
                 <Typography variant="body2" sx={s.statLabel}>
                   XP
                 </Typography>
-                <Typography sx={s.statValue} className="mono">
-                  {user.xp}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={s.statValue} className="mono">
+                    {user.xp}
+                  </Typography>
+                  <LevelChip xp={user.xp} dense />
+                </Box>
               </Box>
               <Box sx={s.statRow}>
                 <Typography variant="body2" sx={s.statLabel}>
@@ -515,6 +530,18 @@ export default function Profile() {
                 <Typography sx={s.statValue} className="mono">
                   {user.documentCount}
                 </Typography>
+              </Box>
+              <Box sx={s.statRow}>
+                <Typography variant="body2" sx={s.statLabel}>
+                  {t('userPublic.statViews')}
+                </Typography>
+                <Typography sx={s.statValue} className="mono">
+                  {myStats ? myStats.totalViews : '—'}
+                </Typography>
+              </Box>
+              {/* Palier céleste + progression vers le suivant. */}
+              <Box sx={{ mt: 2 }}>
+                <LevelProgress xp={user.xp} />
               </Box>
             </Box>
           </GlassCard>

@@ -17,6 +17,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class NotificationController {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final NotificationService notificationService;
 
     @GetMapping
@@ -25,7 +27,8 @@ public class NotificationController {
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
         Long userId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(notificationService.list(userId, PageRequest.of(page, size)));
+        return ResponseEntity.ok(notificationService.list(userId,
+                PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE))));
     }
 
     @GetMapping("/unread-count")

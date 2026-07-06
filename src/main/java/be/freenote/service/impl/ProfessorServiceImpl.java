@@ -60,7 +60,7 @@ public class ProfessorServiceImpl implements ProfessorService {
     @Transactional
     public ProfessorResponse create(String name) {
         Professor professor = Professor.builder()
-                .name(name)
+                .name(requireUniqueName(name))
                 .build();
         return professorMapper.toResponse(professorRepository.save(professor));
     }
@@ -69,10 +69,26 @@ public class ProfessorServiceImpl implements ProfessorService {
     @Transactional
     public ProfessorResponse adminCreate(String name) {
         Professor professor = Professor.builder()
-                .name(name)
+                .name(requireUniqueName(name))
                 .approved(true)
                 .build();
         return professorMapper.toResponse(professorRepository.save(professor));
+    }
+
+    /** Trim + doublon (insensible à la casse) + taille — deux « M. Dupont » pollueraient les
+     *  dropdowns d'upload et éclateraient les stats du prof entre les deux entrées. */
+    private String requireUniqueName(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        if (trimmed.length() > 100) {
+            throw new IllegalArgumentException("Name too long (max 100)");
+        }
+        if (professorRepository.existsByNameIgnoreCase(trimmed)) {
+            throw new be.freenote.exception.DuplicateResourceException("Ce professeur existe déjà");
+        }
+        return trimmed;
     }
 
     @Override

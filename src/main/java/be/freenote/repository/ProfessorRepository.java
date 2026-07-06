@@ -11,4 +11,5 @@ public interface ProfessorRepository extends JpaRepository<Professor, Long> {
     List<Professor> findByApprovedFalse();
     List<Professor> findByApprovedTrue();
     List<Professor> findAllByOrderByNameAsc();
+    boolean existsByNameIgnoreCase(String name);
 }

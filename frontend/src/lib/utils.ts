@@ -35,6 +35,19 @@ export function formatRelativeDate(dateStr: string, locale: string = 'fr'): stri
   return locale.startsWith('fr') ? 'À l\'instant' : 'Just now';
 }
 
+const DAY_MS = 86_400_000;
+
+/** « Nouveau » : publié il y a moins de 7 jours. Prime sur « 🔥 » — jamais les deux. */
+export function isNewDoc(createdAt: string, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(createdAt).getTime() < 7 * DAY_MS;
+}
+
+/** « 🔥 » : rythme de vues soutenu dans la durée (≥ 2 vues/jour de moyenne ET ≥ 20 vues). */
+export function isHotDoc(createdAt: string, downloadCount: number, now: Date = new Date()): boolean {
+  const days = Math.max(1, (now.getTime() - new Date(createdAt).getTime()) / DAY_MS);
+  return downloadCount >= 20 && downloadCount / days >= 2;
+}
+
 /** Strips HTML tags and collapses whitespace — for excerpts/reading-time off blog content. */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -47,9 +60,17 @@ export function readingMinutes(html: string | null | undefined): number {
   return words ? Math.max(1, Math.round(words / 200)) : 0;
 }
 
-export function categoryColor(category: string): string {
+// Sur fond clair, les teintes les plus claires (jaune NOTES, cyan SYNTHESE) manquent de
+// contraste — variantes assombries pour le mode light uniquement.
+const CATEGORY_LIGHT_OVERRIDES: Record<string, string> = {
+  NOTES: '#a16207',
+  SYNTHESE: '#0891b2',
+};
+
+export function categoryColor(category: string, mode: 'light' | 'dark' = 'dark'): string {
   const key = category as keyof typeof TOKENS.categories;
-  return TOKENS.categories[key] ?? '#888';
+  const base = TOKENS.categories[key] ?? '#888';
+  return mode === 'light' ? (CATEGORY_LIGHT_OVERRIDES[category] ?? base) : base;
 }
 
 /**

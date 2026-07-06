@@ -20,7 +20,8 @@ public class SectionController {
     @GetMapping
     public ResponseEntity<List<SectionResponse>> getAll() {
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                // private : endpoint authentifié par cookie — jamais de cache partagé sur ces réponses.
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePrivate())
                 .body(sectionService.getAll());
     }
 }

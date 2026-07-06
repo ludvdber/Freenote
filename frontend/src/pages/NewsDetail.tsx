@@ -1,6 +1,6 @@
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Typography, Box, Chip, Button, Divider } from '@mui/material';
-import { ArrowBack, OpenInNew } from '@mui/icons-material';
+import { ArrowBack, ArrowForward, OpenInNew } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
@@ -18,13 +18,22 @@ export default function NewsDetail() {
   const { data: news } = useQuery({ queryKey: ['news'], queryFn: getNews, staleTime: STALE_15M });
   const item = news?.find((n) => n.id === id);
 
+  // Navigation entre articles + « À lire ensuite » : le flux est déjà en cache React Query,
+  // zéro requête supplémentaire. prev = plus récent, next = plus ancien (ordre du flux).
+  const idx = news?.findIndex((n) => n.id === id) ?? -1;
+  const prevItem = idx > 0 ? news![idx - 1] : null;
+  const nextItem = idx >= 0 && idx < (news?.length ?? 0) - 1 ? news![idx + 1] : null;
+  const readNext = idx >= 0 && news
+    ? [...news.slice(idx + 1), ...news.slice(0, idx)].slice(0, 3)
+    : [];
+
   // The feed content is third-party blog HTML → sanitized with DOMPurify before rendering.
   const cleanHtml = item?.content ? DOMPurify.sanitize(item.content) : '';
   const readMinutes = readingMinutes(item?.content);
   const excerpt = item?.content ? stripHtml(item.content).slice(0, 160) : '';
 
   const fullDate = item?.date
-    ? new Date(item.date).toLocaleDateString(i18n.language === 'fr' ? 'fr-BE' : 'en-GB', {
+    ? new Date(item.date).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -109,6 +118,64 @@ export default function NewsDetail() {
                 )}
               </GlassCard>
             </Box>
+
+            {/* Navigation article précédent / suivant. */}
+            {(prevItem || nextItem) && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 3 }}>
+                {prevItem ? (
+                  <Button
+                    component={RouterLink}
+                    to={`/news/${prevItem.id}`}
+                    startIcon={<ArrowBack />}
+                    size="small"
+                    sx={{ maxWidth: '48%', justifyContent: 'flex-start', textAlign: 'left' }}
+                  >
+                    <Typography variant="caption" noWrap>{prevItem.title}</Typography>
+                  </Button>
+                ) : <Box />}
+                {nextItem && (
+                  <Button
+                    component={RouterLink}
+                    to={`/news/${nextItem.id}`}
+                    endIcon={<ArrowForward />}
+                    size="small"
+                    sx={{ maxWidth: '48%', justifyContent: 'flex-end', textAlign: 'right' }}
+                  >
+                    <Typography variant="caption" noWrap>{nextItem.title}</Typography>
+                  </Button>
+                )}
+              </Box>
+            )}
+
+            {/* « À lire ensuite » : remplit la zone vide sous l'article et garde le lecteur sur le site. */}
+            {readNext.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  {t('news.readNext')}
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {readNext.map((n) => {
+                    const minutes = readingMinutes(n.content);
+                    return (
+                      <GlassCard
+                        key={n.id}
+                        component={RouterLink}
+                        to={`/news/${n.id}`}
+                        sx={{ p: 2, textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', gap: 1 }}
+                      >
+                        <Typography sx={{ fontWeight: 700, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {n.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
+                          {n.date && new Date(n.date).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {minutes > 0 && ` · ${t('news.readTime', { count: minutes })}`}
+                        </Typography>
+                      </GlassCard>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
           </>
         )}
       </Box>

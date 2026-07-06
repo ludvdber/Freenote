@@ -16,3 +16,14 @@ export const searchCol: Sx = { flex: 1, minWidth: 200 };
 export const filterControl: Sx = { minWidth: 140 };
 
 export const emptyText: Sx = { textAlign: 'center', py: 8 };
+
+// Barre au-dessus de la grille : « N documents » + chips des filtres actifs (supprimables).
+export const resultsBar: Sx = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 1,
+  flexWrap: 'wrap',
+  mb: 2,
+};
+
+export const resultsCount: Sx = { fontWeight: 600 };

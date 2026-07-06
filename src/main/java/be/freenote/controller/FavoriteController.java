@@ -17,6 +17,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FavoriteController {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final FavoriteService favoriteService;
 
     // POST toggle plutôt que PUT+DELETE séparés : le frontend n'a qu'un seul bouton
@@ -35,7 +37,8 @@ public class FavoriteController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Long userId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(favoriteService.getFavorites(userId, PageRequest.of(page, size)));
+        return ResponseEntity.ok(favoriteService.getFavorites(userId,
+                PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE))));
     }
 
     @GetMapping("/{docId}")

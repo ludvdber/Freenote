@@ -20,8 +20,12 @@ export default function HowItWorks() {
 
   return (
     <Box component="section" sx={{ py: 2 }}>
-      <Typography variant="h5" component="h2" sx={{ fontWeight: 800, mb: 2, textAlign: 'center' }}>
+      <Typography variant="h5" component="h2" sx={{ fontWeight: 800, mb: 0.5, textAlign: 'center' }}>
         {t('home.how.title')}
+      </Typography>
+      {/* Accroche (slogan n°3 de la charte) : l'insight « les docs se perdent d'année en année ». */}
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, textAlign: 'center', fontStyle: 'italic' }}>
+        {t('home.how.tagline')}
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
         {steps.map((step, i) => (

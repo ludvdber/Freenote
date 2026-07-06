@@ -51,7 +51,11 @@ export interface DocumentResponse {
   year: string | null;
   professorName: string | null;
   averageRating: number;
+  /** Nombre de votes — 0 = ne pas afficher d'étoiles (des ☆☆☆☆☆ se lisent comme « note 0 »). */
+  ratingCount: number;
   downloadCount: number;
+  /** Avatar résolu de l'uploader (null : doc anonyme ou avatar « lettre »). */
+  authorAvatarUrl: string | null;
   createdAt: string;
 }
 
@@ -78,6 +82,19 @@ export interface StatsResponse {
   totalContributors: number;
   totalCourses: number;
   weekUploads: number;
+  /** Docs par section (plus actives d'abord) — nourrit la constellation du hero. */
+  sections: SectionStat[];
+}
+
+export interface SectionStat {
+  name: string;
+  documentCount: number;
+}
+
+/** Tuiles du profil public (GET /users/:id/stats). */
+export interface UserStats {
+  totalViews: number;
+  avgRatingReceived: number | null;
 }
 
 export interface LeaderboardEntry {
@@ -465,6 +482,21 @@ export interface PublicDocumentSummary {
   year: string | null;
   averageRating: number;
   ratingCount: number;
+  createdAt: string;
+}
+
+/** Statut public minimal d'un doc hors catégories publiques : « existe mais réservé » ou inconnu. */
+export interface PublicDocumentStatus {
+  exists: boolean;
+  title: string | null;
+}
+
+// --- Notifications (historique persisté serveur) ---
+export interface NotificationItem {
+  id: number;
+  type: string;
+  payload: Record<string, string | number>;
+  read: boolean;
   createdAt: string;
 }
 

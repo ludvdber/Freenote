@@ -112,7 +112,9 @@ public class MeilisearchServiceImpl implements MeilisearchService {
             reindexIfNeeded();
 
         } catch (Exception e) {
-            log.warn("Meilisearch index init failed (search will use DB fallback): {}", e.getMessage());
+            // NB : il n'y a PAS de fallback DB pour la recherche avec `q` (par design) — index KO
+            // signifie recherche vide jusqu'au prochain initIndex/dailyResync réussi.
+            log.warn("Meilisearch index init failed (search with a query will return empty until re-init): {}", e.getMessage());
         }
     }
 

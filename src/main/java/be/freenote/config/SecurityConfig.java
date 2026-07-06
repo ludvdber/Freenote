@@ -48,6 +48,9 @@ public class SecurityConfig {
                 // even with a stale/expired CSRF cookie). The other /api/auth/** endpoints are called
                 // by the SPA, which sends X-XSRF-TOKEN on every request (axios interceptor) — no
                 // reason to exempt them. /api/dev/** is handled by DevSecurityConfig (dev only).
+                // Trade-off assumé sur logout : un site tiers peut théoriquement forcer une
+                // déconnexion (POST cross-site) — nuisance sans gain pour l'attaquant, acceptée en
+                // échange d'un logout qui ne peut jamais échouer.
                 .ignoringRequestMatchers(
                     "/api/webhooks/**",
                     "/api/auth/logout"
@@ -71,9 +74,9 @@ public class SecurityConfig {
                 .permissionsPolicyHeader(policy -> policy.policy(
                     "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
                 ))
-                // X-Frame-Options: SAMEORIGIN so we can embed our own PDFs in <iframe>
-                // (DocumentView). Combined with CSP frame-ancestors 'self' below, third-party
-                // sites still cannot embed Freenote — only the app itself can iframe its own pages.
+                // X-Frame-Options: SAMEORIGIN + CSP frame-ancestors 'self' : aucun site tiers ne
+                // peut embarquer Freenote. Le PDF est rendu via pdf.js dans un <canvas> (plus
+                // d'<iframe> PDF depuis 2026-06) — SAMEORIGIN est gardé défensivement.
                 .frameOptions(frame -> frame.sameOrigin())
                 .contentSecurityPolicy(csp -> csp
                     .policyDirectives(

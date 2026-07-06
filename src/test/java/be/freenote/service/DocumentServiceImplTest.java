@@ -38,6 +38,7 @@ class DocumentServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private CourseRepository courseRepository;
     @Mock private ProfessorRepository professorRepository;
+    @Mock private RatingRepository ratingRepository;
     @Mock private DocumentMapper documentMapper;
     @Mock private MinioService minioService;
     @Mock private PdfValidationService pdfValidationService;
@@ -71,7 +72,7 @@ class DocumentServiceImplTest {
 
     private DocumentResponse dummyResponse() {
         return new DocumentResponse(100L, "Test Doc", 1L, "Java", "IT", "SYNTHESE",
-                "author", null, false, false, "FR", null, null, 0.0, 0,
+                "author", null, false, false, "FR", null, null, 0.0, 0, 0, null,
                 LocalDateTime.now());
     }
 
@@ -283,18 +284,73 @@ class DocumentServiceImplTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ---- download ----
+    @Test
+    void delete_shouldTakeBackXpEarnedByDocument() {
+        // Supprimer un doc vérifié et noté reprend à l'auteur l'XP correspondant (règle 2026-07-06).
+        User author = testUser();
+        Document doc = testDocument(author);
+        doc.setVerified(true);
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(ratingRepository.findScoresByDocumentId(100L)).thenReturn(List.of(5, 2));
+
+        documentService.delete(100L, 1L);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        XpEvent.DocumentDeleted event = (XpEvent.DocumentDeleted) captor.getValue();
+        assertThat(event.authorId()).isEqualTo(1L);
+        assertThat(event.wasVerified()).isTrue();
+        assertThat(event.ratingScores()).containsExactly(5, 2);
+    }
 
     @Test
-    void shouldIncrementRedisCounterOnDownload() {
+    void delete_shouldNotPublishXpRemovalForAnonymousDocument() {
+        User admin = User.builder().id(99L).username("admin").role("ADMIN").build();
+        Document doc = testDocument(null); // doc anonymisé — plus d'auteur à débiter
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
+
+        documentService.delete(100L, 99L);
+
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
+    }
+
+    // ---- download ----
+
+    /** Simule « première vue dans les 24 h » (SETNX renvoie true). */
+    private void stubFirstView(boolean first) {
+        when(valueOps.setIfAbsent(startsWith("view:"), anyString(), any(java.time.Duration.class)))
+                .thenReturn(first);
+    }
+
+    @Test
+    void shouldIncrementRedisCounterOnFirstView() {
         Document doc = testDocument(testUser());
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(true);
         when(minioService.download("uuid/test.pdf")).thenReturn(new byte[]{1, 2, 3});
 
         documentService.download(100L, 50L);
 
         verify(valueOps).increment("dl-buffer:100");
+    }
+
+    @Test
+    void shouldNotCountViewNorXpWithin24hDedupWindow() {
+        // Deuxième fetch du même doc par le même user dans les 24 h : ni vue, ni XP — anti-farming.
+        Document doc = testDocument(testUser());
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(false);
+        when(minioService.download("uuid/test.pdf")).thenReturn(new byte[]{1, 2, 3});
+
+        byte[] result = documentService.download(100L, 50L);
+
+        assertThat(result).isNotEmpty(); // le fichier est bien servi
+        verify(valueOps, never()).increment(anyString());
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
     }
 
     @Test
@@ -304,6 +360,7 @@ class DocumentServiceImplTest {
 
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(true);
         when(minioService.download("uuid/test.pdf")).thenReturn(new byte[]{1, 2, 3});
 
         documentService.download(100L, 50L);
@@ -318,6 +375,7 @@ class DocumentServiceImplTest {
 
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(true);
         when(minioService.download("uuid/test.pdf")).thenReturn(new byte[]{1, 2, 3});
 
         documentService.download(100L, 1L);
@@ -331,6 +389,7 @@ class DocumentServiceImplTest {
 
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(true);
         when(minioService.download("uuid/test.pdf")).thenReturn(new byte[]{1, 2, 3});
 
         documentService.download(100L, 50L);
@@ -345,6 +404,7 @@ class DocumentServiceImplTest {
 
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        stubFirstView(true);
         when(minioService.download("uuid/test.pdf")).thenReturn(expected);
 
         byte[] result = documentService.download(100L, 50L);
@@ -414,6 +474,20 @@ class DocumentServiceImplTest {
         verify(eventPublisher).publishEvent(any(XpEvent.DocumentVerified.class));
     }
 
+    @Test
+    void shouldBeIdempotentWhenAlreadyVerified() {
+        // Re-clic admin sur un doc déjà vérifié : pas de double XP, pas de re-annonce Discord.
+        Document doc = testDocument(testUser());
+        doc.setVerified(true);
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentMapper.toResponse(doc)).thenReturn(dummyResponse());
+
+        documentService.verify(100L);
+
+        verify(documentRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
+    }
+
     // ---- adminUpdate ----
 
     @Test
@@ -462,7 +536,57 @@ class DocumentServiceImplTest {
         req.setCategory("FAKE");
 
         assertThatThrownBy(() -> documentService.adminUpdate(100L, req))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                // parseCategory : message propre, le nom de la classe enum ne fuit pas au client
+                .hasMessageNotContaining("be.freenote");
+    }
+
+    @Test
+    void adminUpdate_shouldGrantXpWhenTurningVerifiedOn() {
+        Document doc = testDocument(testUser());
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
+
+        UpdateDocumentRequest req = new UpdateDocumentRequest();
+        req.setVerified(true);
+
+        documentService.adminUpdate(100L, req);
+
+        verify(eventPublisher).publishEvent(any(XpEvent.DocumentVerified.class));
+    }
+
+    @Test
+    void adminUpdate_shouldTakeXpBackWhenTurningVerifiedOff() {
+        // Symétrie : unverify → -10, sinon un aller-retour unverify/verify doublerait l'XP.
+        Document doc = testDocument(testUser());
+        doc.setVerified(true);
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
+
+        UpdateDocumentRequest req = new UpdateDocumentRequest();
+        req.setVerified(false);
+
+        documentService.adminUpdate(100L, req);
+
+        verify(eventPublisher).publishEvent(any(XpEvent.DocumentUnverified.class));
+    }
+
+    @Test
+    void adminUpdate_shouldNotPublishXpWhenVerifiedUnchanged() {
+        Document doc = testDocument(testUser());
+        doc.setVerified(true);
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentMapper.toResponse(any(Document.class))).thenReturn(dummyResponse());
+
+        UpdateDocumentRequest req = new UpdateDocumentRequest();
+        req.setVerified(true); // déjà vérifié — aucune transition
+
+        documentService.adminUpdate(100L, req);
+
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
     }
 
     // ---- adminDelete ----

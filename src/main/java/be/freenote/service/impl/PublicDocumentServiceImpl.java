@@ -41,4 +41,15 @@ public class PublicDocumentServiceImpl implements PublicDocumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Document", "id", id));
         return PublicDocumentMapper.toSummary(doc);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public be.freenote.dto.response.PublicDocumentStatus getStatus(Long id) {
+        // Un lien partagé vers un doc hors catégories publiques doit dire « réservé, connecte-toi »
+        // (avec son titre) plutôt qu'un faux « introuvable ». Seuls les docs vérifiés existent
+        // publiquement — le titre d'un doc non relu n'est pas exposé.
+        return documentRepository.findVerifiedTitleById(id)
+                .map(be.freenote.dto.response.PublicDocumentStatus::reserved)
+                .orElseGet(be.freenote.dto.response.PublicDocumentStatus::unknown);
+    }
 }

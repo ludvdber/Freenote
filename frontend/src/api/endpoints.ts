@@ -39,9 +39,12 @@ import type {
   GuideResponse,
   CreateGuideRequest,
   PublicDocumentSummary,
+  PublicDocumentStatus,
+  NotificationItem,
   GanttSummary,
   GanttResponse,
   SaveGanttRequest,
+  UserStats,
 } from '@/types';
 
 // --- Stats ---
@@ -99,6 +102,10 @@ export const rateDocument = (docId: number, data: RateRequest) =>
 export const getAverageRating = (docId: number) =>
   api.get<number>(`/documents/${docId}/ratings/average`).then((r) => r.data);
 
+/** Ma note sur ce document (0 = pas encore noté) — affichée à part de la moyenne. */
+export const getMyRating = (docId: number) =>
+  api.get<number>(`/documents/${docId}/ratings/mine`).then((r) => r.data);
+
 // --- Favorites ---
 export const toggleFavorite = (docId: number) =>
   api.post<{ isFavorite: boolean }>(`/favorites/${docId}`).then((r) => r.data);
@@ -148,6 +155,9 @@ export const getUserById = (id: number) =>
 
 export const getUserRank = (id: number) =>
   api.get<number>(`/users/${id}/rank`).then((r) => r.data);
+
+export const getUserStats = (id: number) =>
+  api.get<UserStats>(`/users/${id}/stats`).then((r) => r.data);
 
 export const getFeaturedProfiles = () =>
   api.get<ProfileCardResponse[]>('/users/featured').then((r) => r.data);
@@ -321,6 +331,12 @@ export const purgeActivityLogs = (days: number) =>
 export const getNotificationsUnreadCount = () =>
   api.get<number>('/notifications/unread-count').then((r) => r.data);
 
+export const getNotifications = (page = 0, size = 10) =>
+  api.get<PageResponse<NotificationItem>>('/notifications', { params: { page, size } }).then((r) => r.data);
+
+export const markAllNotificationsRead = () =>
+  api.post('/notifications/read-all');
+
 // --- News ---
 export const getNews = () =>
   api.get<NewsItem[]>('/news').then((r) => r.data);
@@ -413,6 +429,10 @@ export const listPublicDocuments = (params: { page?: number; size?: number } = {
 
 export const getPublicDocument = (id: number) =>
   api.get<PublicDocumentSummary>(`/public/documents/${id}`).then((r) => r.data);
+
+/** Statut minimal d'un doc hors catégories publiques : « existe mais réservé » (titre seul) ou inconnu. */
+export const getPublicDocumentStatus = (id: number) =>
+  api.get<PublicDocumentStatus>(`/public/documents/${id}/status`).then((r) => r.data);
 
 /** Soft duplicate signal for the upload form — true if a same-titled doc already exists in the course. */
 export const checkDocumentTitle = (title: string, courseId: number) =>

@@ -59,6 +59,7 @@ public class GanttChartController {
     }
 
     @PutMapping("/{id}")
+    @RateLimit(max = 30, window = 3600) // aligné sur create — sinon updates JSONB illimités
     public ResponseEntity<GanttResponse> update(Authentication authentication, @PathVariable Long id,
                                                 @Valid @RequestBody SaveGanttRequest request) {
         Long userId = SecurityUtils.currentUserId(authentication);

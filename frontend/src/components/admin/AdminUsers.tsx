@@ -43,6 +43,10 @@ export default function AdminUsers() {
   const [error, setError] = useState('');
   const [deleteCandidate, setDeleteCandidate] = useState<User | null>(null);
   const [banCandidate, setBanCandidate] = useState<User | null>(null);
+  const [banReason, setBanReason] = useState('');
+  // Changement de rôle confirmé avant mutation — un mauvais clic dans le Select promouvait
+  // ADMIN (ou retirait la vérification) immédiatement, sans garde-fou.
+  const [roleCandidate, setRoleCandidate] = useState<{ user: User; role: Role } | null>(null);
 
   const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: getSections });
   const { data: users, isLoading } = useQuery({
@@ -78,8 +82,14 @@ export default function AdminUsers() {
 
   const roleMut = useMutation({
     mutationFn: ({ id, role }: { id: number; role: Role }) => adminUpdateUserRole(id, role),
-    onSuccess: invalidate,
-    onError: (e) => setError(extractApiError(e)),
+    onSuccess: () => {
+      invalidate();
+      setRoleCandidate(null);
+    },
+    onError: (e) => {
+      setError(extractApiError(e));
+      setRoleCandidate(null);
+    },
   });
 
   const deleteMut = useMutation({
@@ -92,10 +102,12 @@ export default function AdminUsers() {
   });
 
   const banMut = useMutation({
-    mutationFn: (id: number) => adminBanUser(id),
+    // La raison (optionnelle) alimente la table `bans` — l'API l'acceptait déjà, l'UI ne l'offrait pas.
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) => adminBanUser(id, reason),
     onSuccess: () => {
       invalidate();
       setBanCandidate(null);
+      setBanReason('');
     },
     onError: (e) => setError(extractApiError(e)),
   });
@@ -175,7 +187,10 @@ export default function AdminUsers() {
             <Select
               value={(u.role as Role | null) ?? 'USER'}
               label={t('admin.users.role')}
-              onChange={(e) => roleMut.mutate({ id: u.id, role: e.target.value as Role })}
+              onChange={(e) => {
+                const role = e.target.value as Role;
+                if (role !== ((u.role as Role | null) ?? 'USER')) setRoleCandidate({ user: u, role });
+              }}
             >
               <MenuItem value="USER">USER</MenuItem>
               <MenuItem value="VERIFIED">VERIFIED</MenuItem>
@@ -237,12 +252,41 @@ export default function AdminUsers() {
       <ConfirmDialog
         open={Boolean(banCandidate)}
         title={t('admin.users.banTitle')}
-        message={t('admin.users.banConfirm', { username: banCandidate?.username })}
+        message={
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
+            <span>{t('admin.users.banConfirm', { username: banCandidate?.username })}</span>
+            <TextField
+              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+              label={t('admin.users.banReasonLabel')}
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value.slice(0, 1000))}
+              helperText={t('admin.users.banReasonHint')}
+            />
+          </Box>
+        }
         confirmLabel={t('admin.users.ban')}
         confirmColor="error"
         loading={banMut.isPending}
-        onConfirm={() => banCandidate && banMut.mutate(banCandidate.id)}
-        onClose={() => setBanCandidate(null)}
+        onConfirm={() => banCandidate && banMut.mutate({ id: banCandidate.id, reason: banReason.trim() || undefined })}
+        onClose={() => { setBanCandidate(null); setBanReason(''); }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(roleCandidate)}
+        title={t('admin.users.roleTitle')}
+        message={
+          roleCandidate?.role === 'USER'
+            ? `${t('admin.users.roleConfirm', { username: roleCandidate?.user.username, role: roleCandidate?.role })} ${t('admin.users.roleConfirmUnverify')}`
+            : t('admin.users.roleConfirm', { username: roleCandidate?.user.username, role: roleCandidate?.role })
+        }
+        confirmLabel={t('common.confirm')}
+        confirmColor="warning"
+        loading={roleMut.isPending}
+        onConfirm={() => roleCandidate && roleMut.mutate({ id: roleCandidate.user.id, role: roleCandidate.role })}
+        onClose={() => setRoleCandidate(null)}
       />
     </Box>
   );

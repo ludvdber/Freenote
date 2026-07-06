@@ -1,7 +1,9 @@
 package be.freenote.event;
 
+import java.util.List;
+
 /**
- * Sealed hierarchy for all XP-granting events.
+ * Sealed hierarchy for all XP-affecting events.
  * A single listener handles the dispatch — XP rules live in one place.
  */
 public sealed interface XpEvent {
@@ -11,9 +13,19 @@ public sealed interface XpEvent {
     /** Document verified by admin → author earns XP. */
     record DocumentVerified(Long authorId, Long documentId, String title) implements XpEvent {}
 
-    /** Document downloaded → author earns XP (unless self-download). */
+    /** Verification revoked by admin → the verification XP is taken back (re-verify must be net zero). */
+    record DocumentUnverified(Long authorId, Long documentId) implements XpEvent {}
+
+    /** Document downloaded → author earns XP (unless self-download; deduped per user/24h upstream). */
     record DocumentDownloaded(Long authorId, Long documentId) implements XpEvent {}
 
-    /** Document rated → author earns XP proportional to score. */
-    record DocumentRated(Long authorId, Long documentId, int score) implements XpEvent {}
+    /** Document rated (new rating or re-rating) → author XP adjusts to the new score.
+     *  {@code previousScore} is null for a first-time rating. */
+    record DocumentRated(Long authorId, Long documentId, int score, Integer previousScore) implements XpEvent {}
+
+    /** Document deleted → author loses the XP the document had earned (verification + ratings).
+     *  {@code ratingScores} = the scores present at deletion time. Download XP is not clawed back
+     *  (no per-download history is stored — accepted drift). */
+    record DocumentDeleted(Long authorId, Long documentId, boolean wasVerified,
+                           List<Integer> ratingScores) implements XpEvent {}
 }

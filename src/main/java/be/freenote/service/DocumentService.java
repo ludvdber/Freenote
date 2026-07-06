@@ -27,5 +27,7 @@ public interface DocumentService {
     List<List<DocumentResponse>> getDuplicateGroups();
     DocumentResponse verify(Long documentId);
     byte[] download(Long documentId, Long userId);
-    PageResponse<DocumentResponse> getByUser(Long userId, Pageable pageable);
+    /** Docs d'un profil : l'auteur ({@code callerId == userId}) voit aussi ses docs en attente,
+     *  les autres ne voient que les vérifiés. */
+    PageResponse<DocumentResponse> getByUser(Long userId, Long callerId, Pageable pageable);
 }
