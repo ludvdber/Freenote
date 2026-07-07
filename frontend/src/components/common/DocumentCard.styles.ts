@@ -57,7 +57,11 @@ export const categoryChip = (color: string): Sx => ({
 
 export const courseLine: Sx = { minWidth: 0 };
 
+// Grille : année alignée à droite de la ligne méta. Liste : inline juste après cours · section
+// (alignée à droite elle flottait au milieu de la rangée).
 export const yearCaption: Sx = { fontSize: 11, whiteSpace: 'nowrap', ml: 'auto' };
+
+export const yearInline: Sx = { fontSize: 11, whiteSpace: 'nowrap' };
 
 export const freshnessChip: Sx = {
   height: 20,
@@ -86,8 +90,8 @@ export const badgeChip: Sx = { fontSize: 10, height: 22, flexShrink: 0 };
 
 export const badgeIcon: Sx = { fontSize: '14px !important' };
 
-// Footer : avatar 20 px + auteur + date relative | note (si votée) + vues.
-// (Le bouton Partager a été retiré : on ne partage pas un doc qu'on n'a pas encore ouvert.)
+// Footer : date relative | note (si votée) + vues. (Partager retiré : on ne partage pas un doc
+// pas encore ouvert. Auteur + avatar retirés 2026-07-07 : secondaires au choix d'un doc.)
 export const footerRow: Sx = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -95,15 +99,6 @@ export const footerRow: Sx = {
   gap: 1,
   mt: 'auto',
 };
-
-export const authorRow: Sx = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 0.75,
-  minWidth: 0,
-};
-
-export const authorName: Sx = { fontSize: 11, fontWeight: 600 };
 
 export const relativeDate: Sx = { fontSize: 11, whiteSpace: 'nowrap' };
 
@@ -141,11 +136,4 @@ export const rowStats: Sx = {
   alignItems: 'center',
   gap: 1.5,
   flexShrink: 0,
-};
-
-// L'auteur disparaît sous md pour que la ligne reste lisible sur petit écran.
-export const rowAuthor: Sx = {
-  display: { xs: 'none', md: 'flex' },
-  minWidth: 0,
-  maxWidth: 200,
 };

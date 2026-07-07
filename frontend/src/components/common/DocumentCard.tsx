@@ -4,7 +4,6 @@ import { Visibility, SmartToy, HourglassEmpty, Star } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next';
 import type { DocumentResponse } from '@/types';
 import GlassCard from '@/components/ui/GlassCard';
-import UserAvatar from '@/components/common/UserAvatar';
 import { categoryColor, formatRelativeDate, isNewDoc, isHotDoc } from '@/lib/utils';
 import * as s from './DocumentCard.styles';
 
@@ -50,15 +49,22 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
     </Box>
   );
 
-  // Ligne « contexte » sous le titre : catégorie + cours · section, année reléguée en bout de ligne.
-  const metaLine = (
+  // Ligne « contexte » sous le titre : catégorie + cours · section, année en fin de ligne.
+  // En vue liste l'année suit le texte (`yearInline`) — alignée à droite elle flottait au
+  // milieu de la rangée, détachée de tout.
+  const metaLine = (inlineYear: boolean) => (
     <Box sx={s.metaLine}>
       <Chip label={t(`categories.${doc.category}`)} size="small" sx={s.categoryChip(color)} />
       <Typography variant="caption" color="text.secondary" noWrap sx={s.courseLine}>
         {courseLine}
       </Typography>
       {doc.year && (
-        <Typography variant="caption" color="text.secondary" className="mono" sx={s.yearCaption}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          className="mono"
+          sx={inlineYear ? s.yearInline : s.yearCaption}
+        >
           {doc.year}
         </Typography>
       )}
@@ -114,16 +120,12 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
     </Box>
   );
 
-  const author = (
-    <Box sx={s.authorRow}>
-      <UserAvatar username={doc.authorName} url={doc.authorAvatarUrl} size={20} />
-      <Typography variant="caption" color="text.secondary" noWrap sx={s.authorName}>
-        {doc.authorName}
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={s.relativeDate}>
-        · {formatRelativeDate(doc.createdAt, i18n.language)}
-      </Typography>
-    </Box>
+  // L'auteur (nom + avatar) a été retiré des cartes (2026-07-07) : info secondaire au moment
+  // de choisir un doc — elle vit sur /documents/:id (carte uploader). La date relative reste.
+  const relativeDate = (
+    <Typography variant="caption" color="text.secondary" sx={s.relativeDate}>
+      {formatRelativeDate(doc.createdAt, i18n.language)}
+    </Typography>
   );
 
   if (variant === 'row') {
@@ -139,12 +141,12 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
             {freshness}
             {stateChips}
           </Box>
-          {metaLine}
+          {metaLine(true)}
         </Box>
         <Box sx={s.rowStats}>
           {rating}
           {views}
-          <Box sx={s.rowAuthor}>{author}</Box>
+          {relativeDate}
         </Box>
       </GlassCard>
     );
@@ -154,10 +156,10 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
     <GlassCard component={Link} to={`/documents/${doc.id}`} sx={s.card(haloStrength, color)}>
       <CardContent sx={s.content}>
         {titleRow}
-        {metaLine}
+        {metaLine(false)}
         {stateChips && <Box sx={s.stateRow}>{stateChips}</Box>}
         <Box sx={s.footerRow}>
-          {author}
+          {relativeDate}
           <Box sx={s.metaRow}>
             {rating}
             {views}

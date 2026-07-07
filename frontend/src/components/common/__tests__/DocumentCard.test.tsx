@@ -32,12 +32,13 @@ const renderCard = (doc: DocumentResponse, variant?: 'card' | 'row') =>
   render(<MemoryRouter><DocumentCard document={doc} variant={variant} /></MemoryRouter>);
 
 describe('DocumentCard', () => {
-  it('renders title, course · section line, author and view count', () => {
+  it('renders title, course · section line and view count — but NOT the author (dropped 2026-07-07)', () => {
     renderCard(makeDoc());
     expect(screen.getByText('Algo notes')).toBeInTheDocument();
     expect(screen.getByText('Algo · Informatique')).toBeInTheDocument();
-    expect(screen.getByText('Sophie')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
+    // L'auteur vit sur /documents/:id (carte uploader), plus sur les cartes.
+    expect(screen.queryByText('Sophie')).not.toBeInTheDocument();
   });
 
   it('puts the title BEFORE the category/year meta line (v3 hierarchy)', () => {
@@ -95,12 +96,12 @@ describe('DocumentCard', () => {
     expect(screen.getByText('🔥')).toBeInTheDocument();
   });
 
-  it('renders the row variant (list view) with the same core info', () => {
+  it('renders the row variant (list view) with the same core info, author excluded', () => {
     renderCard(makeDoc({ averageRating: 4.3, ratingCount: 12 }), 'row');
     expect(screen.getByText('Algo notes')).toBeInTheDocument();
     expect(screen.getByText('Algo · Informatique')).toBeInTheDocument();
     expect(screen.getByText('4.3')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('Sophie')).toBeInTheDocument();
+    expect(screen.queryByText('Sophie')).not.toBeInTheDocument();
   });
 });
