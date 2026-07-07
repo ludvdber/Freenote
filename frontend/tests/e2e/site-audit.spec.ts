@@ -79,8 +79,9 @@ test.describe('Visiteur non connecté', () => {
   test('page d\'accueil accessible avec contenu', async ({ page }) => {
     collectConsole(page, 'visitor-home');
     await page.goto('/');
-    // Slogan unifié depuis le lot copywriting 2026-07-06 : « Éclaire ta promo. »
-    await expect(page.getByText(either('Éclaire', 'Light up'))).toBeVisible({ timeout: 15_000 });
+    // Hero revenu à « Réussis plus vite à plusieurs » (choix produit 2026-07-07) —
+    // « Éclaire ta promo » reste le slogan SEO (title/og), pas le titre du hero.
+    await expect(page.getByText(either('Réussis plus vite', 'Learn faster'))).toBeVisible({ timeout: 15_000 });
     await autoScroll(page);
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-home.png'), fullPage: true });
   });

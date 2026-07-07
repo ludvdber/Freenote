@@ -11,7 +11,6 @@ import { DISCORD_OAUTH_URL } from '@/lib/constants';
 // OrbsFallback is a pure-CSS component (no Three.js import), so referencing it here does NOT pull
 // the heavy @react-three/fiber + three bundle into the entry chunk.
 import OrbsFallback from '@/components/three/ParticleField/OrbsFallback';
-import SectionConstellation from '@/components/home/SectionConstellation';
 
 const HeroBackground = lazy(() => import('@/components/three/ParticleField'));
 import * as s from './HeroSection.styles';
@@ -74,18 +73,7 @@ export default function HeroSection() {
             coût nul (le fond était à 60 % de noir vide en dark). */}
         <Box aria-hidden="true" sx={s.nebulaA} />
         <Box aria-hidden="true" sx={s.nebulaB} />
-        {/* La constellation des sections : chaque étoile = une section ISFCE, pulsant à l'échelle
-            de son activité réelle. */}
-        <SectionConstellation />
         <Container maxWidth="md" sx={s.inner}>
-          {/* Le chip ISFCE en eyebrow AU-DESSUS du titre : c'est LE différenciateur, il était
-              perdu sous le sous-titre. */}
-          <motion.div variants={s.fadeUpVariants}>
-            <Typography variant="body2" sx={s.restrictedBadge}>
-              {t('hero.restricted')}
-            </Typography>
-          </motion.div>
-
           <motion.div variants={s.titleVariants}>
             <Typography variant="h1" sx={s.title}>
               {t('hero.title')}
@@ -99,6 +87,14 @@ export default function HeroSection() {
           <motion.div variants={s.fadeUpVariants}>
             <Typography variant="h6" component="p" color="text.secondary" sx={s.subtitle}>
               {t('hero.subtitle')}
+            </Typography>
+          </motion.div>
+
+          {/* Le chip ISFCE entre le sous-titre et les CTA (choix produit 2026-07-07) :
+              il qualifie l'audience juste avant l'action, sans concurrencer le titre. */}
+          <motion.div variants={s.fadeUpVariants}>
+            <Typography variant="body2" sx={s.restrictedBadge}>
+              {t('hero.restricted')}
             </Typography>
           </motion.div>
 

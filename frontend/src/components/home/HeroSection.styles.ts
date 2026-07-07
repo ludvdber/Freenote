@@ -111,7 +111,7 @@ export const titleGradient: Sx = {
 };
 
 export const subtitle: Sx = {
-  mb: 4,
+  mb: 3,
   fontWeight: 400,
   fontSize: { xs: '1rem', md: '1.15rem' },
   maxWidth: 560,
@@ -119,10 +119,10 @@ export const subtitle: Sx = {
   lineHeight: 1.7,
 };
 
-// Eyebrow AU-DESSUS du titre (le différenciateur d'abord) — même pill, position promue.
+// Pill « Réservé aux étudiants de l'ISFCE » entre le sous-titre et les CTA.
 export const restrictedBadge: Sx = {
   display: 'inline-block',
-  mb: 3,
+  mb: 3.5,
   letterSpacing: 1.2,
   textTransform: 'uppercase',
   fontWeight: 700,
