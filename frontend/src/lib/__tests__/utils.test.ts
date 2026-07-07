@@ -8,7 +8,26 @@ import {
   shareOrCopy,
   isNewDoc,
   isHotDoc,
+  daysUntil,
 } from '../utils';
+
+describe('daysUntil', () => {
+  // Jours CALENDAIRES (minuit à minuit) : à 23 h, demain reste « dans 1 jour ».
+  const now = new Date('2026-07-07T23:30:00');
+
+  it('counts calendar days to a future date', () => {
+    expect(daysUntil('2026-09-07', now)).toBe(62);
+    expect(daysUntil('2026-07-08', now)).toBe(1);
+  });
+
+  it('returns 0 for today', () => {
+    expect(daysUntil('2026-07-07', now)).toBe(0);
+  });
+
+  it('returns a negative number for a past date (banner auto-hidden)', () => {
+    expect(daysUntil('2026-07-01', now)).toBe(-6);
+  });
+});
 
 describe('formatNumber', () => {
   it('formats thousands and millions, leaves small numbers as-is', () => {

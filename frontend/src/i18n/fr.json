@@ -190,7 +190,25 @@
     "aiShort": "IA",
     "supporter": "Supporter",
     "uploaderTitle": "Document partagé par",
-    "viewProfile": "Voir le profil"
+    "viewProfile": "Voir le profil",
+    "rateCardTitle": "Ce doc t'a aidé ?",
+    "rateCardWhy": "Une note prend 2 secondes, et toute la promo sait quoi télécharger.",
+    "rateFirstTitle": "Sois le premier à noter",
+    "rateFirstHint": "✨ Aucune note pour l'instant — la tienne guidera toute la promo.",
+    "rateXpChip": "Ta note = +2 XP",
+    "xpChipShort": "+2 XP",
+    "nudgeTitle": "Bien téléchargé !",
+    "nudgeText": "Il vaut le coup ? Ta note guide toute la promo.",
+    "reviseTitle": "Réviser ce cours",
+    "reviseCards_one": "{{count}} carte",
+    "reviseCards_other": "{{count}} cartes",
+    "reviseQuestions_one": "{{count}} question",
+    "reviseQuestions_other": "{{count}} questions",
+    "tocTitle": "Sommaire du PDF",
+    "tocPage": "p. {{page}}",
+    "prevDoc": "Précédent",
+    "nextDoc": "Suivant",
+    "sameCourse": "Du même cours"
   },
   "admin": {
     "tabs": {
@@ -204,7 +222,20 @@
       "donations": "Dons",
       "activity": "Logs",
       "guides": "Guides",
-      "tools": "Outils"
+      "tools": "Outils",
+      "settings": "Réglages"
+    },
+    "settings": {
+      "countdownTitle": "Compte à rebours de l'accueil",
+      "countdownHint": "Affiche une bannière « J-N » sur la page d'accueil (rentrée, session d'examens…). Elle disparaît automatiquement une fois la date passée.",
+      "dateLabel": "Date",
+      "labelLabel": "Libellé",
+      "labelPlaceholder": "Rentrée 2026",
+      "preview": "Aperçu",
+      "previewPast": "Cette date est déjà passée — la bannière ne s'affichera pas.",
+      "disable": "Désactiver",
+      "saved": "Compte à rebours enregistré.",
+      "disabled": "Compte à rebours désactivé."
     },
     "guides": {
       "title": "Guides",
@@ -493,6 +524,12 @@
     "oauthFailed": "La connexion a échoué. Réessaie dans un instant."
   },
   "home": {
+    "countdown": {
+      "defaultLabel": "La rentrée",
+      "inDays_one": "{{label}} dans {{count}} jour",
+      "inDays_other": "{{label}} dans {{count}} jours",
+      "today": "{{label}}, c'est aujourd'hui ! 🎉"
+    },
     "recent": {
       "title": "Reprise de lecture",
       "empty": "Ouvre un document pour qu'il apparaisse ici la prochaine fois."
@@ -542,7 +579,10 @@
     "bestRated": "Mieux notés",
     "viewMode": "Mode d'affichage",
     "viewGrid": "Vue grille",
-    "viewList": "Vue liste"
+    "viewList": "Vue liste",
+    "allCategories": "Tout",
+    "pageSize": "Documents par page",
+    "perPage": "{{n}} / page"
   },
   "common": {
     "loading": "Chargement...",
@@ -559,7 +599,8 @@
     "continue": "Continuer",
     "back": "Retour",
     "edit": "Modifier",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "close": "Fermer"
   },
   "onboarding": {
     "title": "Bienvenue sur Freenote",
@@ -606,6 +647,12 @@
     "metaDescription": "Outils gratuits pour étudiants : flashcards avec répétition espacée, QCM à partager, diagramme de Gantt, calculateur de moyenne, calculateur IPv4/IPv6, convertisseur de bases et décodeur JWT. Sans compte, dans le navigateur.",
     "openTool": "Ouvrir l'outil",
     "allTools": "Tous les outils",
+    "courseLink": {
+      "section": "Section",
+      "course": "Cours (optionnel)",
+      "none": "Aucun",
+      "hint": "Le contenu apparaîtra en suggestion de révision sur les documents de ce cours."
+    },
     "filterLabel": "Filtrer les outils par catégorie",
     "categories": {
       "all": "Tous",

@@ -54,6 +54,14 @@ class XpEventListenerTest {
     }
 
     @Test
+    void firstRatingGivenGrantsTwoXpToTheRater() {
+        // Règle validée 2026-07-07 : motiver la notation — le NOTEUR touche +2 à sa première note
+        // sur un doc, quel que soit le score (un 1★ informe la promo autant qu'un 5★).
+        listener.onRatingGiven(new XpEvent.RatingGiven(7L, 100L));
+        verify(userService).addXp(7L, 2);
+    }
+
+    @Test
     void reRatingAdjustsByDelta() {
         // 5★ (=10 XP) re-noté 3★ (=6 XP) → delta -4.
         listener.onDocumentRated(new XpEvent.DocumentRated(1L, 100L, 3, 5));

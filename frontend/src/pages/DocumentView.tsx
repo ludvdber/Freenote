@@ -1,11 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Typography, Box, Button, Chip, TextField, Grid, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, useTheme } from '@mui/material';
-import { Download, Favorite, FavoriteBorder, Flag, Share, Verified, SmartToy, Edit, DeleteOutlined, NavigateNext, MoreHoriz } from '@mui/icons-material';
+import { Typography, Box, Button, Chip, TextField, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, Collapse, useTheme } from '@mui/material';
+import { Download, Favorite, FavoriteBorder, Flag, Share, SmartToy, Edit, DeleteOutlined, NavigateNext, MoreHoriz, Visibility, Star, Close, Style, Quiz as QuizIcon, ArrowForward } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   getDocumentById,
+  getAdjacentDocuments,
   rateDocument,
   toggleFavorite,
   reportDocument,
@@ -15,17 +16,22 @@ import {
   getFavoriteStatus,
   deleteDocument,
   renameDocument,
+  searchDocuments,
+  listQuizzes,
+  listSharedDecks,
 } from '@/api/endpoints';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { categoryColor, formatDate, shareOrCopy } from '@/lib/utils';
+import { categoryColor, formatRelativeDate, shareOrCopy } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import UploaderCard from '@/components/common/UploaderCard';
 import StarRating from '@/components/ui/StarRating';
 import Shimmer from '@/components/ui/Shimmer';
 import AdSlot from '@/components/ui/AdSlot';
+// import type = effacé à la compilation : ne charge PAS le chunk pdf.js, contrairement au lazy() dessous.
+import type { PdfOutlineEntry, PdfViewerHandle } from '@/components/common/PdfViewer';
 import * as s from './DocumentView.styles';
 
 // Lazy so pdf.js (heavy) only loads once a document is actually open.
@@ -45,6 +51,25 @@ export default function DocumentView() {
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  // Nudge « note ce doc » affiché juste APRÈS un téléchargement (jamais à l'arrivée sur la page).
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const nudgeTimer = useRef<number | null>(null);
+  // Sommaire extrait du PDF (outline pdf.js) + contrôleur de saut de page du viewer.
+  const [outline, setOutline] = useState<PdfOutlineEntry[]>([]);
+  const viewerCtl = useRef<PdfViewerHandle | null>(null);
+  const viewerColRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset des états volatils quand on navigue de doc en doc (prev/next, du même cours) — le
+  // composant reste monté. Pattern render-adjust (recommandé React), comme favStatus plus bas.
+  const [prevId, setPrevId] = useState(id);
+  if (id !== prevId) {
+    setPrevId(id);
+    setNudgeOpen(false);
+    setShowReport(false);
+    setShowRename(false);
+    setMenuAnchor(null);
+    setOutline([]);
+  }
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -58,8 +83,8 @@ export default function DocumentView() {
     enabled: !!id,
   });
 
-  // Ma note (0 = pas encore voté) — affichée séparément de la moyenne : avant, le même contrôle
-  // affichait la moyenne ET servait de saisie, illisible.
+  // Ma note (0 = pas encore voté) — pilote l'affichage du rail : tant que je n'ai pas noté, la
+  // grosse carte « Ce doc t'a aidé ? » ; après, une carte compacte « Ta note » (modifiable).
   const { data: myRating } = useQuery({
     queryKey: ['my-rating', id],
     queryFn: () => getMyRating(Number(id)),
@@ -78,6 +103,56 @@ export default function DocumentView() {
     refetchOnMount: 'always',
   });
 
+  // Voisins précédent/suivant du même cours (navigation sous le viewer).
+  const { data: adjacent } = useQuery({
+    queryKey: ['adjacent-docs', id],
+    queryFn: () => getAdjacentDocuments(Number(id)),
+    enabled: !!id && isVerified,
+  });
+
+  const courseId = doc?.courseId;
+
+  // « Réviser ce cours » : quiz + paquets publiés rattachés au même cours.
+  const { data: courseQuizzes } = useQuery({
+    queryKey: ['course-quizzes', courseId],
+    queryFn: () => listQuizzes({ courseId: courseId!, size: 10 }),
+    enabled: !!courseId && isVerified,
+  });
+  const { data: courseDecks } = useQuery({
+    queryKey: ['course-decks', courseId],
+    queryFn: () => listSharedDecks({ courseId: courseId!, size: 10 }),
+    enabled: !!courseId && isVerified,
+  });
+
+  // « Du même cours » : les plus consultés du cours, sans le doc courant.
+  const { data: sameCoursePage } = useQuery({
+    queryKey: ['same-course-docs', courseId],
+    // Valeur whitelistée backend (comme SORT_API de Browse) — « popular » nu ferait un 400.
+    queryFn: () => searchDocuments({ courseId: courseId!, sort: 'downloadCount:desc', size: 6 }),
+    enabled: !!courseId && isVerified,
+  });
+  const sameDocs = useMemo(
+    () => (sameCoursePage?.content ?? []).filter((d) => d.id !== Number(id)).slice(0, 4),
+    [sameCoursePage, id],
+  );
+
+  const reviseItems = useMemo(() => [
+    ...(courseDecks?.content ?? []).map((d) => ({
+      kind: 'deck' as const,
+      id: d.id,
+      title: d.title,
+      sub: `${t('document.reviseCards', { count: d.cardCount })}${d.ownerName ? ` · ${d.ownerName}` : ''}`,
+      to: `/outils/flashcards#deck=${d.id}`,
+    })),
+    ...(courseQuizzes?.content ?? []).map((q) => ({
+      kind: 'quiz' as const,
+      id: q.id,
+      title: q.title,
+      sub: `${t('document.reviseQuestions', { count: q.questionCount })}${q.ownerName ? ` · ${q.ownerName}` : ''}`,
+      to: `/outils/quiz#play=${q.id}`,
+    })),
+  ], [courseDecks, courseQuizzes, t]);
+
   // Sync the heart icon with the server's favorite status when it loads/changes. Adjusting
   // state during render (React's recommended pattern) instead of an effect avoids a cascading render.
   const [prevFavStatus, setPrevFavStatus] = useState(favStatus);
@@ -87,7 +162,7 @@ export default function DocumentView() {
   }
 
   // Direct URL to the authenticated file endpoint (same-origin → HttpOnly JWT cookie sent
-  // automatically). Used by the "Download" action; the inline preview now goes through <PdfViewer>
+  // automatically). Used by the "Download" action; the inline preview goes through <PdfViewer>
   // (pdf.js canvas) which renders on mobile too, unlike the old <iframe> that Chrome Android blocks.
   const pdfSrc = isVerified && doc ? `/api/documents/${id}/file` : null;
 
@@ -97,6 +172,10 @@ export default function DocumentView() {
     recordDocVisit(doc.id).catch(() => { /* best-effort, no UX impact */ });
     queryClient.invalidateQueries({ queryKey: ['recent-docs'] });
   }, [token, doc?.id, doc?.verified, queryClient]);
+
+  useEffect(() => () => {
+    if (nudgeTimer.current) window.clearTimeout(nudgeTimer.current);
+  }, []);
 
   const [ratingFeedback, setRatingFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
 
@@ -110,6 +189,7 @@ export default function DocumentView() {
       queryClient.invalidateQueries({ queryKey: ['document', id] });
       queryClient.invalidateQueries({ queryKey: ['search'] });
       queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+      setNudgeOpen(false);
       setRatingFeedback({ severity: 'success', message: t('document.ratingSaved') });
     },
     onError: (err) => {
@@ -167,12 +247,26 @@ export default function DocumentView() {
     },
   });
 
+  const isOwner = !!doc && doc.authorId != null && user?.id === doc.authorId;
+  const hasRated = (myRating ?? 0) > 0;
+
   const handleDownload = () => {
     if (!pdfSrc) return;
     const a = document.createElement('a');
     a.href = pdfSrc;
     a.download = `${doc?.title ?? 'document'}.pdf`;
     a.click();
+    // Nudge de notation différé d'une seconde — le temps que le téléchargement démarre.
+    if (isVerified && !isOwner && !hasRated) {
+      if (nudgeTimer.current) window.clearTimeout(nudgeTimer.current);
+      nudgeTimer.current = window.setTimeout(() => setNudgeOpen(true), 1000);
+    }
+  };
+
+  const jumpToPage = (page: number) => {
+    viewerCtl.current?.scrollToPage(page);
+    // Sur mobile le sommaire vit SOUS le viewer — on ramène le viewer à l'écran (no-op si visible).
+    viewerColRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   if (isLoading) {
@@ -190,7 +284,9 @@ export default function DocumentView() {
     );
   }
 
-  const isOwner = doc.authorId != null && user?.id === doc.authorId;
+  const average = avgRating ?? doc.averageRating ?? 0;
+  const prevDoc = adjacent?.previous ?? null;
+  const nextDoc = adjacent?.next ?? null;
 
   return (
     <PageWrapper maxWidth="lg">
@@ -218,14 +314,10 @@ export default function DocumentView() {
             label={t(`categories.${doc.category}`)}
             sx={s.categoryChip(categoryColor(doc.category, theme.palette.mode))}
           />
-          {doc.verified && (
-            <Chip
-              size="small"
-              variant="outlined"
-              color="primary"
-              icon={<Verified sx={{ fontSize: 14 }} />}
-              label={t('document.verified')}
-            />
+          {/* Cohérence carte v3 : vérifié = état par défaut, pas de badge — seuls « En attente »
+              et « IA » signalent une particularité. */}
+          {!doc.verified && (
+            <Chip size="small" variant="outlined" color="warning" label={t('document.pending')} />
           )}
           {doc.aiGenerated && (
             <Chip
@@ -245,96 +337,31 @@ export default function DocumentView() {
           {doc.courseName} · {doc.sectionName}
           {!doc.authorId && ` · ${doc.authorName}`}
         </Typography>
-      </Box>
-
-      {/* PDF Viewer — pdf.js canvas (renders inline on mobile, unlike an <iframe>) */}
-      {isVerified && (
-        <Suspense fallback={<Box sx={s.pdfViewerWrapper}><Box sx={s.pdfLoading}><CircularProgress /></Box></Box>}>
-          <PdfViewer docId={Number(id)} title={doc.title} />
-        </Suspense>
-      )}
-
-      {!isVerified && token && (
-        <GlassCard sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {t('auth.verifyEmailMessage')}
-          </Typography>
-        </GlassCard>
-      )}
-
-      <GlassCard sx={s.metaCard}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Typography variant="caption" color="text.secondary">
-              {t('document.language')}
-            </Typography>
-            <Typography variant="body2">{doc.language}</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Typography variant="caption" color="text.secondary">
-              {t('document.year')}
-            </Typography>
-            <Typography variant="body2">{doc.year ?? '—'}</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Typography variant="caption" color="text.secondary">
-              {t('document.professor')}
-            </Typography>
-            <Typography variant="body2">{doc.professorName ?? '—'}</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Typography variant="caption" color="text.secondary">
-              {t('document.downloads')}
-            </Typography>
-            <Typography variant="body2" className="mono">
-              {doc.downloadCount}
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 4, md: 2.4 }}>
-            <Typography variant="caption" color="text.secondary">
-              {t('document.publishedAt')}
-            </Typography>
-            <Typography variant="body2" className="mono">
-              {formatDate(doc.createdAt, i18n.language)}
-            </Typography>
-          </Grid>
-        </Grid>
-      </GlassCard>
-
-      {doc.authorId && <UploaderCard authorId={doc.authorId} />}
-
-      {/* Moyenne (lecture seule, avec compteur) et « Ta note » (saisie) séparées — l'ancien
-          contrôle unique affichait la moyenne ET la modifiait au clic, illisible. */}
-      <Box sx={s.ratingRow}>
-        <Box sx={s.ratingInner}>
-          <Typography variant="body2" color="text.secondary">
-            {t('document.rating')}:
-          </Typography>
-          {doc.ratingCount > 0 ? (
-            <>
-              <StarRating value={avgRating ?? doc.averageRating} readOnly />
-              <Typography variant="caption" color="text.secondary" className="mono">
-                {(avgRating ?? doc.averageRating ?? 0).toFixed(1)} · {t('document.votes', { count: doc.ratingCount })}
-              </Typography>
-            </>
-          ) : (
-            // Pas d'étoiles vides « note 0 » quand personne n'a voté.
-            <Typography variant="caption" color="text.secondary">
-              {t('document.noVotesYet')}
+        {/* Méta compacte (remplace l'ancienne carte 5 colonnes) : année · note · vues · date ·
+            prof · langue. La moyenne vit ici pour rester visible même sans carte de notation
+            (auteur du doc, visiteur non vérifié). */}
+        <Box sx={s.metaLine}>
+          {doc.year && (
+            <Typography component="span" variant="caption" className="mono">{doc.year}</Typography>
+          )}
+          {doc.ratingCount > 0 && (
+            <Typography component="span" variant="caption" className="mono" sx={s.metaItem}>
+              <Star sx={{ fontSize: 14, color: '#ffd93d' }} aria-hidden="true" />
+              {average.toFixed(1)} · {t('document.votes', { count: doc.ratingCount })}
             </Typography>
           )}
+          <Typography component="span" variant="caption" className="mono" sx={s.metaItem}>
+            <Visibility sx={{ fontSize: 14 }} aria-hidden="true" />
+            {doc.downloadCount} {t('document.downloads').toLowerCase()}
+          </Typography>
+          <Typography component="span" variant="caption">
+            {formatRelativeDate(doc.createdAt, i18n.language)}
+          </Typography>
+          {doc.professorName && (
+            <Typography component="span" variant="caption">{doc.professorName}</Typography>
+          )}
+          <Typography component="span" variant="caption">{doc.language}</Typography>
         </Box>
-        {isVerified && !isOwner && (
-          <Box sx={s.ratingInner}>
-            <Typography variant="body2" color="text.secondary">
-              {t('document.myRating')}:
-            </Typography>
-            <StarRating
-              value={myRating ?? 0}
-              onChange={(v) => rateMutation.mutate(v)}
-            />
-          </Box>
-        )}
       </Box>
 
       {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage/favori en
@@ -426,18 +453,6 @@ export default function DocumentView() {
         )}
       </Box>
 
-      <Snackbar open={shareStatus !== null} autoHideDuration={2000} onClose={() => setShareStatus(null)}>
-        <Alert severity="success" onClose={() => setShareStatus(null)}>
-          {shareStatus === 'shared' ? t('common.shared') : t('common.linkCopied')}
-        </Alert>
-      </Snackbar>
-
-      <Snackbar open={ratingFeedback !== null} autoHideDuration={3000} onClose={() => setRatingFeedback(null)}>
-        <Alert severity={ratingFeedback?.severity ?? 'success'} onClose={() => setRatingFeedback(null)}>
-          {ratingFeedback?.message}
-        </Alert>
-      </Snackbar>
-
       {showReport && (
         <Box sx={s.reportRow}>
           <TextField
@@ -478,6 +493,175 @@ export default function DocumentView() {
           </Button>
         </Box>
       )}
+
+      {/* Nudge post-téléchargement : demander la note juste après la consommation de la valeur
+          (timing Udemy/Booking) — jamais à l'arrivée sur la page. */}
+      <Collapse in={nudgeOpen}>
+        <Box sx={s.nudge}>
+          <Box sx={s.nudgeText}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>{t('document.nudgeTitle')}</Typography>
+            <Typography variant="body2" color="text.secondary">{t('document.nudgeText')}</Typography>
+          </Box>
+          <StarRating value={0} onChange={(v) => rateMutation.mutate(v)} size={30} />
+          <Chip size="small" label={t('document.xpChipShort')} sx={s.xpChip} />
+          <IconButton size="small" onClick={() => setNudgeOpen(false)} aria-label={t('common.close')}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
+      </Collapse>
+
+      {!isVerified && token && (
+        <GlassCard sx={{ p: 3, mb: 3, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            {t('auth.verifyEmailMessage')}
+          </Typography>
+        </GlassCard>
+      )}
+
+      <Box sx={s.cols}>
+        {/* ——— Colonne principale : viewer + navigation précédent/suivant ——— */}
+        <Box ref={viewerColRef} sx={{ minWidth: 0 }}>
+          {isVerified && (
+            <Suspense fallback={<Box sx={s.pdfViewerWrapper}><Box sx={s.pdfLoading}><CircularProgress /></Box></Box>}>
+              <PdfViewer docId={Number(id)} title={doc.title} onOutline={setOutline} controllerRef={viewerCtl} />
+            </Suspense>
+          )}
+
+          {(prevDoc || nextDoc) && (
+            <Box sx={s.pnGrid}>
+              {prevDoc ? (
+                <GlassCard component={RouterLink} to={`/documents/${prevDoc.id}`} sx={s.pnCard(false)}>
+                  <Typography component="span" sx={s.pnLabel}>← {t('document.prevDoc')} · {doc.courseName}</Typography>
+                  <Typography component="span" sx={s.pnTitle}>{prevDoc.title}</Typography>
+                </GlassCard>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+              {nextDoc && (
+                <GlassCard component={RouterLink} to={`/documents/${nextDoc.id}`} sx={s.pnCard(true)}>
+                  <Typography component="span" sx={s.pnLabel}>{t('document.nextDoc')} · {doc.courseName} →</Typography>
+                  <Typography component="span" sx={s.pnTitle}>{nextDoc.title}</Typography>
+                </GlassCard>
+              )}
+            </Box>
+          )}
+        </Box>
+
+        {/* ——— Rail droit : notation, réviser, sommaire, uploader, du même cours ——— */}
+        <Box sx={s.rail}>
+          {isVerified && !isOwner && (
+            hasRated ? (
+              // Déjà noté : la grosse carte disparaît (demande explicite 2026-07-07) — reste une
+              // carte compacte « Ta note », toujours modifiable.
+              <GlassCard sx={s.sideCard}>
+                <Typography variant="caption" sx={s.sideTitle}>{t('document.myRating')}</Typography>
+                <StarRating value={myRating ?? 0} onChange={(v) => rateMutation.mutate(v)} />
+                {doc.ratingCount > 0 && (
+                  <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'block', mt: 1 }}>
+                    {average.toFixed(1)} · {t('document.votes', { count: doc.ratingCount })}
+                  </Typography>
+                )}
+              </GlassCard>
+            ) : (
+              <Box sx={s.rateCard}>
+                <Typography variant="h6" sx={s.rateTitle}>
+                  {doc.ratingCount === 0 ? t('document.rateFirstTitle') : t('document.rateCardTitle')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={s.rateWhy}>
+                  {t('document.rateCardWhy')}
+                </Typography>
+                <StarRating value={0} onChange={(v) => rateMutation.mutate(v)} size={34} />
+                <Box sx={s.rateMeta}>
+                  {doc.ratingCount > 0 ? (
+                    <Typography variant="caption" color="text.secondary" className="mono">
+                      {average.toFixed(1)} · {t('document.votes', { count: doc.ratingCount })}
+                    </Typography>
+                  ) : (
+                    <span />
+                  )}
+                  <Chip size="small" label={t('document.rateXpChip')} sx={s.xpChip} />
+                </Box>
+                {doc.ratingCount === 0 && (
+                  <Typography variant="caption" sx={s.zeroState}>{t('document.rateFirstHint')}</Typography>
+                )}
+              </Box>
+            )
+          )}
+
+          {reviseItems.length > 0 && (
+            <GlassCard sx={s.sideCard}>
+              <Typography variant="caption" sx={s.sideTitle}>{t('document.reviseTitle')}</Typography>
+              <Box sx={s.reviseList(reviseItems.length >= 3)}>
+                {reviseItems.map((item) => (
+                  <Box key={`${item.kind}-${item.id}`} component={RouterLink} to={item.to} sx={s.reviseRow}>
+                    {item.kind === 'deck'
+                      ? <Style sx={{ color: 'secondary.main' }} aria-hidden="true" />
+                      : <QuizIcon sx={{ color: 'primary.main' }} aria-hidden="true" />}
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="body2" sx={s.reviseTitle}>{item.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.sub}</Typography>
+                    </Box>
+                    <ArrowForward sx={{ fontSize: 16, color: 'primary.main' }} aria-hidden="true" />
+                  </Box>
+                ))}
+              </Box>
+            </GlassCard>
+          )}
+
+          {/* Sommaire : masqué à 0 ou 1 entrée (inutile), scrollable au-delà de 10. */}
+          {outline.length > 1 && (
+            <GlassCard sx={s.sideCard}>
+              <Typography variant="caption" sx={s.sideTitle}>{t('document.tocTitle')}</Typography>
+              <Box sx={s.tocList(outline.length > 10)}>
+                {outline.map((entry, i) => (
+                  <Box
+                    key={`${entry.page}-${i}`}
+                    component="button"
+                    type="button"
+                    onClick={() => jumpToPage(entry.page)}
+                    sx={s.tocRow(entry.level > 0)}
+                  >
+                    <Box component="span" sx={s.tocEntry}>{entry.title}</Box>
+                    <Typography component="span" variant="caption" className="mono" sx={{ flexShrink: 0 }}>
+                      {t('document.tocPage', { page: entry.page })}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </GlassCard>
+          )}
+
+          {doc.authorId && <UploaderCard authorId={doc.authorId} sx={{ mb: 0 }} />}
+
+          {sameDocs.length > 0 && (
+            <GlassCard sx={s.sideCard}>
+              <Typography variant="caption" sx={s.sideTitle}>
+                {t('document.sameCourse')} — {doc.courseName}
+              </Typography>
+              {sameDocs.map((d) => (
+                <Box key={d.id} component={RouterLink} to={`/documents/${d.id}`} sx={s.sameRow}>
+                  <Typography component="span" className="same-title" sx={s.sameTitle}>{d.title}</Typography>
+                  <Typography component="span" className="mono" sx={s.sameViews}>
+                    <Visibility sx={{ fontSize: 12 }} aria-hidden="true" /> {d.downloadCount}
+                  </Typography>
+                </Box>
+              ))}
+            </GlassCard>
+          )}
+        </Box>
+      </Box>
+
+      <Snackbar open={shareStatus !== null} autoHideDuration={2000} onClose={() => setShareStatus(null)}>
+        <Alert severity="success" onClose={() => setShareStatus(null)}>
+          {shareStatus === 'shared' ? t('common.shared') : t('common.linkCopied')}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={ratingFeedback !== null} autoHideDuration={3000} onClose={() => setRatingFeedback(null)}>
+        <Alert severity={ratingFeedback?.severity ?? 'success'} onClose={() => setRatingFeedback(null)}>
+          {ratingFeedback?.message}
+        </Alert>
+      </Snackbar>
 
       <AdSlot width={728} height={90} sx={{ mt: 4 }} />
     </PageWrapper>

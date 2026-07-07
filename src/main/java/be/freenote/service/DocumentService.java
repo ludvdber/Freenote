@@ -2,6 +2,7 @@ package be.freenote.service;
 
 import be.freenote.dto.request.CreateDocumentRequest;
 import be.freenote.dto.request.UpdateDocumentRequest;
+import be.freenote.dto.response.AdjacentDocumentsResponse;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
 import org.springframework.data.domain.Pageable;
@@ -30,4 +31,8 @@ public interface DocumentService {
     /** Docs d'un profil : l'auteur ({@code callerId == userId}) voit aussi ses docs en attente,
      *  les autres ne voient que les vérifiés. */
     PageResponse<DocumentResponse> getByUser(Long userId, Long callerId, Pageable pageable);
+    /** Voisins chronologiques dans le même cours — navigation précédent/suivant de la page document. */
+    AdjacentDocumentsResponse getAdjacent(Long documentId);
+    /** Docs par catégorie dans le périmètre section/cours — compteurs des chips de l'explorer. */
+    java.util.Map<String, Long> getCategoryCounts(Long sectionId, Long courseId);
 }

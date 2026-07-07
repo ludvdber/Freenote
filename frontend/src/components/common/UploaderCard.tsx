@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Button } from '@mui/material';
+import { Box, Typography, Chip, Button, type SxProps, type Theme } from '@mui/material';
 import { Verified, Bolt, School, FavoriteBorder, EmojiEvents } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ import LevelChip from '@/components/common/LevelChip';
  * activity (XP, document count, section, verified) so readers can gauge reliability,
  * with a link to the full profile.
  */
-export default function UploaderCard({ authorId }: { authorId: number }) {
+export default function UploaderCard({ authorId, sx }: { authorId: number; sx?: SxProps<Theme> }) {
   const { t } = useTranslation();
   const { data: u } = useQuery({
     queryKey: ['user', authorId],
@@ -40,7 +40,10 @@ export default function UploaderCard({ authorId }: { authorId: number }) {
   const isFormerDelegate = !isDelegate && (delegateHistory?.length ?? 0) > 0;
 
   return (
-    <GlassCard sx={{ p: 2.5, mb: 3 }}>
+    // Pas de tableau ici : GlassCard spreade son sx dans un objet (`{ ...défauts, ...sx }`), un
+    // tableau y deviendrait des clés numériques ignorées (padding perdu — bug vu en capture).
+    // Le cast est sûr tant que les appelants passent un objet de style simple.
+    <GlassCard sx={{ p: 2.5, mb: 3, ...(sx as object) }}>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
         {t('document.uploaderTitle')}
       </Typography>

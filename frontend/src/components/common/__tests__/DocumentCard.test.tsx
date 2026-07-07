@@ -32,21 +32,28 @@ const renderCard = (doc: DocumentResponse, variant?: 'card' | 'row') =>
   render(<MemoryRouter><DocumentCard document={doc} variant={variant} /></MemoryRouter>);
 
 describe('DocumentCard', () => {
-  it('renders title, course · section line and view count — but NOT the author (dropped 2026-07-07)', () => {
+  it('renders title, course · section line, view count AND the author (back in v4, maquette 6)', () => {
     renderCard(makeDoc());
     expect(screen.getByText('Algo notes')).toBeInTheDocument();
     expect(screen.getByText('Algo · Informatique')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
-    // L'auteur vit sur /documents/:id (carte uploader), plus sur les cartes.
-    expect(screen.queryByText('Sophie')).not.toBeInTheDocument();
+    // v4 : avatar + prénom au footer (revirement assumé 2026-07-07 — l'espace de la v4 le permet).
+    expect(screen.getByText(/Sophie/)).toBeInTheDocument();
   });
 
-  it('puts the title BEFORE the category/year meta line (v3 hierarchy)', () => {
+  it('renders the category cover: watermark emoji + category chip (v4)', () => {
+    renderCard(makeDoc());
+    expect(screen.getByText('📘')).toBeInTheDocument(); // filigrane SYNTHESE
+    expect(screen.getByText('categories.SYNTHESE')).toBeInTheDocument();
+  });
+
+  it('puts the title BEFORE the course/year context line (v3 hierarchy kept in v4)', () => {
     renderCard(makeDoc({ year: '2025-2026' }));
     const title = screen.getByText('Algo notes');
-    const year = screen.getByText('2025-2026');
-    // compareDocumentPosition : FOLLOWING = l'année arrive APRÈS le titre dans le DOM.
-    expect(title.compareDocumentPosition(year) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // v4 : l'année vit en fin de ligne contexte « cours · section · année ».
+    const context = screen.getByText('Algo · Informatique · 2025-2026');
+    // compareDocumentPosition : FOLLOWING = le contexte arrive APRÈS le titre dans le DOM.
+    expect(title.compareDocumentPosition(context) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('has no share button — the card links to the doc, nothing else is clickable', () => {
@@ -96,12 +103,13 @@ describe('DocumentCard', () => {
     expect(screen.getByText('🔥')).toBeInTheDocument();
   });
 
-  it('renders the row variant (list view) with the same core info, author excluded', () => {
+  it('renders the row variant (list view) with the same core info, author excluded (density)', () => {
     renderCard(makeDoc({ averageRating: 4.3, ratingCount: 12 }), 'row');
     expect(screen.getByText('Algo notes')).toBeInTheDocument();
     expect(screen.getByText('Algo · Informatique')).toBeInTheDocument();
     expect(screen.getByText('4.3')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.queryByText('Sophie')).not.toBeInTheDocument();
+    // La ligne compacte reste sans auteur ni couverture — la densité prime en vue liste.
+    expect(screen.queryByText(/Sophie/)).not.toBeInTheDocument();
   });
 });

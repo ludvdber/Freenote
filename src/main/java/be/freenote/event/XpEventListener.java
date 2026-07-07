@@ -20,6 +20,9 @@ public class XpEventListener {
     private static final int XP_PER_RATING_STAR = 2;
     /** A rating below this grants no XP — a mediocre document must not reward its author. */
     private static final int MIN_SCORE_FOR_XP = 3;
+    /** Reward for the RATER's first rating on a document (validated 2026-07-07) — whatever the score:
+     *  the signal « ce doc est médiocre » vaut autant pour la promo qu'un 5★. */
+    private static final int XP_RATING_GIVEN = 2;
 
     private final UserService userService;
 
@@ -52,6 +55,12 @@ public class XpEventListener {
         userService.addXp(event.authorId(), delta);
         log.debug("XP {}{} to user {} (document {} rated {}★, was {})", delta > 0 ? "+" : "", delta,
                 event.authorId(), event.documentId(), event.score(), event.previousScore());
+    }
+
+    @EventListener
+    public void onRatingGiven(XpEvent.RatingGiven event) {
+        userService.addXp(event.raterId(), XP_RATING_GIVEN);
+        log.debug("XP +{} to user {} (first rating on document {})", XP_RATING_GIVEN, event.raterId(), event.documentId());
     }
 
     @EventListener

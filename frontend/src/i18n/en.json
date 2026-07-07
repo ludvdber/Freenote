@@ -190,7 +190,25 @@
     "aiShort": "AI",
     "supporter": "Supporter",
     "uploaderTitle": "Shared by",
-    "viewProfile": "View profile"
+    "viewProfile": "View profile",
+    "rateCardTitle": "Did this doc help you?",
+    "rateCardWhy": "Rating takes 2 seconds, and the whole class knows what to download.",
+    "rateFirstTitle": "Be the first to rate",
+    "rateFirstHint": "✨ No rating yet — yours will guide the whole class.",
+    "rateXpChip": "Your rating = +2 XP",
+    "xpChipShort": "+2 XP",
+    "nudgeTitle": "Downloaded!",
+    "nudgeText": "Worth it? Your rating guides the whole class.",
+    "reviseTitle": "Study this course",
+    "reviseCards_one": "{{count}} card",
+    "reviseCards_other": "{{count}} cards",
+    "reviseQuestions_one": "{{count}} question",
+    "reviseQuestions_other": "{{count}} questions",
+    "tocTitle": "PDF outline",
+    "tocPage": "p. {{page}}",
+    "prevDoc": "Previous",
+    "nextDoc": "Next",
+    "sameCourse": "From the same course"
   },
   "admin": {
     "tabs": {
@@ -204,7 +222,20 @@
       "donations": "Donations",
       "activity": "Logs",
       "guides": "Guides",
-      "tools": "Tools"
+      "tools": "Tools",
+      "settings": "Settings"
+    },
+    "settings": {
+      "countdownTitle": "Home page countdown",
+      "countdownHint": "Shows a \"D-N\" banner on the home page (school year start, exam session…). It disappears automatically once the date has passed.",
+      "dateLabel": "Date",
+      "labelLabel": "Label",
+      "labelPlaceholder": "Back to school 2026",
+      "preview": "Preview",
+      "previewPast": "This date has already passed — the banner will not show.",
+      "disable": "Disable",
+      "saved": "Countdown saved.",
+      "disabled": "Countdown disabled."
     },
     "guides": {
       "title": "Guides",
@@ -493,6 +524,12 @@
     "oauthFailed": "Login failed. Please try again in a moment."
   },
   "home": {
+    "countdown": {
+      "defaultLabel": "Back to school",
+      "inDays_one": "{{label}} in {{count}} day",
+      "inDays_other": "{{label}} in {{count}} days",
+      "today": "{{label}} is today! 🎉"
+    },
     "recent": {
       "title": "Keep reading",
       "empty": "Open a document and it will show up here next time."
@@ -542,7 +579,10 @@
     "bestRated": "Best rated",
     "viewMode": "Display mode",
     "viewGrid": "Grid view",
-    "viewList": "List view"
+    "viewList": "List view",
+    "allCategories": "All",
+    "pageSize": "Documents per page",
+    "perPage": "{{n}} / page"
   },
   "common": {
     "loading": "Loading...",
@@ -559,7 +599,8 @@
     "continue": "Continue",
     "back": "Back",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "close": "Close"
   },
   "onboarding": {
     "title": "Welcome to Freenote",
@@ -606,6 +647,12 @@
     "metaDescription": "Free tools for students: spaced-repetition flashcards, shareable quizzes, Gantt chart, grade calculator, IPv4/IPv6 subnet calculators, base converter and JWT decoder. No account, runs in your browser.",
     "openTool": "Open tool",
     "allTools": "All tools",
+    "courseLink": {
+      "section": "Section",
+      "course": "Course (optional)",
+      "none": "None",
+      "hint": "The content will appear as a study suggestion on this course's documents."
+    },
     "filterLabel": "Filter tools by category",
     "categories": {
       "all": "All",

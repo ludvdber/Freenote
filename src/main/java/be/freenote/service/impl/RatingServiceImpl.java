@@ -49,6 +49,10 @@ public class RatingServiceImpl implements RatingService {
                     .user(user)
                     .score(score)
                     .build());
+            // +2 XP au NOTEUR, à la première note sur ce doc uniquement (règle validée 2026-07-07) :
+            // re-noter passe dans la branche update et n'en redonne jamais, le self-rating est déjà
+            // refusé plus haut, et l'unicité (document, user) empêche tout doublon en base.
+            eventPublisher.publishEvent(new XpEvent.RatingGiven(userId, documentId));
         } else {
             existing.get().setScore(score);
             ratingRepository.save(existing.get());

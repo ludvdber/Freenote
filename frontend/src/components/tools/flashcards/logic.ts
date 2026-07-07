@@ -31,6 +31,11 @@ export interface Deck {
   serverId?: number;
   /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
   published?: boolean;
+  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents).
+   *  sectionId sert uniquement a re-remplir les dropdowns du selecteur a la reouverture. */
+  sectionId?: number;
+  courseId?: number;
+  courseName?: string;
 }
 
 export type Rating = 'again' | 'hard' | 'good' | 'easy';
@@ -154,6 +159,9 @@ export function decksFromJson(text: string, now: number = Date.now()): Deck[] {
       sharedAt: Number.isFinite(deck.sharedAt) ? (deck.sharedAt as number) : undefined,
       serverId: Number.isFinite(deck.serverId) ? (deck.serverId as number) : undefined,
       published: typeof deck.published === 'boolean' ? deck.published : undefined,
+      sectionId: Number.isFinite(deck.sectionId) ? (deck.sectionId as number) : undefined,
+      courseId: Number.isFinite(deck.courseId) ? (deck.courseId as number) : undefined,
+      courseName: typeof deck.courseName === 'string' ? deck.courseName : undefined,
     };
   });
 }

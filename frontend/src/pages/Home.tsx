@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthPromptStore } from '@/stores/useAuthPromptStore';
 import HeroSection from '@/components/home/HeroSection';
+import CountdownBanner from '@/components/home/CountdownBanner';
 import Divider from '@/components/ui/Divider';
 import AdSlot from '@/components/ui/AdSlot';
 
@@ -58,6 +59,9 @@ export default function Home() {
       <Container maxWidth="lg">
         {/* Hiérarchie : PRODUIT (stats + docs/outils) → (comment ça marche, anon) → NEWS + liens → extras.
             Les outils vivent DANS l'aperçu (colonne droite anon) et dans l'accès rapide (connecté). */}
+
+        {/* Compte à rebours (rentrée…) piloté par l'admin — rend null si non configuré/passé. */}
+        <CountdownBanner />
 
         {/* Stats agrégées, visibles aussi des anonymes (GET /api/stats est permitAll). */}
         <Suspense fallback={<SectionFallback />}>

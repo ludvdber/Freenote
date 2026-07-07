@@ -91,7 +91,45 @@ class RatingServiceImplTest {
 
         ratingService.rate(2L, 100L, 3);
 
-        verify(eventPublisher, never()).publishEvent(any(XpEvent.class));
+        // Aucun événement AUTEUR sur un doc anonyme — mais le NOTEUR touche quand même son +2
+        // (sa note guide la promo, que le doc ait un auteur ou non).
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.DocumentRated.class));
+        verify(eventPublisher).publishEvent(any(XpEvent.RatingGiven.class));
+    }
+
+    @Test
+    void shouldRewardRaterOnFirstRating() {
+        User voter = testUser(2L);
+        Document doc = testDocument(testUser(1L));
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(voter));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(ratingRepository.findByDocumentIdAndUserId(100L, 2L)).thenReturn(Optional.empty());
+
+        ratingService.rate(2L, 100L, 4);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher, times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues()).anySatisfy(e -> {
+            assertThat(e).isInstanceOf(XpEvent.RatingGiven.class);
+            assertThat(((XpEvent.RatingGiven) e).raterId()).isEqualTo(2L);
+        });
+    }
+
+    @Test
+    void shouldNotRewardRaterOnReRating() {
+        // Re-noter ne redonne jamais le +2 du noteur — seule la CRÉATION du Rating le déclenche.
+        User voter = testUser(2L);
+        Document doc = testDocument(testUser(1L));
+        Rating existing = Rating.builder().id(10L).document(doc).user(voter).score(3).build();
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(voter));
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(ratingRepository.findByDocumentIdAndUserId(100L, 2L)).thenReturn(Optional.of(existing));
+
+        ratingService.rate(2L, 100L, 5);
+
+        verify(eventPublisher, never()).publishEvent(any(XpEvent.RatingGiven.class));
     }
 
     @Test

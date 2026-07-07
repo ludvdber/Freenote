@@ -59,6 +59,23 @@ export interface DocumentResponse {
   createdAt: string;
 }
 
+/** Compte à rebours de la home (rentrée…) — date null = désactivé. */
+export interface CountdownResponse {
+  date: string | null;
+  label: string | null;
+}
+
+/** Voisins précédent/suivant d'un doc dans son cours (navigation de la page document). */
+export interface AdjacentDocRef {
+  id: number;
+  title: string;
+}
+
+export interface AdjacentDocumentsResponse {
+  previous: AdjacentDocRef | null;
+  next: AdjacentDocRef | null;
+}
+
 export interface Section {
   id: number;
   name: string;

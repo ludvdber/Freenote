@@ -208,4 +208,40 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
            "LEFT JOIN FETCH c.section " +
            "LEFT JOIN FETCH d.professor")
     List<Document> findAllWithAssociations();
+
+    /** Répartition des docs par catégorie pour les filtres courants — alimente les compteurs des
+     *  chips catégories de l'explorer (le paramètre de recherche `q` est volontairement ignoré :
+     *  les compteurs décrivent le périmètre structurel section/cours, pas le texte tapé). */
+    @Query("""
+        SELECT d.category, COUNT(d) FROM Document d
+        WHERE (:sectionId IS NULL OR d.course.section.id = :sectionId)
+          AND (:courseId IS NULL OR d.course.id = :courseId)
+        GROUP BY d.category
+        """)
+    List<Object[]> countByCategory(@Param("sectionId") Long sectionId, @Param("courseId") Long courseId);
+
+    /** Doc précédent du même cours (ordre chronologique, id en départage des createdAt égaux) —
+     *  navigation « précédent/suivant » de la page document. Appeler avec PageRequest.of(0, 1). */
+    @Query("""
+        SELECT d FROM Document d
+        WHERE d.course.id = :courseId
+          AND (d.createdAt < :createdAt OR (d.createdAt = :createdAt AND d.id < :docId))
+        ORDER BY d.createdAt DESC, d.id DESC
+        """)
+    List<Document> findPreviousInCourse(@Param("courseId") Long courseId,
+                                        @Param("createdAt") LocalDateTime createdAt,
+                                        @Param("docId") Long docId,
+                                        Pageable pageable);
+
+    /** Doc suivant du même cours — symétrique de {@link #findPreviousInCourse}. */
+    @Query("""
+        SELECT d FROM Document d
+        WHERE d.course.id = :courseId
+          AND (d.createdAt > :createdAt OR (d.createdAt = :createdAt AND d.id > :docId))
+        ORDER BY d.createdAt ASC, d.id ASC
+        """)
+    List<Document> findNextInCourse(@Param("courseId") Long courseId,
+                                    @Param("createdAt") LocalDateTime createdAt,
+                                    @Param("docId") Long docId,
+                                    Pageable pageable);
 }

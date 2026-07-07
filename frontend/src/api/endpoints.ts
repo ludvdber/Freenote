@@ -45,15 +45,35 @@ import type {
   GanttResponse,
   SaveGanttRequest,
   UserStats,
+  AdjacentDocumentsResponse,
+  CountdownResponse,
 } from '@/types';
 
 // --- Stats ---
 export const getStats = () =>
   api.get<StatsResponse>('/stats').then((r) => r.data);
 
+// --- Réglages (compte à rebours de la home) ---
+export const getCountdown = () =>
+  api.get<CountdownResponse>('/public/countdown').then((r) => r.data);
+
+export const adminGetCountdown = () =>
+  api.get<CountdownResponse>('/admin/settings/countdown').then((r) => r.data);
+
+export const adminSetCountdown = (body: { date: string | null; label: string | null }) =>
+  api.put<CountdownResponse>('/admin/settings/countdown', body).then((r) => r.data);
+
 // --- Documents ---
 export const getDocumentById = (id: number) =>
   api.get<DocumentResponse>(`/documents/${id}`).then((r) => r.data);
+
+/** Voisins précédent/suivant du même cours (navigation de la page document). */
+export const getAdjacentDocuments = (id: number) =>
+  api.get<AdjacentDocumentsResponse>(`/documents/${id}/adjacent`).then((r) => r.data);
+
+/** Compteurs par catégorie (chips de l'explorer) dans le périmètre section/cours courant. */
+export const getCategoryCounts = (params: { sectionId?: number; courseId?: number } = {}) =>
+  api.get<Record<string, number>>('/documents/category-counts', { params }).then((r) => r.data);
 
 export const searchDocuments = (params: {
   q?: string;

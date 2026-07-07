@@ -23,12 +23,13 @@ export const toolbar: Sx = {
   backdropFilter: 'blur(8px)',
 };
 
-export const canvasArea: Sx = {
-  height: { xs: '78vh', md: '85vh' },
+// Hauteur passée par le composant = une page entière au fit-width (fallback vh avant mesure).
+export const canvasArea = (height?: number): Sx => ({
+  height: height ?? { xs: '78vh', md: '85vh' },
   overflow: 'auto',
   overscrollBehavior: 'contain',
   p: { xs: 1, sm: 2 },
-};
+});
 
 // Vertical stack of pages. `fit-content` + `minWidth 100%` lets a zoomed page (wider than the
 // viewport) push the column wider so the container scrolls horizontally, while narrower pages stay

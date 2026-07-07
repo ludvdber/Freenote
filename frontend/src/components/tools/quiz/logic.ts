@@ -37,6 +37,11 @@ export interface Quiz {
   serverId?: number;
   /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
   published?: boolean;
+  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents).
+   *  sectionId sert uniquement a re-remplir les dropdowns du selecteur a la reouverture. */
+  sectionId?: number;
+  courseId?: number;
+  courseName?: string;
 }
 
 export interface GradeResult {
@@ -175,6 +180,9 @@ function healQuiz(input: unknown, now: number): Quiz {
     sharedAt: Number.isFinite(q.sharedAt) ? (q.sharedAt as number) : undefined,
     serverId: Number.isFinite(q.serverId) ? (q.serverId as number) : undefined,
     published: typeof q.published === 'boolean' ? q.published : undefined,
+    sectionId: Number.isFinite(q.sectionId) ? (q.sectionId as number) : undefined,
+    courseId: Number.isFinite(q.courseId) ? (q.courseId as number) : undefined,
+    courseName: typeof q.courseName === 'string' ? q.courseName : undefined,
     questions: q.questions.map(healQuestion),
   };
 }

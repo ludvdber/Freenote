@@ -48,6 +48,30 @@ export function isHotDoc(createdAt: string, downloadCount: number, now: Date = n
   return downloadCount >= 20 && downloadCount / days >= 2;
 }
 
+/** Jours calendaires (minuit à minuit) d'ici une date ISO `yyyy-mm-dd`.
+ *  0 = aujourd'hui, négatif = passée — la bannière compte à rebours se masque alors d'elle-même. */
+export function daysUntil(dateStr: string, now: Date = new Date()): number {
+  const target = new Date(`${dateStr}T00:00:00`);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target.getTime() - todayStart.getTime()) / DAY_MS);
+}
+
+/** Pictogramme par catégorie — filigrane des couvertures de cartes + chips de l'explorer.
+ *  Des émojis, pas des initiales : « E » était ambigu (Examen/Exercices). */
+const CATEGORY_EMOJI: Record<string, string> = {
+  SYNTHESE: '📘',
+  EXAMEN: '📝',
+  NOTES: '✏️',
+  EXERCICES: '🧮',
+  COURS: '📚',
+  TFE: '🎓',
+  DIVERS: '📦',
+};
+
+export function categoryEmoji(category: string): string {
+  return CATEGORY_EMOJI[category] ?? '📄';
+}
+
 /** Strips HTML tags and collapses whitespace — for excerpts/reading-time off blog content. */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();

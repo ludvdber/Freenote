@@ -19,6 +19,7 @@ import {
 } from '@/api/endpoints';
 import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry, QuizQuestionDto, QuizFullResponse } from '@/types';
 import CodeBlock from './quiz/CodeBlock';
+import CourseSelect from './CourseSelect';
 import { fileToDataUrl } from './quiz/image';
 import {
   type Quiz, type QuizQuestion,
@@ -75,6 +76,10 @@ function quizFromFull(full: QuizFullResponse, link: boolean): Quiz {
     serverId: link ? full.id : undefined,
     published: link ? full.published : undefined,
     sharedAt: link && full.published ? Date.now() : undefined,
+    // Le rattachement au cours voyage avec la copie (la section n'est pas dans la réponse — le
+    // sélecteur affiche le nom du cours via son option synthétique).
+    courseId: full.courseId ?? undefined,
+    courseName: full.courseName ?? undefined,
     questions: full.questions.map((q) => ({
       id: uid(),
       type: q.type,
@@ -218,7 +223,7 @@ export default function Quiz() {
     const err = validateQuiz(quiz);
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const n = normalizeQuiz(quiz);
-    const body = { title: n.title, questions: n.questions.map(toQuestionDto), published };
+    const body = { title: n.title, courseId: n.courseId ?? null, questions: n.questions.map(toQuestionDto), published };
     try {
       const saved = quiz.serverId ? await updateQuiz(quiz.serverId, body) : await createQuiz(body);
       setQuizzes((qs) => qs.map((q) => (q.id === quiz.id
@@ -655,6 +660,18 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onSaveOnlin
           onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
           slotProps={{ htmlInput: { maxLength: 100 } }}
         />
+        {/* Rattachement à un cours (optionnel, vérifiés) : fait apparaître le quiz dans
+            « Réviser ce cours » sur les pages des documents de ce cours. */}
+        {canPublish && (
+          <Box sx={{ mt: 2 }}>
+            <CourseSelect
+              value={{ sectionId: draft.sectionId, courseId: draft.courseId, courseName: draft.courseName }}
+              onChange={(link) => setDraft((d) => ({
+                ...d, sectionId: link.sectionId, courseId: link.courseId, courseName: link.courseName,
+              }))}
+            />
+          </Box>
+        )}
       </GlassCard>
 
       <input ref={imageInput} type="file" accept="image/*" hidden onChange={onImageFile} />

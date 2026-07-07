@@ -2,6 +2,7 @@ package be.freenote.service.impl;
 
 import be.freenote.dto.request.CreateDocumentRequest;
 import be.freenote.dto.request.UpdateDocumentRequest;
+import be.freenote.dto.response.AdjacentDocumentsResponse;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
 import be.freenote.entity.*;
@@ -484,6 +485,32 @@ public class DocumentServiceImpl implements DocumentService {
                 .map(documentMapper::toResponse)
                 .toList();
         return PageResponse.from(page, content);
+    }
+
+    @Override
+    public AdjacentDocumentsResponse getAdjacent(Long documentId) {
+        Document doc = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
+        Long courseId = doc.getCourse().getId();
+        var one = org.springframework.data.domain.PageRequest.of(0, 1);
+        AdjacentDocumentsResponse.AdjacentDoc previous = documentRepository
+                .findPreviousInCourse(courseId, doc.getCreatedAt(), documentId, one).stream()
+                .findFirst()
+                .map(d -> new AdjacentDocumentsResponse.AdjacentDoc(d.getId(), d.getTitle()))
+                .orElse(null);
+        AdjacentDocumentsResponse.AdjacentDoc next = documentRepository
+                .findNextInCourse(courseId, doc.getCreatedAt(), documentId, one).stream()
+                .findFirst()
+                .map(d -> new AdjacentDocumentsResponse.AdjacentDoc(d.getId(), d.getTitle()))
+                .orElse(null);
+        return new AdjacentDocumentsResponse(previous, next);
+    }
+
+    @Override
+    public Map<String, Long> getCategoryCounts(Long sectionId, Long courseId) {
+        return documentRepository.countByCategory(sectionId, courseId).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Category) row[0]).name(),
+                        row -> (Long) row[1]));
     }
 
     /** Flush buffered download counts to DB every 5 minutes */

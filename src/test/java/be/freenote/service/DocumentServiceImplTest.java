@@ -633,4 +633,50 @@ class DocumentServiceImplTest {
         assertThatThrownBy(() -> documentService.getById(999L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    // ---- getAdjacent ----
+
+    @Test
+    void shouldReturnAdjacentDocumentsOfSameCourse() {
+        Document doc = testDocument(testUser());
+        doc.setCreatedAt(LocalDateTime.of(2026, 7, 1, 12, 0));
+        Document previous = Document.builder().id(90L).title("Ancien doc").course(doc.getCourse()).build();
+        Document next = Document.builder().id(110L).title("Doc plus récent").course(doc.getCourse()).build();
+
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findPreviousInCourse(eq(10L), eq(doc.getCreatedAt()), eq(100L), any()))
+                .thenReturn(List.of(previous));
+        when(documentRepository.findNextInCourse(eq(10L), eq(doc.getCreatedAt()), eq(100L), any()))
+                .thenReturn(List.of(next));
+
+        var result = documentService.getAdjacent(100L);
+
+        assertThat(result.previous().id()).isEqualTo(90L);
+        assertThat(result.previous().title()).isEqualTo("Ancien doc");
+        assertThat(result.next().id()).isEqualTo(110L);
+        assertThat(result.next().title()).isEqualTo("Doc plus récent");
+    }
+
+    @Test
+    void shouldReturnNullNeighboursWhenAloneInCourse() {
+        Document doc = testDocument(testUser());
+        doc.setCreatedAt(LocalDateTime.of(2026, 7, 1, 12, 0));
+
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findPreviousInCourse(anyLong(), any(), anyLong(), any())).thenReturn(List.of());
+        when(documentRepository.findNextInCourse(anyLong(), any(), anyLong(), any())).thenReturn(List.of());
+
+        var result = documentService.getAdjacent(100L);
+
+        assertThat(result.previous()).isNull();
+        assertThat(result.next()).isNull();
+    }
+
+    @Test
+    void shouldThrowNotFoundOnAdjacentWhenDocumentMissing() {
+        when(documentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.getAdjacent(999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

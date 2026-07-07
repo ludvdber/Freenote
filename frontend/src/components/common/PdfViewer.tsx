@@ -14,6 +14,59 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
+// Bornes de la hauteur « une page » du conteneur (voir viewerHeight ci-dessous).
+const MIN_VIEWER_H = 480;
+const MAX_VIEWER_H = 1500;
+// Le sommaire d'un PDF pathologique peut compter des centaines d'entrées — on borne ce qu'on
+// remonte au rail (au-delà, la liste ne guide plus personne).
+const MAX_OUTLINE_ENTRIES = 60;
+
+/** Une entrée du sommaire (outline) du PDF, résolue en numéro de page. */
+export interface PdfOutlineEntry {
+  title: string;
+  page: number;
+  /** 0 = chapitre, 1 = sous-section (on ne descend pas plus profond). */
+  level: number;
+}
+
+/** Contrôle imperatif exposé au parent (saut de page depuis le sommaire du rail). */
+export interface PdfViewerHandle {
+  scrollToPage: (page: number) => void;
+}
+
+/** Aplati l'outline pdf.js (2 niveaux max) en résolvant chaque destination en numéro de page. */
+async function extractOutline(pdf: PDFDocumentProxy): Promise<PdfOutlineEntry[]> {
+  const outline = await pdf.getOutline();
+  if (!outline?.length) return [];
+  const acc: PdfOutlineEntry[] = [];
+  const walk = async (items: typeof outline, level: number) => {
+    for (const item of items) {
+      if (acc.length >= MAX_OUTLINE_ENTRIES) return;
+      try {
+        // dest : soit un tableau [pageRef, …], soit un nom à résoudre via getDestination.
+        const dest = typeof item.dest === 'string' ? await pdf.getDestination(item.dest) : item.dest;
+        if (Array.isArray(dest) && dest[0] != null) {
+          const pageIndex = await pdf.getPageIndex(dest[0]);
+          const title = item.title?.trim();
+          if (title) acc.push({ title, page: pageIndex + 1, level });
+        }
+      } catch { /* destination cassée — on saute l'entrée, pas tout le sommaire */ }
+      if (level === 0 && item.items?.length) await walk(item.items, 1);
+    }
+  };
+  await walk(outline, 0);
+  return acc;
+}
+
+interface PdfViewerProps {
+  docId: number;
+  title: string;
+  /** Reçoit le sommaire du PDF une fois extrait ([] si le PDF n'en a pas). */
+  onOutline?: (entries: PdfOutlineEntry[]) => void;
+  /** Prop plutôt que ref React : le composant est chargé via lazy(), une prop explicite
+   *  évite toute ambiguïté de transmission de ref à travers Suspense. */
+  controllerRef?: React.RefObject<PdfViewerHandle | null>;
+}
 
 /**
  * Renders an authenticated PDF to <canvas> with pdf.js — works inline on every device, including
@@ -25,7 +78,7 @@ const ZOOM_STEP = 0.25;
  * space with a sized placeholder so the scrollbar and layout stay stable. Zoom re-renders on the fly;
  * the page indicator follows the scroll position.
  */
-export default function PdfViewer({ docId, title }: { docId: number; title: string }) {
+export default function PdfViewer({ docId, title, onOutline, controllerRef }: PdfViewerProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
@@ -59,11 +112,18 @@ export default function PdfViewer({ docId, title }: { docId: number; title: stri
     // cleanup cancels any in-flight render tasks.
   }
 
+  // Latest-ref : l'identité de onOutline ne doit pas invalider l'effet de chargement (sinon un
+  // parent qui re-render re-téléchargerait le PDF). Mis à jour dans un effet (déclaré avant celui
+  // du chargement — l'ordre d'exécution des effets suit l'ordre de déclaration).
+  const onOutlineRef = useRef(onOutline);
+  useEffect(() => { onOutlineRef.current = onOutline; }, [onOutline]);
+
   // Load the document once, fetching bytes through the authenticated endpoint.
   useEffect(() => {
     let cancelled = false;
     let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
     const tasks = renderTasks.current; // stable array instance — safe to reference in cleanup
+    onOutlineRef.current?.([]); // reset : pas de sommaire périmé pendant le chargement du doc suivant
     (async () => {
       try {
         const blob = await downloadDocument(docId);
@@ -80,6 +140,12 @@ export default function PdfViewer({ docId, title }: { docId: number; title: stri
         setNumPages(pdf.numPages);
         setCurrentPage(1);
         setLoaded(true);
+        // Sommaire (outline) — best-effort : un PDF sans outline ou aux destinations cassées
+        // donne simplement [], le rail masque alors la carte.
+        try {
+          const entries = await extractOutline(pdf);
+          if (!cancelled) onOutlineRef.current?.(entries);
+        } catch { /* outline illisible — on n'affiche rien */ }
       } catch {
         if (!cancelled) setError(true);
       }
@@ -91,6 +157,22 @@ export default function PdfViewer({ docId, title }: { docId: number; title: stri
       pdfRef.current = null;
     };
   }, [docId]);
+
+  // Saut de page depuis le sommaire : scroll du conteneur interne vers la page demandée
+  // (le rendu suit tout seul — l'IntersectionObserver rend les pages qui entrent en vue).
+  useEffect(() => {
+    if (!controllerRef) return;
+    controllerRef.current = {
+      scrollToPage: (page: number) => {
+        const container = containerRef.current;
+        const wrap = wrapRefs.current[page - 1];
+        if (!container || !wrap) return;
+        const delta = wrap.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        container.scrollTo({ top: container.scrollTop + delta - 8, behavior: 'smooth' });
+      },
+    };
+    return () => { controllerRef.current = null; };
+  }, [controllerRef]);
 
   // Available width for fit-to-width — measured on a width:100% ruler so it stays the *visible* inner
   // width even when a zoomed page overflows and makes the scroll container wider than the viewport.
@@ -185,6 +267,13 @@ export default function PdfViewer({ docId, title }: { docId: number; title: stri
 
   const placeholderH = availWidth ? Math.round(availWidth * zoom * defaultAspect) : 480;
 
+  // Hauteur du conteneur = UNE page entière au fit-width (zoom 1) + le padding vertical — demande
+  // explicite (2026-07-07) : « la taille d'une page pdf ». Bornée pour rester raisonnable sur un
+  // écran étroit (min) et face à un PDF paysage très allongé ou une colonne très large (max).
+  const viewerHeight = availWidth
+    ? Math.min(MAX_VIEWER_H, Math.max(MIN_VIEWER_H, Math.round(availWidth * defaultAspect) + 34))
+    : undefined;
+
   return (
     <Box sx={s.wrapper}>
       <Box sx={s.toolbar}>
@@ -201,7 +290,7 @@ export default function PdfViewer({ docId, title }: { docId: number; title: stri
         </IconButton>
       </Box>
 
-      <Box ref={containerRef} sx={s.canvasArea}>
+      <Box ref={containerRef} sx={s.canvasArea(viewerHeight)}>
         <Box ref={rulerRef} sx={{ width: '100%', height: 0 }} />
         {!loaded && <Box sx={s.center}><CircularProgress size={32} /></Box>}
         {loaded && (

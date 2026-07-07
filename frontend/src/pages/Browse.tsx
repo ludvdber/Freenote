@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Pagination,
-  Chip, CircularProgress, Button, Alert, ToggleButtonGroup, ToggleButton, Tooltip,
+  Chip, CircularProgress, Button, Alert, ToggleButtonGroup, ToggleButton, Tooltip, useTheme,
 } from '@mui/material';
 import { ArrowForward, Lock, Star, ViewModule, ViewList } from '@mui/icons-material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { searchDocuments, getSections, getCourses, listPublicDocuments } from '@/api/endpoints';
+import { searchDocuments, getSections, getCourses, getCategoryCounts, listPublicDocuments } from '@/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CATEGORIES, STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
+import { categoryColor, categoryEmoji } from '@/lib/utils';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import SearchBar from '@/components/ui/SearchBar';
@@ -27,8 +28,12 @@ export default function Browse() {
   return token ? <FullBrowse /> : <PublicBrowse />;
 }
 
+// Tailles de page proposées (multiples de 3 pour la grille) — plafond serveur : 100.
+const PAGE_SIZES = [12, 24, 48, 96];
+
 function FullBrowse() {
   const { t } = useTranslation();
+  const theme = useTheme();
 
   // Filters live in the URL so they survive a back-navigation from a document (React would otherwise
   // reset the useState on remount and drop every filter), and become shareable/bookmarkable.
@@ -63,6 +68,17 @@ function FullBrowse() {
     localStorage.setItem('freenote-browse-view', v);
   };
 
+  // Taille de page — même statut de préférence locale que la vue (plafond serveur : 100).
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const stored = Number(localStorage.getItem('freenote-browse-size'));
+    return PAGE_SIZES.includes(stored) ? stored : 24;
+  });
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    localStorage.setItem('freenote-browse-size', String(n));
+    patchParams({ page: 0 });
+  };
+
   // Patch the URL params (replace: no extra history entry per filter tweak). Empty values are dropped
   // so the URL stays clean (?section=2 rather than ?q=&cat=&section=2).
   const patchParams = (updates: Record<string, string | number>) => {
@@ -94,7 +110,7 @@ function FullBrowse() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['search', debouncedQuery, sectionId, courseId, category, sort, page],
+    queryKey: ['search', debouncedQuery, sectionId, courseId, category, sort, page, pageSize],
     queryFn: () =>
       searchDocuments({
         q: debouncedQuery || undefined,
@@ -103,9 +119,20 @@ function FullBrowse() {
         category: category || undefined,
         sort: sort ? SORT_API[sort] : undefined,
         page,
-        size: 18,
+        size: pageSize,
       }),
   });
+
+  // Compteurs des chips catégories — périmètre section/cours (le texte tapé est ignoré : les
+  // compteurs décrivent le catalogue filtré, pas la recherche en cours).
+  const { data: catCounts } = useQuery({
+    queryKey: ['category-counts', sectionId, courseId],
+    queryFn: () => getCategoryCounts({
+      sectionId: sectionId || undefined,
+      courseId: courseId || undefined,
+    }),
+  });
+  const totalInScope = Object.values(catCounts ?? {}).reduce((sum, n) => sum + n, 0);
 
   return (
     <PageWrapper>
@@ -154,21 +181,6 @@ function FullBrowse() {
           </FormControl>
         )}
         <FormControl size="small" sx={s.filterControl}>
-          <InputLabel>{t('document.category')}</InputLabel>
-          <Select
-            value={category}
-            label={t('document.category')}
-            onChange={(e) => patchParams({ cat: e.target.value, page: 0 })}
-          >
-            <MenuItem value="">{t('common.seeAll')}</MenuItem>
-            {CATEGORIES.map((c) => (
-              <MenuItem key={c} value={c}>
-                {t(`categories.${c}`)}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={s.filterControl}>
           <InputLabel>{t('search.sort')}</InputLabel>
           <Select
             value={sort}
@@ -180,6 +192,27 @@ function FullBrowse() {
             <MenuItem value="bestRated">{t('search.bestRated')}</MenuItem>
           </Select>
         </FormControl>
+      </Box>
+
+      {/* Le dropdown Catégorie est devenu une rangée de chips (maquette 6 validée) : filtre
+          1-clic + légende des couleurs de couvertures, avec compteurs du périmètre courant.
+          Re-cliquer la chip active la désélectionne. */}
+      <Box sx={s.quickCats} role="group" aria-label={t('document.category')}>
+        <Chip
+          clickable
+          label={`${t('search.allCategories')}${catCounts ? ` · ${totalInScope}` : ''}`}
+          onClick={() => patchParams({ cat: '', page: 0 })}
+          sx={s.quickCat(category === '', categoryColor('SYNTHESE', theme.palette.mode))}
+        />
+        {CATEGORIES.map((c) => (
+          <Chip
+            key={c}
+            clickable
+            label={`${categoryEmoji(c)} ${t(`categories.${c}`)}${catCounts ? ` · ${catCounts[c] ?? 0}` : ''}`}
+            onClick={() => patchParams({ cat: category === c ? '' : c, page: 0 })}
+            sx={s.quickCat(category === c, categoryColor(c, theme.palette.mode))}
+          />
+        ))}
       </Box>
 
       <AdSlot width={728} height={90} sx={{ mb: 3 }} />
@@ -209,13 +242,6 @@ function FullBrowse() {
                 onDelete={() => patchParams({ course: '', page: 0 })}
               />
             )}
-            {category && (
-              <Chip
-                size="small"
-                label={t(`categories.${category}`)}
-                onDelete={() => patchParams({ cat: '', page: 0 })}
-              />
-            )}
             {urlQuery && (
               <Chip
                 size="small"
@@ -223,12 +249,23 @@ function FullBrowse() {
                 onDelete={() => setQuery('')}
               />
             )}
+            {/* Sélecteur « N / page » — préférence locale, plafond serveur 100. */}
+            <FormControl size="small" sx={s.pageSizeControl}>
+              <Select
+                value={pageSize}
+                onChange={(e) => changePageSize(Number(e.target.value))}
+                aria-label={t('search.pageSize')}
+              >
+                {PAGE_SIZES.map((n) => (
+                  <MenuItem key={n} value={n}>{t('search.perPage', { n })}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <ToggleButtonGroup
               value={view}
               exclusive
               onChange={(_, v) => changeView(v)}
               size="small"
-              sx={{ ml: 'auto' }}
               aria-label={t('search.viewMode')}
             >
               <ToggleButton value="grid" aria-label={t('search.viewGrid')}>

@@ -2,6 +2,7 @@ package be.freenote.controller;
 
 import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.CreateDocumentRequest;
+import be.freenote.dto.response.AdjacentDocumentsResponse;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
 import be.freenote.security.ratelimit.RateLimit;
@@ -27,8 +28,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentController {
 
-    /** Hard cap on page size — a verified user must not be able to pull the whole table in one call. */
-    private static final int MAX_PAGE_SIZE = 50;
+    /** Hard cap on page size — a verified user must not be able to pull the whole table in one call.
+     *  100 couvre le plus grand choix du sélecteur « N / page » de l'explorer (96) avec une marge. */
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final DocumentService documentService;
 
@@ -50,6 +52,22 @@ public class DocumentController {
     @GetMapping("/{id}")
     public ResponseEntity<DocumentResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(documentService.getById(id));
+    }
+
+    /** Voisins précédent/suivant du même cours (navigation de la page document). */
+    @GetMapping("/{id}/adjacent")
+    public ResponseEntity<AdjacentDocumentsResponse> getAdjacent(@PathVariable Long id) {
+        return ResponseEntity.ok(documentService.getAdjacent(id));
+    }
+
+    /** Compteurs par catégorie (chips de l'explorer) dans le périmètre section/cours courant. */
+    @GetMapping("/category-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getCategoryCounts(
+            @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) Long courseId) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)))
+                .body(documentService.getCategoryCounts(sectionId, courseId));
     }
 
     /** Soft duplicate signal for the upload form: is there already a same-titled doc in this course?

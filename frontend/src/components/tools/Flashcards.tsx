@@ -19,6 +19,7 @@ import {
   type Deck, type Flashcard, type Rating,
   newDeck, newCard, schedule, dueCards, isDue, toTsv, parseCards, decksToJson, decksFromJson,
 } from './flashcards/logic';
+import CourseSelect, { type CourseLink } from './CourseSelect';
 
 const STORAGE_KEY = 'freenote.flashcards.v1';
 /** Server cap (PublishDeckRequest @Size(max=1000)) — mirrored here for a precise message before the call. */
@@ -41,6 +42,15 @@ function download(filename: string, content: string, type: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Read a `#deck=<id>` link (tuile « Réviser ce cours » d'une page document) once, at mount —
+ *  ouvre l'onglet Bibliothèque et met le paquet ciblé en évidence. */
+function readDeckIdFromHash(): number | null {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#deck=')) return null;
+  const id = Number(hash.slice('#deck='.length));
+  return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 function shuffled<T>(arr: T[]): T[] {
@@ -67,7 +77,8 @@ export default function Flashcards() {
   const { isVerified } = useAuthStore();
 
   const [decks, setDecks] = useState<Deck[]>(loadDecks);
-  const [tab, setTab] = useState<'mine' | 'library'>('mine');
+  const [highlightDeckId] = useState<number | null>(readDeckIdFromHash);
+  const [tab, setTab] = useState<'mine' | 'library'>(() => (readDeckIdFromHash() != null ? 'library' : 'mine'));
   const [openId, setOpenId] = useState<string | null>(null);   // deck whose detail is open (null = overview)
   const [review, setReview] = useState<string[] | null>(null); // queue of card ids, or null = manage
 
@@ -92,6 +103,11 @@ export default function Flashcards() {
   const csvInput = useRef<HTMLInputElement>(null);       // add cards to the OPEN deck
   const deckFileInput = useRef<HTMLInputElement>(null);  // create a NEW deck from .apkg / CSV
   const jsonInput = useRef<HTMLInputElement>(null);      // restore a full JSON backup
+
+  // Strip the `#deck=` deep-link from the address bar after capturing it (same as the quiz hashes).
+  useEffect(() => {
+    if (highlightDeckId != null) window.history.replaceState(null, '', window.location.pathname);
+  }, [highlightDeckId]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, decksToJson(decks));
@@ -226,6 +242,7 @@ export default function Flashcards() {
     setPublishingId(deck.id);
     const body = {
       title: deck.name,
+      courseId: deck.courseId ?? null,
       cards: deck.cards.map((c) => ({ front: c.front, back: c.back })),
       published,
     };
@@ -252,6 +269,8 @@ export default function Flashcards() {
     const shared = await getSharedDeck(summary.id);
     const local = newDeck(shared.title);
     local.cards = shared.cards.map((c) => newCard(c.front, c.back));
+    local.courseId = shared.courseId ?? undefined;
+    local.courseName = shared.courseName ?? undefined;
     setDecks((ds) => [...ds, local]);
     setFeedback({ msg: t('tools.flashcards.importedToMine', { count: shared.cards.length }), severity: 'success' });
   };
@@ -263,6 +282,8 @@ export default function Flashcards() {
     local.cards = shared.cards.map((c) => newCard(c.front, c.back));
     local.serverId = shared.id;
     local.published = shared.published;
+    local.courseId = shared.courseId ?? undefined;
+    local.courseName = shared.courseName ?? undefined;
     // Date serveur (pure) plutôt que Date.now() : plus juste pour « Publié le … » et conforme
     // à la règle react-hooks/purity qui interdit l'horloge dans le corps du composant.
     if (shared.published) local.sharedAt = new Date(shared.createdAt).getTime();
@@ -314,7 +335,7 @@ export default function Flashcards() {
 
       {/* ════════ LIBRARY ════════ */}
       {tab === 'library' && !openDeck && (
-        <LibraryPanel isVerified={isVerified} onImport={importShared} />
+        <LibraryPanel isVerified={isVerified} onImport={importShared} highlightId={highlightDeckId} />
       )}
 
       {/* ════════ MINE — overview list ════════ */}
@@ -425,6 +446,9 @@ export default function Flashcards() {
           onSaveOnline={() => saveOnline(openDeck, openDeck.published ?? false)}
           onPublish={() => saveOnline(openDeck, true)}
           onUnpublish={() => saveOnline(openDeck, false)}
+          onCourseLink={(link) => patchDeck(openDeck.id, (d) => ({
+            ...d, sectionId: link.sectionId, courseId: link.courseId, courseName: link.courseName,
+          }))}
           onRename={() => setNameDialog('rename')}
           onDelete={() => deleteDeck(openDeck)}
           onImportFile={() => csvInput.current?.click()}
@@ -582,6 +606,7 @@ function DeckDetail(props: {
   deck: Deck; isVerified: boolean; publishing: boolean;
   onBack: () => void; onReview: () => void; onStudyAll: () => void;
   onSaveOnline: () => void; onPublish: () => void; onUnpublish: () => void;
+  onCourseLink: (link: CourseLink) => void;
   onRename: () => void; onDelete: () => void; onImportFile: () => void; onExportAnki: () => void;
   importError: string; clearImportError: () => void;
   front: string; back: string; setFront: (v: string) => void; setBack: (v: string) => void; addCard: () => void;
@@ -674,6 +699,16 @@ function DeckDetail(props: {
             {t('tools.flashcards.publishedOn', { date: new Date(deck.sharedAt).toLocaleDateString() })}
           </Typography>
         )}
+        {/* Rattachement à un cours (optionnel, vérifiés) : fait apparaître le paquet dans
+            « Réviser ce cours » sur les pages des documents de ce cours. */}
+        {isVerified && (
+          <Box sx={{ mt: 2 }}>
+            <CourseSelect
+              value={{ sectionId: deck.sectionId, courseId: deck.courseId, courseName: deck.courseName }}
+              onChange={props.onCourseLink}
+            />
+          </Box>
+        )}
       </GlassCard>
 
       {/* Add card */}
@@ -760,7 +795,12 @@ function DeckDetail(props: {
 }
 
 /** "Bibliothèque" tab — decks shared by other verified students, importable into "Mes paquets". */
-function LibraryPanel({ isVerified, onImport }: { isVerified: boolean; onImport: (d: FlashcardDeckSummary) => Promise<void> }) {
+function LibraryPanel({ isVerified, onImport, highlightId }: {
+  isVerified: boolean;
+  onImport: (d: FlashcardDeckSummary) => Promise<void>;
+  /** Paquet ciblé par un lien `#deck=<id>` (tuile « Réviser ce cours ») — scrollé + surligné. */
+  highlightId?: number | null;
+}) {
   const { t } = useTranslation();
   const [decks, setDecks] = useState<FlashcardDeckSummary[] | null>(null);
   const [error, setError] = useState(false);
@@ -771,6 +811,12 @@ function LibraryPanel({ isVerified, onImport }: { isVerified: boolean; onImport:
     if (!isVerified) return;
     listSharedDecks({ size: 50 }).then((p) => setDecks(p.content)).catch(() => setError(true));
   }, [isVerified]);
+
+  // Amène le paquet ciblé par le deep-link à l'écran une fois la liste chargée.
+  useEffect(() => {
+    if (highlightId == null || !decks?.length) return;
+    document.getElementById(`lib-deck-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightId, decks]);
 
   if (!isVerified) {
     return (
@@ -805,7 +851,14 @@ function LibraryPanel({ isVerified, onImport }: { isVerified: boolean; onImport:
         {decks?.map((d) => {
           const imported = done.has(d.id);
           return (
-            <GlassCard key={d.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center' }}>
+            <GlassCard
+              key={d.id}
+              id={`lib-deck-${d.id}`}
+              sx={{
+                p: 1.75, display: 'flex', gap: 1, alignItems: 'center',
+                ...(d.id === highlightId && { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(0,210,255,0.35)' }),
+              }}
+            >
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                 <Typography sx={{ fontWeight: 600 }} noWrap>{d.title}</Typography>
                 <Typography variant="caption" color="text.secondary">
