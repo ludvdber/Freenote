@@ -1,19 +1,29 @@
+import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Chip, CircularProgress } from '@mui/material';
-import { ArrowForward, MenuBook } from '@mui/icons-material';
+import { Box, Typography, Chip, CircularProgress, Grid } from '@mui/material';
+import { ArrowForward } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { listGuides } from '@/api/endpoints';
 import { STALE_15M, SITE_URL } from '@/lib/constants';
+import { guideCover } from '@/lib/guideCover';
+import { isNewDoc } from '@/lib/utils';
+import { toolBySlug } from '@/pages/tools/toolsData';
 import { useAuthStore } from '@/stores/useAuthStore';
+import type { GuideSummary } from '@/types';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import AdSlot from '@/components/ui/AdSlot';
+import * as s from './GuidesIndex.styles';
 
+/** Refonte « Bibliothèque » (maquette A validée 2026-07-07) : couvertures dérivées de la
+ *  catégorie libre, chips catégories avec compteurs, guide le plus récent « à la une ». */
 export default function GuidesIndex() {
   const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
+  const [activeCat, setActiveCat] = useState('');
+
   const { data, isLoading } = useQuery({
     queryKey: ['guides'],
     queryFn: () => listGuides({ size: 50 }),
@@ -22,6 +32,19 @@ export default function GuidesIndex() {
 
   const guides = data?.content ?? [];
   const showAd = !user?.supporter;
+
+  // Compteurs par catégorie, dans l'ordre d'apparition (les guides sans catégorie ne
+  // produisent pas de chip — ils restent visibles sous « Tout »).
+  const catCounts = new Map<string, number>();
+  for (const g of guides) {
+    if (g.category) catCounts.set(g.category, (catCounts.get(g.category) ?? 0) + 1);
+  }
+
+  const filtered = activeCat ? guides.filter((g) => g.category === activeCat) : guides;
+  // « À la une » = le plus récent (la liste arrive triée createdAt desc), uniquement hors
+  // filtre et s'il y a de quoi remplir une grille dessous — sinon grille simple.
+  const featured = !activeCat && guides.length >= 2 ? filtered[0] : null;
+  const gridGuides = featured ? filtered.slice(1) : filtered;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -39,8 +62,13 @@ export default function GuidesIndex() {
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric', month: 'short',
     });
+
+  const toolLabel = (slug: string | null) => {
+    const tool = toolBySlug(slug ?? undefined);
+    return tool ? t(`tools.${tool.key}.tab`) : null;
+  };
 
   return (
     <PageWrapper>
@@ -57,14 +85,40 @@ export default function GuidesIndex() {
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
-      <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          <MenuBook sx={{ fontSize: 34, color: 'primary.main' }} aria-hidden="true" />
-          <Typography variant="h1" sx={{ fontWeight: 800, fontSize: { xs: '1.9rem', md: '2.4rem' }, letterSpacing: '-0.02em' }}>
-            {t('guides.title')}
-          </Typography>
-        </Box>
-        <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 680 }}>{t('guides.intro')}</Typography>
+      <Box sx={s.wrap}>
+        <Typography sx={s.eyebrow} aria-hidden="true">{'// '}{t('guides.title')}</Typography>
+        <Typography variant="h1" sx={s.heroTitle}>
+          {t('guides.heroLine1')}
+          <br />
+          <Box component="span" sx={s.heroGradient}>{t('guides.heroLine2')}</Box>
+        </Typography>
+        <Typography sx={s.intro}>{t('guides.intro')}</Typography>
+
+        {catCounts.size > 0 && (
+          <Box sx={s.cats}>
+            <Chip
+              label={`${t('guides.all')} · ${guides.length}`}
+              variant="outlined"
+              clickable
+              onClick={() => setActiveCat('')}
+              sx={s.catChip(activeCat === '', '#00d2ff')}
+            />
+            {[...catCounts.entries()].map(([cat, count]) => {
+              const cover = guideCover(cat);
+              return (
+                <Chip
+                  key={cat}
+                  label={`${cover.emoji} ${cat} · ${count}`}
+                  variant="outlined"
+                  clickable
+                  // Re-cliquer la chip active désélectionne (retour à « Tout »).
+                  onClick={() => setActiveCat((prev) => (prev === cat ? '' : cat))}
+                  sx={s.catChip(activeCat === cat, cover.color)}
+                />
+              );
+            })}
+          </Box>
+        )}
 
         {isLoading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress size={32} /></Box>
@@ -76,38 +130,85 @@ export default function GuidesIndex() {
           </GlassCard>
         )}
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-          {guides.map((g) => (
-            <GlassCard
-              key={g.id}
-              component={RouterLink}
-              to={`/guides/${g.slug}`}
-              sx={{
-                p: 2.5, textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 1,
-                color: 'inherit', height: '100%',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                {g.category && <Chip size="small" label={g.category} variant="outlined" color="primary" sx={{ height: 22 }} />}
-                <Typography variant="caption" color="text.secondary">{fmtDate(g.createdAt)}</Typography>
-              </Box>
-              <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.3 }}>{g.title}</Typography>
-              {g.summary && (
-                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>{g.summary}</Typography>
-              )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontWeight: 600, fontSize: '0.85rem', mt: 0.5 }}>
-                {t('guides.read')} <ArrowForward sx={{ fontSize: 16 }} />
-              </Box>
-            </GlassCard>
-          ))}
-        </Box>
+        {featured && <FeaturedGuide guide={featured} fmtDate={fmtDate} toolLabel={toolLabel} />}
+
+        <Grid container spacing={2.5}>
+          {gridGuides.map((g) => {
+            const cover = guideCover(g.category);
+            const tool = toolLabel(g.relatedTool);
+            return (
+              <Grid key={g.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                <GlassCard component={RouterLink} to={`/guides/${g.slug}`} sx={s.card}>
+                  <Box sx={s.cover}>
+                    <Box className="guide-cover-bg" sx={s.coverBg(cover.gradient)} />
+                    <Typography component="span" aria-hidden="true" sx={s.coverEmoji}>
+                      {cover.emoji}
+                    </Typography>
+                    {g.category && <Chip label={g.category} size="small" sx={s.coverChip(cover.color)} />}
+                  </Box>
+                  <Box sx={s.body}>
+                    <Typography className="guide-title" sx={s.cardTitle}>{g.title}</Typography>
+                    {g.summary && <Typography sx={s.cardSummary}>{g.summary}</Typography>}
+                    {tool && <Chip size="small" label={`🔧 ${tool}`} sx={s.toolPill} />}
+                    <Box sx={s.cardFooter}>
+                      <Typography component="span" className="mono" sx={s.cardTime}>
+                        {g.readMinutes} min · {fmtDate(g.createdAt)}
+                      </Typography>
+                      <Box component="span" sx={s.cardGo}>
+                        {t('guides.read')} <ArrowForward sx={{ fontSize: 15 }} />
+                      </Box>
+                    </Box>
+                  </Box>
+                </GlassCard>
+              </Grid>
+            );
+          })}
+        </Grid>
 
         {showAd && guides.length > 0 && (
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={s.adRow}>
             <AdSlot width={728} height={90} />
           </Box>
         )}
       </Box>
     </PageWrapper>
+  );
+}
+
+function FeaturedGuide({
+  guide: g,
+  fmtDate,
+  toolLabel,
+}: {
+  guide: GuideSummary;
+  fmtDate: (iso: string) => string;
+  toolLabel: (slug: string | null) => string | null;
+}) {
+  const { t } = useTranslation();
+  const cover = guideCover(g.category);
+  const tool = toolLabel(g.relatedTool);
+
+  return (
+    <GlassCard component={RouterLink} to={`/guides/${g.slug}`} sx={s.featured}>
+      <Box sx={s.featuredCover}>
+        <Box className="guide-cover-bg" sx={s.coverBg(cover.gradient)} />
+        <Typography component="span" aria-hidden="true" sx={s.featuredEmoji}>{cover.emoji}</Typography>
+        {isNewDoc(g.createdAt) && (
+          <Chip label={t('document.badgeNew')} size="small" color="primary" sx={s.featuredNew} />
+        )}
+      </Box>
+      <Box sx={s.featuredBody}>
+        <Box sx={s.featuredMeta}>
+          {g.category && <Chip label={g.category} size="small" sx={s.coverChip(cover.color)} />}
+          <Typography variant="caption" color="text.secondary">
+            {fmtDate(g.createdAt)} · {t('guides.readTime', { count: g.readMinutes })}
+          </Typography>
+        </Box>
+        <Typography className="guide-title" sx={s.featuredTitle}>{g.title}</Typography>
+        {g.summary && <Typography sx={s.featuredSummary}>{g.summary}</Typography>}
+        {tool && <Chip size="small" label={`🔧 ${t('guides.toolPill', { name: tool })}`} sx={s.toolPill} />}
+        <Typography component="span" sx={s.readCta}>{t('guides.read')} →</Typography>
+      </Box>
+    </GlassCard>
   );
 }

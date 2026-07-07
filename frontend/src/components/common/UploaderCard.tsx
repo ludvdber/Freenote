@@ -47,55 +47,61 @@ export default function UploaderCard({ authorId, sx }: { authorId: number; sx?: 
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
         {t('document.uploaderTitle')}
       </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <UserAvatar username={u.username} url={u.avatarUrl} size={48} />
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {u.displayName}
+      {/* Layout pensé pour le rail 330 px : avatar + identité en tête, puis chips, puis stats
+          sur une ligne — l'ancien flex horizontal y empilait tout dans une colonne étroite. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+        <UserAvatar username={u.username} url={u.avatarUrl} size={44} />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>
+            {u.displayName}
+          </Typography>
+          {u.displayName !== u.username && (
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+              @{u.username}
             </Typography>
-            {u.displayName !== u.username && (
-              <Typography variant="caption" color="text.secondary">@{u.username}</Typography>
-            )}
-            {u.verified && (
-              <Chip size="small" icon={<Verified sx={{ fontSize: 14 }} />} label={t('profile.verified')}
-                    color="primary" variant="outlined" />
-            )}
-            {u.supporter && (
-              <Chip size="small" icon={<FavoriteBorder sx={{ fontSize: 14 }} />} label={t('document.supporter')}
-                    color="secondary" variant="outlined" />
-            )}
-            <UserBadges
-              graduated={u.graduated}
-              studyEndYear={u.studyEndYear}
-              delegate={isDelegate}
-              formerDelegate={isFormerDelegate}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
-            <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Bolt sx={{ fontSize: 14 }} /> {u.xp} XP
-            </Typography>
-            <LevelChip xp={u.xp} dense />
-            <Typography variant="caption" color="text.secondary" className="mono">
-              {u.documentCount} {t('stats.docs').toLowerCase()}
-            </Typography>
-            {rank != null && (
-              <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <EmojiEvents sx={{ fontSize: 14 }} /> #{rank}
-              </Typography>
-            )}
-            {u.sectionName && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <School sx={{ fontSize: 14 }} /> {u.sectionName}
-              </Typography>
-            )}
-          </Box>
+          )}
         </Box>
-        <Button component={Link} to={`/users/${u.id}`} size="small" variant="outlined">
-          {t('document.viewProfile')}
-        </Button>
       </Box>
+      {(u.verified || u.supporter || isDelegate || isFormerDelegate || u.graduated) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mt: 1.25 }}>
+          {u.verified && (
+            <Chip size="small" icon={<Verified sx={{ fontSize: 14 }} />} label={t('profile.verified')}
+                  color="primary" variant="outlined" />
+          )}
+          {u.supporter && (
+            <Chip size="small" icon={<FavoriteBorder sx={{ fontSize: 14 }} />} label={t('document.supporter')}
+                  color="secondary" variant="outlined" />
+          )}
+          <UserBadges
+            graduated={u.graduated}
+            studyEndYear={u.studyEndYear}
+            delegate={isDelegate}
+            formerDelegate={isFormerDelegate}
+          />
+        </Box>
+      )}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mt: 1.25 }}>
+        <LevelChip xp={u.xp} dense />
+        <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Bolt sx={{ fontSize: 14 }} /> {u.xp} XP
+        </Typography>
+        <Typography variant="caption" color="text.secondary" className="mono">
+          {u.documentCount} {t('stats.docs').toLowerCase()}
+        </Typography>
+        {rank != null && (
+          <Typography variant="caption" color="text.secondary" className="mono" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <EmojiEvents sx={{ fontSize: 14 }} /> #{rank}
+          </Typography>
+        )}
+      </Box>
+      {u.sectionName && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.75 }}>
+          <School sx={{ fontSize: 14 }} /> {u.sectionName}
+        </Typography>
+      )}
+      <Button component={Link} to={`/users/${u.id}`} size="small" variant="outlined" fullWidth sx={{ mt: 1.75 }}>
+        {t('document.viewProfile')}
+      </Button>
     </GlassCard>
   );
 }

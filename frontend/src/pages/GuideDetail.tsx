@@ -1,11 +1,13 @@
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { Typography, Box, Chip, Button } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { getGuide } from '@/api/endpoints';
 import { STALE_15M, SITE_URL } from '@/lib/constants';
+import { guideCover } from '@/lib/guideCover';
+import { toolBySlug } from '@/pages/tools/toolsData';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
@@ -29,6 +31,11 @@ export default function GuideDetail() {
   const showAd = !user?.supporter;
   const words = guide?.content ? guide.content.replace(/[#>*`_\-[\]()]/g, ' ').split(/\s+/).filter(Boolean).length : 0;
   const readMinutes = words ? Math.max(1, Math.round(words / 200)) : 0;
+
+  const cover = guideCover(guide?.category);
+  const tool = toolBySlug(guide?.relatedTool ?? undefined);
+  // Le rail existe s'il a quelque chose à montrer : encart outil et/ou pub.
+  const showRail = showAd || Boolean(tool);
 
   const fullDate = guide?.createdAt
     ? new Date(guide.createdAt).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', {
@@ -78,7 +85,9 @@ export default function GuideDetail() {
           <>
             <Box component="header" sx={s.header}>
               <Box sx={s.eyebrow}>
-                {guide.category && <Chip label={guide.category} size="small" variant="outlined" sx={s.chip} />}
+                {guide.category && (
+                  <Chip label={`${cover.emoji} ${guide.category}`} size="small" variant="outlined" sx={s.chip(cover.color)} />
+                )}
                 {fullDate && (
                   <>
                     {guide.category && <Box sx={s.dot} />}
@@ -96,14 +105,34 @@ export default function GuideDetail() {
               <Box sx={s.accentBar} />
             </Box>
 
-            <Box sx={s.grid(showAd)}>
+            <Box sx={s.grid(showRail)}>
               <GlassCard sx={s.articleCard}>
                 <Markdown content={guide.content} sx={s.prose} />
               </GlassCard>
 
-              {showAd && (
+              {showRail && (
                 <Box component="aside" sx={s.sidebar}>
-                  <AdSlot width={300} height={250} />
+                  {tool && (
+                    <GlassCard sx={s.toolCard}>
+                      <Typography sx={s.toolOverline}>
+                        <span aria-hidden="true">🔧 </span>
+                        {t('guides.practiceTitle')}
+                      </Typography>
+                      <Typography sx={s.toolName}>{t(`tools.${tool.key}.tab`)}</Typography>
+                      <Button
+                        component={RouterLink}
+                        to={`/outils/${tool.slug}`}
+                        size="small"
+                        variant="outlined"
+                        fullWidth
+                        endIcon={<ArrowForward />}
+                        sx={{ mt: 1.5 }}
+                      >
+                        {t('guides.practiceCta')}
+                      </Button>
+                    </GlassCard>
+                  )}
+                  {showAd && <AdSlot width={300} height={250} />}
                 </Box>
               )}
             </Box>

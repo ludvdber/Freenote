@@ -68,6 +68,7 @@ public class GuideServiceImpl implements GuideService {
                 .summary(blankToNull(request.summary()))
                 .content(request.content())
                 .category(blankToNull(request.category()))
+                .relatedTool(blankToNull(request.relatedTool()))
                 .published(request.published())
                 .author(admin)
                 .authorName(UserMapper.resolveDisplayName(admin.getProfile(), admin.getUsername()))
@@ -84,6 +85,7 @@ public class GuideServiceImpl implements GuideService {
         guide.setSummary(blankToNull(request.summary()));
         guide.setContent(request.content());
         guide.setCategory(blankToNull(request.category()));
+        guide.setRelatedTool(blankToNull(request.relatedTool()));
         guide.setPublished(request.published());
         return GuideMapper.toResponse(guideRepository.save(guide));
     }

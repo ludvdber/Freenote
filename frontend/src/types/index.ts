@@ -432,13 +432,17 @@ export interface GuideSummary {
   title: string;
   summary: string | null;
   category: string | null;
+  /** Slug d'un outil /outils mis en avant par le guide (optionnel — V12). */
+  relatedTool: string | null;
   authorName: string;
   published: boolean;
+  /** Temps de lecture estimé, calculé côté serveur (les cartes n'embarquent pas le Markdown). */
+  readMinutes: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface GuideResponse extends GuideSummary {
+export interface GuideResponse extends Omit<GuideSummary, 'readMinutes'> {
   /** Raw Markdown — rendered + sanitised on the client. */
   content: string;
 }
@@ -448,6 +452,7 @@ export interface CreateGuideRequest {
   summary: string;
   content: string;
   category: string;
+  relatedTool: string;
   published: boolean;
 }
 

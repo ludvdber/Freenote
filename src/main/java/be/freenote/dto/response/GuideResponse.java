@@ -10,6 +10,7 @@ public record GuideResponse(
         String summary,
         String content,
         String category,
+        String relatedTool,
         String authorName,
         boolean published,
         LocalDateTime createdAt,

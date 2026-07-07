@@ -44,6 +44,10 @@ public class Guide {
     @Column(length = 40)
     private String category;
 
+    /** Optional /outils tool slug the guide trains with (e.g. "calculateur-ipv4"). V12. */
+    @Column(name = "related_tool", length = 40)
+    private String relatedTool;
+
     /** Draft (false) is hidden from the public list/detail; visible only in the admin panel. */
     @Column(nullable = false)
     private boolean published;

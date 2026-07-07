@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Box, Typography, Button, TextField, IconButton, Tooltip, Chip, Alert,
-  FormControlLabel, Switch, ToggleButtonGroup, ToggleButton, CircularProgress,
+  FormControlLabel, Switch, ToggleButtonGroup, ToggleButton, CircularProgress, MenuItem,
 } from '@mui/material';
 import { Add, Edit, Delete, ArrowBack, Visibility, Code } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import Markdown from '@/components/common/Markdown';
 import { extractApiError } from '@/lib/utils';
+import { TOOLS } from '@/pages/tools/toolsData';
 import type { GuideSummary } from '@/types';
 
 export default function AdminGuides() {
@@ -98,6 +99,7 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [category, setCategory] = useState('');
+  const [relatedTool, setRelatedTool] = useState('');
   const [content, setContent] = useState('');
   const [published, setPublished] = useState(false);
   const [view, setView] = useState<'edit' | 'preview'>('edit');
@@ -112,6 +114,7 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
       setTitle(g.title);
       setSummary(g.summary ?? '');
       setCategory(g.category ?? '');
+      setRelatedTool(g.relatedTool ?? '');
       setContent(g.content);
       setPublished(g.published);
       setLoaded(true);
@@ -123,7 +126,7 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
 
   const save = useMutation({
     mutationFn: () => {
-      const body = { title: title.trim(), summary: summary.trim(), category: category.trim(), content, published };
+      const body = { title: title.trim(), summary: summary.trim(), category: category.trim(), relatedTool, content, published };
       return isNew ? adminCreateGuide(body) : adminUpdateGuide(id as number, body);
     },
     onSuccess: () => {
@@ -167,6 +170,16 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
                 label={t('admin.guides.category')} value={category} onChange={(e) => setCategory(e.target.value)}
                 size="small" placeholder="Java" sx={{ width: 180 }} slotProps={{ htmlInput: { maxLength: 40 } }}
               />
+              <TextField
+                select
+                label={t('admin.guides.relatedTool')} value={relatedTool} onChange={(e) => setRelatedTool(e.target.value)}
+                size="small" sx={{ width: 240 }} helperText={t('admin.guides.relatedToolHelp')}
+              >
+                <MenuItem value="">{t('admin.guides.relatedToolNone')}</MenuItem>
+                {TOOLS.map((tool) => (
+                  <MenuItem key={tool.slug} value={tool.slug}>{t(`tools.${tool.key}.tab`)}</MenuItem>
+                ))}
+              </TextField>
               <TextField
                 label={t('admin.guides.summary')} value={summary} onChange={(e) => setSummary(e.target.value)}
                 size="small" fullWidth sx={{ flex: '1 1 280px' }} slotProps={{ htmlInput: { maxLength: 300 } }}

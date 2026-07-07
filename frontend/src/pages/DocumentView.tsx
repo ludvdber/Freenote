@@ -364,10 +364,10 @@ export default function DocumentView() {
         </Box>
       </Box>
 
-      {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage/favori en
-          icônes ; le reste (signaler, renommer, supprimer) vit dans le menu « ⋯ » — avant,
-          6 boutons de même poids se disputaient l'attention. Signaler est masqué sur son
-          propre doc (le backend le refuse déjà). */}
+      {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage/favori/
+          signaler en icônes (le drapeau vaut mieux qu'un item caché dans un menu) ; seules
+          les actions du propriétaire (renommer, supprimer) restent dans le « ⋯ ». Signaler
+          est masqué sur son propre doc (le backend le refuse déjà). */}
       <Box sx={s.actionsRow}>
         {isVerified && pdfSrc && (
           <Button variant="contained" startIcon={<Download />} onClick={handleDownload}>
@@ -400,7 +400,18 @@ export default function DocumentView() {
             </IconButton>
           </Tooltip>
         )}
-        {((isVerified && !isOwner) || isOwner) && (
+        {isVerified && !isOwner && (
+          <Tooltip title={t('document.report')}>
+            <IconButton
+              aria-label={t('document.report')}
+              color={showReport ? 'error' : 'default'}
+              onClick={() => setShowReport((v) => !v)}
+            >
+              <Flag />
+            </IconButton>
+          </Tooltip>
+        )}
+        {isOwner && (
           <>
             <Tooltip title={t('document.moreActions')}>
               <IconButton
@@ -412,42 +423,27 @@ export default function DocumentView() {
               </IconButton>
             </Tooltip>
             <Menu anchorEl={menuAnchor} open={menuAnchor !== null} onClose={() => setMenuAnchor(null)}>
-              {isVerified && !isOwner && (
-                <MenuItem
-                  onClick={() => {
-                    setMenuAnchor(null);
-                    setShowReport(true);
-                  }}
-                >
-                  <ListItemIcon><Flag fontSize="small" /></ListItemIcon>
-                  {t('document.report')}
-                </MenuItem>
-              )}
-              {isOwner && (
-                <MenuItem
-                  onClick={() => {
-                    setMenuAnchor(null);
-                    setRenameValue(doc.title);
-                    setShowRename(true);
-                  }}
-                >
-                  <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                  {t('document.rename')}
-                </MenuItem>
-              )}
-              {isOwner && (
-                <MenuItem
-                  disabled={deleteMutation.isPending}
-                  onClick={() => {
-                    setMenuAnchor(null);
-                    if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
-                  }}
-                  sx={{ color: 'error.main' }}
-                >
-                  <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
-                  {t('document.delete')}
-                </MenuItem>
-              )}
+              <MenuItem
+                onClick={() => {
+                  setMenuAnchor(null);
+                  setRenameValue(doc.title);
+                  setShowRename(true);
+                }}
+              >
+                <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
+                {t('document.rename')}
+              </MenuItem>
+              <MenuItem
+                disabled={deleteMutation.isPending}
+                onClick={() => {
+                  setMenuAnchor(null);
+                  if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
+                }}
+                sx={{ color: 'error.main' }}
+              >
+                <ListItemIcon><DeleteOutlined fontSize="small" color="error" /></ListItemIcon>
+                {t('document.delete')}
+              </MenuItem>
             </Menu>
           </>
         )}

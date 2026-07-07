@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Pagination,
+  Typography, Grid, Box, FormControl, InputLabel, Select, MenuItem, Pagination, CardContent,
   Chip, CircularProgress, Button, Alert, ToggleButtonGroup, ToggleButton, Tooltip, useTheme,
 } from '@mui/material';
 import { ArrowForward, Lock, Star, ViewModule, ViewList } from '@mui/icons-material';
@@ -11,11 +11,12 @@ import { Helmet } from 'react-helmet-async';
 import { searchDocuments, getSections, getCourses, getCategoryCounts, listPublicDocuments } from '@/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CATEGORIES, STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
-import { categoryColor, categoryEmoji } from '@/lib/utils';
+import { categoryColor, categoryEmoji, formatRelativeDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import SearchBar from '@/components/ui/SearchBar';
 import DocumentCard from '@/components/common/DocumentCard';
+import * as dc from '@/components/common/DocumentCard.styles';
 import GlassCard from '@/components/ui/GlassCard';
 import Shimmer from '@/components/ui/Shimmer';
 import AdSlot from '@/components/ui/AdSlot';
@@ -343,9 +344,6 @@ function PublicBrowse() {
     })),
   };
 
-  const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { month: 'short', year: 'numeric' });
-
   return (
     <PageWrapper>
       <Helmet>
@@ -389,34 +387,52 @@ function PublicBrowse() {
           </GlassCard>
         )}
 
+        {/* Mêmes couvertures v4 que l'explorer connecté (styles partagés DocumentCard.styles) —
+            seul le footer diffère : pas d'auteur (anonymisation structurelle du teaser public),
+            l'affordance « Aperçu → » prend sa place. */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
           {docs.map((d) => (
-            <GlassCard
-              key={d.id}
-              component={RouterLink}
-              to={`/documents/${d.id}`}
-              sx={{ p: 2, textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Chip size="small" label={t(`categories.${d.category}`)} variant="outlined" color="primary" sx={{ height: 22 }} />
-                {d.year && <Typography variant="caption" color="text.secondary">{d.year}</Typography>}
-                {d.ratingCount > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ml: 'auto', color: 'warning.main' }}>
-                    <Star sx={{ fontSize: 14 }} />
-                    <Typography variant="caption" className="mono">{Number(d.averageRating).toFixed(1)}</Typography>
+            <GlassCard key={d.id} component={RouterLink} to={`/documents/${d.id}`} sx={dc.card(0)}>
+              <Box sx={dc.cover}>
+                <Box className="doc-cover-bg" sx={dc.coverBg(d.category)} />
+                <Typography component="span" aria-hidden="true" sx={dc.coverEmoji}>
+                  {categoryEmoji(d.category)}
+                </Typography>
+                <Chip
+                  label={t(`categories.${d.category}`)}
+                  size="small"
+                  sx={dc.coverCatChip(categoryColor(d.category, 'dark'))}
+                />
+              </Box>
+              <CardContent sx={dc.content}>
+                <Typography variant="subtitle2" className="doc-title" sx={dc.titleClamp}>
+                  {d.title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" noWrap sx={dc.courseLine}>
+                  {[d.courseName, d.sectionName, d.year].filter(Boolean).join(' · ')}
+                </Typography>
+                <Box sx={dc.footerRow}>
+                  <Box sx={dc.metaRow}>
+                    <Typography variant="caption" color="text.secondary" sx={dc.relativeDate}>
+                      {formatRelativeDate(d.createdAt, i18n.language)}
+                    </Typography>
+                    {d.ratingCount > 0 && (
+                      <Box sx={dc.ratingBox}>
+                        <Star sx={dc.ratingIcon} />
+                        <Typography variant="caption" className="mono" sx={{ fontWeight: 700 }}>
+                          {Number(d.averageRating).toFixed(1)}
+                        </Typography>
+                        <Typography variant="caption" className="mono" sx={dc.ratingCountCaption}>
+                          ({d.ratingCount})
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                )}
-              </Box>
-              <Typography sx={{ fontWeight: 700, lineHeight: 1.3 }}>{d.title}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                {[d.courseName, d.sectionName].filter(Boolean).join(' · ')}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="caption" color="text.secondary">{fmtDate(d.createdAt)}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontWeight: 600, fontSize: '0.85rem' }}>
-                  {t('resources.preview')} <ArrowForward sx={{ fontSize: 16 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontWeight: 600, fontSize: '0.8rem', flexShrink: 0 }}>
+                    {t('resources.preview')} <ArrowForward sx={{ fontSize: 15 }} />
+                  </Box>
                 </Box>
-              </Box>
+              </CardContent>
             </GlassCard>
           ))}
         </Box>

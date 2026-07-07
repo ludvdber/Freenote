@@ -16,16 +16,17 @@ export const header: Sx = { mb: { xs: 3, md: 4 }, px: { xs: 0.5, md: 0 } };
 
 export const eyebrow: Sx = { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25, mb: 2 };
 
-export const chip: Sx = {
+// Teinte dérivée de la catégorie (lib/guideCover) — même accent que la couverture de l'index.
+export const chip = (color: string): Sx => ({
   fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
   fontSize: '0.68rem',
   height: 22,
-  color: 'primary.main',
-  borderColor: 'rgba(0, 210, 255, 0.4)',
-  backgroundColor: 'rgba(0, 210, 255, 0.06)',
-};
+  color,
+  borderColor: `${color}66`,
+  backgroundColor: `${color}0f`,
+});
 
 export const dot: Sx = { width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.disabled', flexShrink: 0 };
 
@@ -133,3 +134,18 @@ export const sidebar: Sx = {
   position: { md: 'sticky' },
   top: { md: 88 },
 };
+
+// ——— Encart « Pratique avec l'outil » (rail) — rendu uniquement si le guide a un outil lié. ———
+
+export const toolCard: Sx = { p: 2.5 };
+
+export const toolOverline: Sx = {
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: 11,
+  letterSpacing: 2,
+  textTransform: 'uppercase',
+  color: 'text.secondary',
+  mb: 1,
+};
+
+export const toolName: Sx = { fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.3 };

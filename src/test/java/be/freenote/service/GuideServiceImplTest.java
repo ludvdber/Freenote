@@ -37,7 +37,7 @@ class GuideServiceImplTest {
     }
 
     private CreateGuideRequest req(String title, boolean published) {
-        return new CreateGuideRequest(title, "Résumé", "# Contenu\n`x << 2`", "Java", published);
+        return new CreateGuideRequest(title, "Résumé", "# Contenu\n`x << 2`", "Java", "convertisseur-bases", published);
     }
 
     @Test
@@ -51,6 +51,7 @@ class GuideServiceImplTest {
         assertThat(res.slug()).isEqualTo("decalage-binaire-en-java");
         assertThat(res.authorName()).isEqualTo("admin");
         assertThat(res.published()).isTrue();
+        assertThat(res.relatedTool()).isEqualTo("convertisseur-bases");
     }
 
     @Test

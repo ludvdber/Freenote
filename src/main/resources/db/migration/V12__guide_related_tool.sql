@@ -1,0 +1,12 @@
+-- ================================================================
+-- V12 — GUIDES : outil lié optionnel (refonte page /guides 2026-07-07)
+-- ================================================================
+-- Migration ADDITIVE (un seul ALTER, aucune donnée touchée — V1..V11 gelées).
+--
+-- `related_tool` = slug d'un outil /outils (ex: 'calculateur-ipv4') que le guide
+-- met en avant (« S'entraîne avec l'outil »). NULLABLE : tous les guides ne
+-- renvoient pas vers un outil. La liste des slugs valides vit côté frontend
+-- (TOOLS dans toolsData) — le dropdown admin contraint la valeur, la colonne
+-- reste un VARCHAR libre (pas de CHECK : ajouter un outil ne doit pas exiger
+-- de migration).
+ALTER TABLE guides ADD COLUMN related_tool VARCHAR(40);
