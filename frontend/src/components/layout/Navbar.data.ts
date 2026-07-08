@@ -9,6 +9,7 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { key: 'home',        to: '/' },
   { key: 'browse',      to: '/browse' },                     // Public : vitrine anonyme intégrée
+  { key: 'reviser',     to: '/reviser' },                    // Hub quiz+paquets publiés — public, jouable hors classement
   { key: 'leaderboard', to: '/leaderboard', protected: true },
   { key: 'news',        to: '/news' },                       // Flux RSS école, public
   { key: 'guides',      to: '/guides' },                     // Tutoriels admin, public (contenu SEO original)

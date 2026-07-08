@@ -16,7 +16,8 @@
     "lightMode": "Éclipse",
     "toggleTheme": "Changer de thème",
     "toggleLanguage": "Changer de langue",
-    "goHome": "Retour à l'accueil"
+    "goHome": "Retour à l'accueil",
+    "reviser": "Réviser"
   },
   "hero": {
     "title": "Réussis plus vite",
@@ -106,7 +107,12 @@
     "practiceTitle": "Pratique avec l'outil",
     "practiceCta": "Ouvrir l'outil",
     "backToList": "Retour aux guides",
-    "notFound": "Guide introuvable."
+    "notFound": "Guide introuvable.",
+    "lockedTitle": "Guide réservé aux étudiants",
+    "lockedBody": "Ce guide contient des éléments de cours réservés aux étudiants de l’ISFCE. Connecte-toi avec ton compte vérifié pour le lire.",
+    "lockedChip": "Réservé aux étudiants ISFCE",
+    "continueWith": "Continue avec…",
+    "tocTitle": "Sommaire"
   },
   "resources": {
     "title": "Ressources publiques",
@@ -135,7 +141,8 @@
     "carousel": "Communauté",
     "empty": "La communauté n'attend que toi.",
     "pauseCarousel": "Mettre en pause le carrousel",
-    "playCarousel": "Reprendre le carrousel"
+    "playCarousel": "Reprendre le carrousel",
+    "seeProfile": "Voir le profil"
   },
   "ad": {
     "disclaimer": "Pub — un café = 30 jours sans pub."
@@ -214,7 +221,15 @@
     "tocPage": "p. {{page}}",
     "prevDoc": "Précédent",
     "nextDoc": "Suivant",
-    "sameCourse": "Du même cours"
+    "sameCourse": "Du même cours",
+    "equivalentCourses": "Ce cours est lié à : {{courses}} — leurs documents sont affichés ensemble.",
+    "searchInPdf": "Rechercher dans le PDF…",
+    "searchHits_one": "{{count}} résultat",
+    "searchHits_other": "{{count}} résultats",
+    "searchNoHits": "Aucun résultat",
+    "searchPrev": "Page précédente avec résultat",
+    "searchNext": "Page suivante avec résultat",
+    "searchClear": "Effacer la recherche"
   },
   "admin": {
     "tabs": {
@@ -264,7 +279,10 @@
       "preview": "Aperçu",
       "bodyPlaceholder": "Écris ton guide en Markdown : titres #, **gras**, listes, liens, images et blocs de code ``` avec coloration.",
       "markdownHelp": "Markdown supporté : titres (#), gras (**), listes, liens, images, et blocs de code ``` (coloration syntaxique automatique).",
-      "previewEmpty": "Rien à prévisualiser."
+      "previewEmpty": "Rien à prévisualiser.",
+      "membersOnlyLabel": "Réservé aux étudiants",
+      "membersOnlyHelp": "La carte reste visible publiquement, mais le contenu du guide exige un compte ISFCE vérifié — pour les guides contenant des éléments de cours.",
+      "membersOnlyChip": "Réservé"
     },
     "docs": {
       "pending": "Documents en attente",
@@ -303,7 +321,13 @@
       "filterSection": "Filtrer par section",
       "allSections": "Toutes les sections",
       "docCount_one": "{{count}} document",
-      "docCount_other": "{{count}} documents"
+      "docCount_other": "{{count}} documents",
+      "equivalents": "Cours équivalents",
+      "equivalentsTitle": "Cours équivalents de « {{name}} »",
+      "equivalentsHelp": "Le même cours donné dans plusieurs sections (ex. Statistiques en Informatique ET en Comptabilité). Les cours liés partagent leurs documents, quiz et paquets dans tous les filtres par cours.",
+      "equivalentsPlaceholder": "Ajouter un cours…",
+      "linkedChip": "lié",
+      "linkedTip": "Ce cours partage ses documents avec des cours équivalents d’autres sections"
     },
     "profs": {
       "all": "Tous les professeurs",
@@ -552,9 +576,9 @@
         "leaderboard": "Classement",
         "tools": "Outils",
         "news": "Actualité",
-        "profile": "Mon profil",
         "bug": "Signaler un bug",
-        "kofi": "Offrir un café"
+        "kofi": "Offrir un café",
+        "reviser": "Réviser"
       }
     },
     "tools": {
@@ -591,7 +615,9 @@
     "viewList": "Vue liste",
     "allCategories": "Tout",
     "pageSize": "Documents par page",
-    "perPage": "{{n}} / page"
+    "perPage": "{{n}} / page",
+    "newSinceVisit_one": "{{count}} nouveau depuis ta dernière visite",
+    "newSinceVisit_other": "{{count}} nouveaux depuis ta dernière visite"
   },
   "common": {
     "loading": "Chargement...",
@@ -1291,12 +1317,8 @@
           "a": "Oui, autant que tu veux : un par cours, par chapitre ou par examen. Le sélecteur en haut permet de basculer de l'un à l'autre."
         }
       ],
-      "localChip": "Navigateur uniquement",
       "savedChip": "Non publié",
       "publishedChip": "Publié",
-      "localChipTooltip": "Enregistré uniquement dans ce navigateur. Exporte une sauvegarde JSON avant de vider ton cache ou de changer d'appareil.",
-      "savedChipTooltip": "Enregistré sur ton compte (privé) : accessible depuis tes appareils, mais pas visible dans la bibliothèque.",
-      "publishedChipTooltip": "Publié dans la bibliothèque : visible et révisable par les autres étudiants vérifiés.",
       "saveOnline": "Enregistrer sur mon compte",
       "updateOnline": "Mettre à jour sur mon compte",
       "saveOnlineOk": "Paquet enregistré sur ton compte (privé) ✓",
@@ -1305,9 +1327,21 @@
       "confirmDeleteLinked": "Supprimer « {{name}} » ? Sa copie en ligne sera aussi supprimée.",
       "onlineOnlyTitle": "Enregistrés en ligne (pas sur cet appareil)",
       "importToDevice": "Récupérer sur cet appareil",
-      "anonHint": "Ici, tout reste sur cet appareil (exporte régulièrement !). Connecte-toi avec ton compte ISFCE pour enregistrer tes paquets en ligne et les publier dans la bibliothèque.",
       "searchDecks": "Rechercher un paquet…",
-      "searchNoResult": "Aucun paquet ne correspond à ta recherche."
+      "searchNoResult": "Aucun paquet ne correspond à ta recherche.",
+      "contractFree": [
+        "✏️ Créer tes paquets et réviser en répétition espacée",
+        "📥 Importer un paquet Anki (.apkg) ou CSV",
+        "💾 Sauvegarder / restaurer en fichier JSON"
+      ],
+      "contractLocked": [
+        "📚 Les paquets partagés par ta promo",
+        "☁️ Tes paquets sur tous tes appareils",
+        "🌍 Publier pour toute ta section"
+      ],
+      "searchLibrary": "Rechercher un paquet…",
+      "reverseMode": "Mode inversé : le verso devient la question, devine le recto",
+      "reverseChip": "Inversé"
     },
     "quiz": {
       "tab": "Quiz",
@@ -1377,7 +1411,6 @@
       "removeChoice": "Supprimer cette réponse",
       "addChoice": "Ajouter une réponse",
       "addQuestion": "Ajouter une question",
-      "libraryLoginHint": "Connecte-toi (compte ISFCE vérifié) pour jouer et publier des quiz partagés.",
       "libraryIntro": "Des quiz partagés par d'autres étudiants vérifiés. Joue, puis compare ton score au classement.",
       "libraryError": "Impossible de charger les quiz partagés.",
       "libraryEmpty": "Aucun quiz partagé pour le moment. Sois le premier à en publier un !",
@@ -1400,7 +1433,6 @@
       "shareTitle": "Partager ce quiz",
       "shareHint": "N'importe qui peut ouvrir ce lien et jouer, même sans compte. Le quiz est entièrement contenu dans le lien : rien n'est stocké sur le serveur, et il n'apparaît pas au classement.",
       "shareRankedHint": "Ce lien ouvre ton quiz publié : tout étudiant vérifié qui le joue apparaît au classement.",
-      "playLinkLoginHint": "Connecte-toi avec ton compte ISFCE vérifié pour jouer ce quiz et apparaître au classement.",
       "copy": "Copier",
       "close": "Fermer",
       "about": [
@@ -1431,12 +1463,8 @@
           "a": "Le quiz partagé par lien est entièrement contenu dans l'adresse : un curieux pourrait techniquement la décoder. C'est sans conséquence pour un quiz d'entraînement, mais pour un classement fiable, préfère publier le quiz dans la bibliothèque (les réponses restent alors côté serveur)."
         }
       ],
-      "localChip": "Navigateur uniquement",
       "savedChip": "Non publié",
       "publishedChip": "Publié",
-      "localChipTooltip": "Enregistré uniquement dans ce navigateur. Exporte une sauvegarde avant de vider ton cache ou de changer d'appareil.",
-      "savedChipTooltip": "Enregistré sur ton compte (privé) : accessible depuis tes appareils, mais pas dans la bibliothèque et sans classement.",
-      "publishedChipTooltip": "Publié dans la bibliothèque : jouable par les étudiants vérifiés, avec classement.",
       "saveOnline": "Enregistrer sur mon compte",
       "updateOnline": "Mettre à jour sur mon compte",
       "saveOnlineOk": "Quiz enregistré sur ton compte (privé) ✓",
@@ -1450,8 +1478,48 @@
       "explanationLabel": "Explication (facultative, montrée après la correction)",
       "addExplanation": "Ajouter une explication",
       "removeExplanation": "Retirer l'explication",
-      "anonHint": "Ici, tout reste sur cet appareil et se partage par lien. Connecte-toi avec ton compte ISFCE pour enregistrer tes quiz en ligne, les publier dans la bibliothèque et apparaître au classement.",
-      "editorAnonHint": "Connecte-toi pour enregistrer en ligne et publier."
+      "editorAnonHint": "Connecte-toi pour enregistrer en ligne et publier.",
+      "contractFree": [
+        "✏️ Créer et modifier tes quiz (stockés dans ce navigateur)",
+        "▶️ Les jouer en illimité, même hors ligne",
+        "🔗 Jouer un quiz reçu par lien de partage",
+        "💾 Sauvegarder / restaurer en fichier JSON"
+      ],
+      "contractLocked": [
+        "📚 La bibliothèque des quiz de ta promo",
+        "🏆 Les parties classées et le classement",
+        "☁️ Tes quiz sur tous tes appareils",
+        "🌍 Publier pour toute ta section"
+      ],
+      "playOfflineFallback": "Serveur injoignable — partie jouée en local, hors classement.",
+      "searchLibrary": "Rechercher un quiz…",
+      "anonRankHint": "Belle partie ! Connecte-toi avec un compte ISFCE vérifié pour apparaître au classement.",
+      "seeProfile": "Voir le profil de {{name}}",
+      "continueWith": "Continue avec…",
+      "reportQuestion": "Signaler une erreur dans cette question",
+      "reportedChip": "Signalé ✓"
+    },
+    "revision": {
+      "mySection": "Ma section",
+      "noSection": "Sans section",
+      "allSections": "Tout",
+      "wholeSection": "Toute la section",
+      "multiCourse": "multi-cours",
+      "seeAll": "Voir tout",
+      "loadError": "Impossible de charger la bibliothèque.",
+      "statusLegend": "Statuts :",
+      "status": {
+        "device": "Cet appareil",
+        "saved": "Enregistré",
+        "published": "Publié"
+      },
+      "statusHint": {
+        "device": "uniquement dans ce navigateur",
+        "saved": "sur ton compte, privé",
+        "published": "visible par ta promo"
+      },
+      "freeTitle": "Sans compte, ici et maintenant",
+      "lockedTitle": "Avec un compte ISFCE vérifié"
     }
   },
   "about": {
@@ -1546,6 +1614,9 @@
     "empty": "Aucune notification pour le moment.",
     "document": {
       "verified": "Ton document « {{title}} » a été vérifié !"
+    },
+    "quiz": {
+      "questionReported": "{{by}} signale une possible erreur dans « {{title}} » (question {{question}})"
     }
   },
   "userPublic": {
@@ -1557,7 +1628,9 @@
     "statAvgRating": "Note moyenne reçue",
     "statXpHint": "Voir le classement",
     "statDocsHint": "Voir ses documents",
-    "bestContribution": "Contribution la plus appréciée"
+    "bestContribution": "Contribution la plus appréciée",
+    "revisionsTitle": "Ses quiz et paquets",
+    "guidesTitle": "Ses guides"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -1572,5 +1645,46 @@
     "COURS": "Cours",
     "TFE": "TFE",
     "DIVERS": "Divers"
+  },
+  "reviser": {
+    "title": "Réviser",
+    "heroTitle": "Tout ce que la promo a préparé",
+    "heroHighlight": "pour réviser.",
+    "intro": "Quiz et paquets de flashcards publiés par les étudiants, rangés par section et par cours. Un clic pour jouer ou réviser — dans l’outil qui va bien.",
+    "search": "Rechercher un quiz ou un paquet…",
+    "empty": "Rien dans ce périmètre pour l’instant.",
+    "typeFilter": "Type de contenu",
+    "typeAll": "Tout",
+    "typeQuiz": "Quiz",
+    "typeDecks": "Paquets",
+    "typeDeck": "Paquet",
+    "play": "Jouer",
+    "study": "Réviser",
+    "createQuiz": "Créer un quiz",
+    "createDeck": "Créer un paquet",
+    "contractFree": [
+      "Jouer tous les quiz publiés — corrigés en direct",
+      "Réviser les paquets partagés, importés sur cet appareil",
+      "Créer tes propres quiz et flashcards dans les outils"
+    ],
+    "contractLocked": [
+      "Apparaître au classement de chaque quiz",
+      "Publier tes quiz et paquets pour ta promo",
+      "Retrouver tes contenus sur tous tes appareils"
+    ]
+  },
+  "globalSearch": {
+    "title": "Recherche",
+    "placeholder": "Docs, quiz, paquets, guides, outils…",
+    "empty": "Aucun résultat. Essaie un titre de doc, un cours, un outil…",
+    "emptyAnon": "Aucun résultat. Connecte-toi pour chercher aussi dans les documents.",
+    "group": {
+      "docs": "Documents",
+      "quizzes": "Quiz",
+      "decks": "Paquets",
+      "guides": "Guides",
+      "tools": "Outils",
+      "pages": "Pages"
+    }
   }
 }

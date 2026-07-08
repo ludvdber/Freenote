@@ -133,6 +133,18 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Équivalences de cours (V15). Le body PUT est la liste EXACTE des ids équivalents (vide = délier). */
+    @GetMapping("/courses/{id}/equivalents")
+    public ResponseEntity<List<CourseResponse>> getCourseEquivalents(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getEquivalents(id));
+    }
+
+    @PutMapping("/courses/{id}/equivalents")
+    public ResponseEntity<List<CourseResponse>> setCourseEquivalents(@PathVariable Long id,
+                                                                     @RequestBody List<Long> courseIds) {
+        return ResponseEntity.ok(courseService.setEquivalents(id, courseIds));
+    }
+
     // --- Professors ---
 
     @GetMapping("/professors")

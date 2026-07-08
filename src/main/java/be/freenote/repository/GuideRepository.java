@@ -16,6 +16,9 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
     /** Public listing: only published guides, newest first. */
     Page<Guide> findByPublishedTrueOrderByCreatedAtDesc(Pageable pageable);
 
+    /** Guides publiés d'un auteur (section « Ses guides » du profil public). */
+    Page<Guide> findByPublishedTrueAndAuthor_IdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
+
     /** Admin listing: everything (drafts included), most-recently edited first. */
     Page<Guide> findAllByOrderByUpdatedAtDesc(Pageable pageable);
 }

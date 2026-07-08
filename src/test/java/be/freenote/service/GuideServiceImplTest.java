@@ -37,7 +37,7 @@ class GuideServiceImplTest {
     }
 
     private CreateGuideRequest req(String title, boolean published) {
-        return new CreateGuideRequest(title, "Résumé", "# Contenu\n`x << 2`", "Java", "convertisseur-bases", published);
+        return new CreateGuideRequest(title, "Résumé", "# Contenu\n`x << 2`", "Java", "convertisseur-bases", published, false);
     }
 
     @Test
@@ -71,8 +71,23 @@ class GuideServiceImplTest {
         Guide draft = Guide.builder().slug("brouillon").title("T").content("c").published(false).authorName("admin").build();
         when(guideRepository.findBySlug("brouillon")).thenReturn(Optional.of(draft));
 
-        assertThatThrownBy(() -> service.getPublishedBySlug("brouillon"))
+        assertThatThrownBy(() -> service.getPublishedBySlug("brouillon", true))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void membersOnly_guide_strips_content_for_an_unverified_caller_but_not_for_a_verified_one() {
+        Guide locked = Guide.builder().slug("interne").title("Guide interne").content("# Secret de cours")
+                .published(true).membersOnly(true).authorName("admin").build();
+        when(guideRepository.findBySlug("interne")).thenReturn(Optional.of(locked));
+
+        GuideResponse anonymous = service.getPublishedBySlug("interne", false);
+        assertThat(anonymous.content()).isNull();          // le Markdown ne sort pas du serveur
+        assertThat(anonymous.membersOnly()).isTrue();
+        assertThat(anonymous.title()).isEqualTo("Guide interne"); // métadonnées conservées (panneau verrou)
+
+        GuideResponse verified = service.getPublishedBySlug("interne", true);
+        assertThat(verified.content()).isEqualTo("# Secret de cours");
     }
 
     @Test

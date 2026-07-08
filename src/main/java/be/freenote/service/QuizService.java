@@ -20,8 +20,9 @@ public interface QuizService {
     /** Met à jour un quiz possédé (titre, questions, cours, statut publié). Admin : modération. */
     QuizSummary update(Long userId, boolean isAdmin, Long id, CreateQuizRequest request);
 
-    /** Bibliothèque : quiz publiés uniquement. {@code callerId} sert à marquer {@code owned}. */
-    PageResponse<QuizSummary> list(Long courseId, Pageable pageable, Long callerId);
+    /** Bibliothèque : quiz publiés uniquement. {@code callerId} (nullable — accès anonyme) sert à
+     *  marquer {@code owned} ; {@code ownerId} filtre les quiz publiés d'un utilisateur (profil). */
+    PageResponse<QuizSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId);
 
     /** « Mes quiz » : tous les quiz du compte (privés + publiés), dernier modifié d'abord. */
     PageResponse<QuizSummary> mine(Long userId, Pageable pageable);
@@ -34,7 +35,8 @@ public interface QuizService {
      *  (bouton « Importer » de la bibliothèque). */
     QuizFullResponse full(Long id, Long callerId, boolean isAdmin);
 
-    /** Grade a finished play server-side and persist the attempt. */
+    /** Grade a finished play server-side and persist the attempt. {@code userId} null = joueur
+     *  anonyme : corrigé mais rien n'est persisté (pas d'essai, rang 0 — hors classement). */
     AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request);
 
     /** Best attempt per user, ranked (score DESC, duration ASC), capped to {@code size}. */
@@ -42,4 +44,8 @@ public interface QuizService {
 
     /** Delete a quiz — allowed for its owner or an admin (moderation). */
     void delete(Long userId, boolean isAdmin, Long id);
+
+    /** Signale une erreur possible dans une question d'un quiz publié → notification à l'auteur.
+     *  Silencieux si le quiz est orphelin ou si le signaleur est l'auteur lui-même. */
+    void reportQuestion(Long reporterId, Long quizId, be.freenote.dto.request.ReportQuizQuestionRequest request);
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Chip, CircularProgress, Grid } from '@mui/material';
+import { Box, Typography, Chip, CircularProgress, Grid, Tooltip } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -145,6 +145,12 @@ export default function GuidesIndex() {
                       {cover.emoji}
                     </Typography>
                     {g.category && <Chip label={g.category} size="small" sx={s.coverChip(cover.color)} />}
+                    {/* Guide réservé (V14) : cadenas — le contenu exigera un compte vérifié. */}
+                    {g.membersOnly && (
+                      <Tooltip title={t('guides.lockedChip')}>
+                        <Chip label="🔒" size="small" sx={s.lockChip} />
+                      </Tooltip>
+                    )}
                   </Box>
                   <Box sx={s.body}>
                     <Typography className="guide-title" sx={s.cardTitle}>{g.title}</Typography>
@@ -195,6 +201,11 @@ function FeaturedGuide({
         <Typography component="span" aria-hidden="true" sx={s.featuredEmoji}>{cover.emoji}</Typography>
         {isNewDoc(g.createdAt) && (
           <Chip label={t('document.badgeNew')} size="small" color="primary" sx={s.featuredNew} />
+        )}
+        {g.membersOnly && (
+          <Tooltip title={t('guides.lockedChip')}>
+            <Chip label="🔒" size="small" sx={s.lockChip} />
+          </Tooltip>
         )}
       </Box>
       <Box sx={s.featuredBody}>

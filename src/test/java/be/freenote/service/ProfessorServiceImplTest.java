@@ -56,7 +56,7 @@ class ProfessorServiceImplTest {
     void shouldReturnOnlyApprovedProfessors() {
         Professor approved = Professor.builder().id(1L).name("A").approved(true).build();
 
-        when(professorRepository.findByApprovedTrue()).thenReturn(List.of(approved));
+        when(professorRepository.findByApprovedTrueOrderByNameAsc()).thenReturn(List.of(approved));
         when(professorMapper.toResponse(approved)).thenReturn(new ProfessorResponse(1L, "A"));
 
         List<ProfessorResponse> result = professorService.getAll();

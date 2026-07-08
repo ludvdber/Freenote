@@ -25,7 +25,8 @@ public final class FlashcardDeckMapper {
         boolean owned = r.ownerId() != null && r.ownerId().equals(callerId);
         return new FlashcardDeckSummary(
                 r.id(), r.title(), r.description(), r.cardCount(),
-                ownerName, r.courseId(), r.courseName(), r.createdAt(), r.published(), owned);
+                ownerName, r.courseId(), r.courseName(), r.sectionId(), r.sectionName(),
+                r.createdAt(), r.published(), owned);
     }
 
     public static FlashcardDeckResponse toResponse(FlashcardDeck d, Long callerId) {
@@ -35,8 +36,8 @@ public final class FlashcardDeckMapper {
         boolean owned = d.getOwner() != null && d.getOwner().getId().equals(callerId);
         return new FlashcardDeckResponse(
                 d.getId(), d.getTitle(), d.getDescription(), d.getCardCount(),
-                ownerName(d), courseId(d), courseName(d), d.getCreatedAt(), cards,
-                d.isPublished(), owned);
+                ownerName(d), courseId(d), courseName(d), sectionId(d), sectionName(d),
+                d.getCreatedAt(), cards, d.isPublished(), owned);
     }
 
     private static String ownerName(FlashcardDeck d) {
@@ -50,5 +51,13 @@ public final class FlashcardDeckMapper {
 
     private static String courseName(FlashcardDeck d) {
         return d.getCourse() == null ? null : d.getCourse().getName();
+    }
+
+    private static Long sectionId(FlashcardDeck d) {
+        return d.getSection() == null ? null : d.getSection().getId();
+    }
+
+    private static String sectionName(FlashcardDeck d) {
+        return d.getSection() == null ? null : d.getSection().getName();
     }
 }

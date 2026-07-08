@@ -7,15 +7,23 @@ import {
 import {
   Add, DeleteOutlined, EditOutlined, MoreVert, Share, CloudUpload, CloudDone, CloudOff, PlayArrow,
   EmojiEvents, ArrowBack, Check, Close, ContentCopy, Quiz as QuizIcon, FileDownload, FileUpload,
-  Image as ImageIcon, Code as CodeIcon, Download, Public,
+  Image as ImageIcon, Code as CodeIcon, Download, FlagOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from '@/components/ui/GlassCard';
+import UserAvatar from '@/components/common/UserAvatar';
 import { useAuthStore } from '@/stores/useAuthStore';
+import AccountContract from './revision/AccountContract';
+import StatusLegend, { StatusPill } from './revision/StatusPills';
+import LibraryShell from './revision/LibraryShell';
+import RevisionTile from './revision/RevisionTile';
+import { groupByCourse, groupBySection, statusOf } from './revision/lib';
 import {
   createQuiz, updateQuiz, deleteQuiz, listQuizzes, listMyQuizzes, getQuizPlay, getQuizFull,
-  submitQuizAttempt, getQuizLeaderboard,
+  submitQuizAttempt, getQuizLeaderboard, listSharedDecks, reportQuizQuestion,
 } from '@/api/endpoints';
 import type { QuizSummary, QuizPlayQuestion, QuizLeaderboardEntry, QuizQuestionDto, QuizFullResponse } from '@/types';
 import CodeBlock from './quiz/CodeBlock';
@@ -76,10 +84,11 @@ function quizFromFull(full: QuizFullResponse, link: boolean): Quiz {
     serverId: link ? full.id : undefined,
     published: link ? full.published : undefined,
     sharedAt: link && full.published ? Date.now() : undefined,
-    // Le rattachement au cours voyage avec la copie (la section n'est pas dans la réponse — le
-    // sélecteur affiche le nom du cours via son option synthétique).
+    // Le rattachement cours ET section voyage avec la copie (V13).
     courseId: full.courseId ?? undefined,
     courseName: full.courseName ?? undefined,
+    sectionId: full.sectionId ?? undefined,
+    sectionName: full.sectionName ?? undefined,
     questions: full.questions.map((q) => ({
       id: uid(),
       type: q.type,
@@ -95,14 +104,15 @@ function quizFromFull(full: QuizFullResponse, link: boolean): Quiz {
   };
 }
 
-type Feedback = { msg: string; severity: 'success' | 'error' };
+type Feedback = { msg: string; severity: 'success' | 'error' | 'info' };
 type PlayResult = {
   score: number; total: number; rank?: number;
   correct: boolean[]; correctAnswers: string[]; explanations?: (string | null)[];
 };
 type GradeFn = (answers: (string | null)[], durationMs: number) => Promise<PlayResult>;
-/** `quizId` set only for backend-graded plays → drives the leaderboard shown on the result screen. */
-type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number };
+/** `quizId` set only for backend-graded plays → drives the leaderboard shown on the result screen.
+ *  `courseId` (backend plays) alimente le « Continue avec… » de l'écran de fin. */
+type PlayState = { title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number; courseId?: number | null };
 type ShareTarget = { url: string; ranked: boolean };
 
 export default function Quiz() {
@@ -135,27 +145,24 @@ export default function Quiz() {
     if (ephemeral) window.history.replaceState(null, '', window.location.pathname);
   }, [ephemeral]);
 
-  // A shared `#play=<id>` link: load the published quiz from the backend and play it (recorded on the
-  // leaderboard). Verified accounts only — the /api/quizzes endpoints require ROLE_VERIFIED.
+  // A shared `#play=<id>` link: load the published quiz from the backend and play it. PUBLIC
+  // depuis 2026-07-08 (révision publique) : un anonyme joue aussi — corrigé serveur mais jamais
+  // classé (le submit sans compte vérifié n'est pas persisté).
   useEffect(() => {
     if (pendingPlayId == null) return;
     window.history.replaceState(null, '', window.location.pathname);
     let cancelled = false;
     (async () => {
-      if (!isVerified) {
-        if (!cancelled) setFeedback({ msg: t('tools.quiz.playLinkLoginHint'), severity: 'error' });
-        return;
-      }
       try {
         const data = await getQuizPlay(pendingPlayId);
-        if (!cancelled) setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id });
+        if (!cancelled) setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id, courseId: data.courseId });
       } catch {
         if (!cancelled) setFeedback({ msg: t('tools.quiz.libraryError'), severity: 'error' });
       }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPlayId, isVerified]);
+  }, [pendingPlayId]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, quizzesToJson(quizzes));
@@ -188,14 +195,19 @@ export default function Quiz() {
 
   const playBackend = async (id: number) => {
     const data = await getQuizPlay(id);
-    setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id });
+    setPlaying({ title: data.title, questions: data.questions, grade: backendGrade(data.id), quizId: data.id, courseId: data.courseId });
   };
 
   /** Play a card's quiz. A PUBLISHED quiz is played through the backend so the author (and anyone)
-   *  is recorded on the leaderboard; anything else is graded locally. */
+   *  is recorded on the leaderboard; anything else is graded locally. Si le serveur est injoignable
+   *  (hors ligne, session expirée), la partie se joue quand même en LOCAL — hors classement — au
+   *  lieu d'une erreur sèche : les questions sont déjà dans le navigateur, Jouer ne casse jamais. */
   const playQuiz = (quiz: Quiz) => {
     if (quiz.serverId && quiz.published) {
-      playBackend(quiz.serverId).catch(() => setFeedback({ msg: t('tools.quiz.libraryError'), severity: 'error' }));
+      playBackend(quiz.serverId).catch(() => {
+        playLocal(quiz);
+        setFeedback({ msg: t('tools.quiz.playOfflineFallback'), severity: 'info' });
+      });
     } else {
       playLocal(quiz);
     }
@@ -223,7 +235,13 @@ export default function Quiz() {
     const err = validateQuiz(quiz);
     if (err) { setFeedback({ msg: t(`tools.quiz.${err}`), severity: 'error' }); return; }
     const n = normalizeQuiz(quiz);
-    const body = { title: n.title, courseId: n.courseId ?? null, questions: n.questions.map(toQuestionDto), published };
+    const body = {
+      title: n.title,
+      courseId: n.courseId ?? null,
+      sectionId: n.sectionId ?? null,
+      questions: n.questions.map(toQuestionDto),
+      published,
+    };
     try {
       const saved = quiz.serverId ? await updateQuiz(quiz.serverId, body) : await createQuiz(body);
       setQuizzes((qs) => qs.map((q) => (q.id === quiz.id
@@ -287,14 +305,28 @@ export default function Quiz() {
   const linkedIds = new Set(quizzes.map((q) => q.serverId).filter(Boolean));
   const onlineOnly = (online ?? []).filter((q) => !linkedIds.has(q.id));
 
+  // « Mes quiz » groupés comme la bibliothèque (cohérence 2026-07-08) : sections les plus
+  // fournies d'abord, « Sans section » en dernier ; dans chaque groupe, « toute la section »
+  // avant les cours alphabétiques. Les en-têtes n'apparaissent que s'il y a un vrai groupage.
+  const groupedMine = groupBySection(quizzes).map((g) => ({
+    ...g,
+    items: groupByCourse(g.items).flatMap((cg) => cg.items),
+  }));
+  const showGroupHeaders = groupedMine.length > 1 || groupedMine[0]?.sectionId != null;
+
   // ── Routing between the views ─────────────────────────────────
   if (playing) {
     return (
       <PlaySession
+        // key : « Continue avec… » remplace le PlayState par un AUTRE quiz — sans key, la
+        // session garderait ses réponses/position de la partie précédente.
+        key={playing.quizId ?? playing.title}
         title={playing.title}
         questions={playing.questions}
         grade={playing.grade}
         quizId={playing.quizId}
+        courseId={playing.courseId}
+        onPlayOther={playBackend}
         onExit={() => setPlaying(null)}
       />
     );
@@ -305,7 +337,10 @@ export default function Quiz() {
         initial={editing}
         canPublish={isVerified}
         onCancel={() => setEditing(null)}
-        onSave={(q) => { upsert(q); setEditing(null); }}
+        // Quiz déjà lié au serveur : « Enregistrer » resynchronise AUSSI la copie en ligne —
+        // sinon la bibliothèque sert une version périmée (rattachement/questions), le drift
+        // silencieux derrière le « Sans section » vu le 2026-07-08.
+        onSave={(q) => { upsert(q); setEditing(null); if (q.serverId) saveOnline(q, q.published ?? false); }}
         onPlay={(q) => { upsert(q); setEditing(null); playLocal(q); }}
         onSaveOnline={(q) => { upsert(q); saveOnline(q, q.published ?? false); }}
         onPublish={(q) => { upsert(q); saveOnline(q, true); }}
@@ -337,10 +372,13 @@ export default function Quiz() {
 
       {tab === 'mine' && (
         <>
+          {/* Contrat anonyme en deux colonnes : ce qui marche sans compte (créer, jouer, liens)
+              vs ce que le compte vérifié ajoute — remplace l'ancien hint ambigu. */}
           {!isVerified && (
-            <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
-              {t('tools.quiz.anonHint')}
-            </Alert>
+            <AccountContract
+              free={(t('tools.quiz.contractFree', { returnObjects: true }) as string[])}
+              locked={(t('tools.quiz.contractLocked', { returnObjects: true }) as string[])}
+            />
           )}
 
           {quizzes.length === 0 && onlineOnly.length === 0 && (
@@ -363,23 +401,36 @@ export default function Quiz() {
                 </Button>
               </Box>
 
+              {isVerified && <StatusLegend />}
+
               <Stack spacing={1.25}>
-                {quizzes.map((quiz) => (
-                  <QuizCard
-                    key={quiz.id}
-                    quiz={quiz}
-                    canPublish={isVerified}
-                    onPlay={() => playQuiz(quiz)}
-                    onEdit={() => setEditing(quiz)}
-                    onShare={() => share(quiz)}
-                    onSaveOnline={() => saveOnline(quiz, quiz.published ?? false)}
-                    onPublish={() => saveOnline(quiz, true)}
-                    onUnpublish={() => saveOnline(quiz, false)}
-                    onLeaderboard={quiz.serverId && quiz.published
-                      ? () => setLeaderboardFor({ id: quiz.serverId!, title: quiz.title })
-                      : undefined}
-                    onDelete={() => confirmAndDelete(quiz)}
-                  />
+                {groupedMine.map((group) => (
+                  <Box key={group.sectionId ?? 'none'}>
+                    {showGroupHeaders && (
+                      <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        {group.sectionName ?? t('tools.revision.noSection')}
+                      </Typography>
+                    )}
+                    <Stack spacing={1.25}>
+                      {group.items.map((quiz) => (
+                        <QuizCard
+                          key={quiz.id}
+                          quiz={quiz}
+                          canPublish={isVerified}
+                          onPlay={() => playQuiz(quiz)}
+                          onEdit={() => setEditing(quiz)}
+                          onShare={() => share(quiz)}
+                          onSaveOnline={() => saveOnline(quiz, quiz.published ?? false)}
+                          onPublish={() => saveOnline(quiz, true)}
+                          onUnpublish={() => saveOnline(quiz, false)}
+                          onLeaderboard={quiz.serverId && quiz.published
+                            ? () => setLeaderboardFor({ id: quiz.serverId!, title: quiz.title })
+                            : undefined}
+                          onDelete={() => confirmAndDelete(quiz)}
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
                 ))}
               </Stack>
             </>
@@ -478,30 +529,7 @@ function EmptyQuizzes({ onCreate, onImport }: { onCreate: () => void; onImport: 
   );
 }
 
-/** Statut du quiz, sans ambiguïté « en ligne ou pas » : icône + libellé + tooltip explicatif.
- *  Navigateur uniquement (CloudOff) / Non publié = compte privé (CloudDone) / Publié = biblio (Public). */
-function StatusChip({ quiz }: { quiz: Quiz }) {
-  const { t } = useTranslation();
-  if (quiz.serverId && quiz.published) {
-    return (
-      <Tooltip title={t('tools.quiz.publishedChipTooltip')}>
-        <Chip size="small" color="success" variant="outlined" icon={<Public sx={{ fontSize: 14 }} />} label={t('tools.quiz.publishedChip')} sx={{ height: 20 }} />
-      </Tooltip>
-    );
-  }
-  if (quiz.serverId) {
-    return (
-      <Tooltip title={t('tools.quiz.savedChipTooltip')}>
-        <Chip size="small" color="info" variant="outlined" icon={<CloudDone sx={{ fontSize: 14 }} />} label={t('tools.quiz.savedChip')} sx={{ height: 20 }} />
-      </Tooltip>
-    );
-  }
-  return (
-    <Tooltip title={t('tools.quiz.localChipTooltip')}>
-      <Chip size="small" color="warning" variant="outlined" icon={<CloudOff sx={{ fontSize: 14 }} />} label={t('tools.quiz.localChip')} sx={{ height: 20 }} />
-    </Tooltip>
-  );
-}
+// Statut du quiz (Cet appareil / Enregistré / Publié) : pill partagé quiz/paquets — revision/StatusPills.
 
 /** A local quiz row. The NEXT server step is always a visible text button (never icon-only):
  *  local → « Enregistrer en ligne », enregistré → « Publier », publié → « Classement ». */
@@ -523,8 +551,9 @@ function QuizCard({ quiz, canPublish, onPlay, onEdit, onShare, onSaveOnline, onP
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', mt: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
             {t('tools.quiz.questionsCount', { count: quiz.questions.length })}
+            {quiz.courseName ? ` · ${quiz.courseName}` : quiz.sectionName ? ` · ${quiz.sectionName}` : ''}
           </Typography>
-          <StatusChip quiz={quiz} />
+          <StatusPill status={statusOf(quiz.serverId, quiz.published)} />
         </Box>
       </Box>
       <Button variant="contained" size="small" startIcon={<PlayArrow />} onClick={onPlay}>{t('tools.quiz.play')}</Button>
@@ -667,7 +696,9 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onSaveOnlin
             <CourseSelect
               value={{ sectionId: draft.sectionId, courseId: draft.courseId, courseName: draft.courseName }}
               onChange={(link) => setDraft((d) => ({
-                ...d, sectionId: link.sectionId, courseId: link.courseId, courseName: link.courseName,
+                ...d,
+                sectionId: link.sectionId, sectionName: link.sectionName,
+                courseId: link.courseId, courseName: link.courseName,
               }))}
             />
           </Box>
@@ -858,7 +889,9 @@ function QuizEditor({ initial, canPublish, onCancel, onSave, onPlay, onSaveOnlin
   );
 }
 
-/** "Bibliothèque" tab — quizzes shared by other verified students. */
+/** "Bibliothèque" tab — quizzes shared by verified students. PUBLIQUE en lecture + jeu depuis
+ *  2026-07-08 : un anonyme joue (hors classement) ; importer (réponses incluses) et consulter le
+ *  classement restent réservés aux comptes vérifiés. */
 function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
   isVerified: boolean;
   onPlay: (id: number) => Promise<void>;
@@ -872,18 +905,10 @@ function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
   const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!isVerified) return;
-    listQuizzes({ size: 50 }).then((p) => setQuizzes(p.content)).catch(() => setError(true));
-  }, [isVerified]);
-
-  if (!isVerified) {
-    return (
-      <GlassCard sx={{ p: 3, textAlign: 'center' }}>
-        <EmojiEvents sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} aria-hidden="true" />
-        <Typography variant="body2" color="text.secondary">{t('tools.quiz.libraryLoginHint')}</Typography>
-      </GlassCard>
-    );
-  }
+    // Tout charger puis grouper côté client : les compteurs des chips et les groupes
+    // section → cours viennent des mêmes données (volume école, une seule requête).
+    listQuizzes({ size: 100 }).then((p) => setQuizzes(p.content)).catch(() => setError(true));
+  }, []);
 
   const play = async (q: QuizSummary) => {
     setBusyId(q.id);
@@ -905,23 +930,24 @@ function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('tools.quiz.libraryIntro')}</Typography>
-      {quizzes === null && !error && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={32} /></Box>
-      )}
-      {error && <Typography color="error">{t('tools.quiz.libraryError')}</Typography>}
-      {quizzes?.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>{t('tools.quiz.libraryEmpty')}</Typography>}
-      <Stack spacing={1}>
-        {quizzes?.map((q) => (
+      <LibraryShell
+        items={quizzes}
+        loading={quizzes === null && !error}
+        error={error}
+        // ToolPage affiche déjà le 728×90 de la page — sans ça, l'onglet cumulait DEUX pubs.
+        showAd={false}
+        searchPlaceholder={t('tools.quiz.searchLibrary')}
+        emptyLabel={t('tools.quiz.libraryEmpty')}
+        renderItem={(q) => (
           <GlassCard key={q.id} sx={{ p: 1.75, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>
               <Typography sx={{ fontWeight: 600 }} noWrap>{q.title}</Typography>
               <Typography variant="caption" color="text.secondary">
                 {t('tools.quiz.questionsCount', { count: q.questionCount })} · {q.ownerName}
                 {q.attemptCount > 0 ? ` · ${t('tools.quiz.attemptsCount', { count: q.attemptCount })}` : ''}
-                {q.courseName ? ` · ${q.courseName}` : ''}
               </Typography>
             </Box>
-            {importedIds.has(q.id) ? (
+            {isVerified && (importedIds.has(q.id) ? (
               <Chip size="small" color="success" variant="outlined" icon={<Check sx={{ fontSize: 14 }} />} label={t('tools.quiz.importedChip')} />
             ) : (
               <Tooltip title={t('tools.quiz.importFromLibrary')}>
@@ -930,12 +956,14 @@ function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
                   <Download fontSize="small" />
                 </IconButton>
               </Tooltip>
+            ))}
+            {isVerified && (
+              <Tooltip title={t('tools.quiz.leaderboard')}>
+                <IconButton size="small" onClick={() => onLeaderboard(q.id, q.title)} aria-label={t('tools.quiz.leaderboard')}>
+                  <EmojiEvents fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
-            <Tooltip title={t('tools.quiz.leaderboard')}>
-              <IconButton size="small" onClick={() => onLeaderboard(q.id, q.title)} aria-label={t('tools.quiz.leaderboard')}>
-                <EmojiEvents fontSize="small" />
-              </IconButton>
-            </Tooltip>
             <Button
               size="small" variant="contained"
               startIcon={busyId === q.id ? <CircularProgress size={14} color="inherit" /> : <PlayArrow />}
@@ -944,13 +972,33 @@ function LibraryPanel({ isVerified, onPlay, onImport, onLeaderboard }: {
               {t('tools.quiz.play')}
             </Button>
           </GlassCard>
-        ))}
-      </Stack>
+        )}
+      />
+
+      {/* Anonyme : il peut jouer — le contrat explique ce que le compte vérifié ajoute. */}
+      {!isVerified && (
+        <Box sx={{ mt: 4 }}>
+          <AccountContract
+            free={(t('tools.quiz.contractFree', { returnObjects: true }) as string[])}
+            locked={(t('tools.quiz.contractLocked', { returnObjects: true }) as string[])}
+          />
+        </Box>
+      )}
     </Box>
   );
 }
 
-/** Reusable ranked list for a backend quiz — used by the standalone panel AND the end-of-play screen. */
+/** Liseré + halo des trois premières places (or/argent/bronze — même esprit que le podium
+ *  du classement général). */
+const MEDALS: Record<number, { emoji: string; color: string }> = {
+  1: { emoji: '🥇', color: '#ffd93d' },
+  2: { emoji: '🥈', color: '#c0c8d8' },
+  3: { emoji: '🥉', color: '#e8935a' },
+};
+
+/** Reusable ranked list for a backend quiz — used by the standalone panel AND the end-of-play
+ *  screen. Chaque ligne porte l'avatar et MÈNE AU PROFIL du joueur (demande 2026-07-08 — avant :
+ *  un simple numéro + pseudo inertes). */
 function LeaderboardList({ quizId, highlightUserId, max = 50 }: { quizId: number; highlightUserId?: number; max?: number }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<QuizLeaderboardEntry[] | null>(null);
@@ -968,16 +1016,34 @@ function LeaderboardList({ quizId, highlightUserId, max = 50 }: { quizId: number
     <Stack spacing={1}>
       {rows?.map((r) => {
         const isMe = highlightUserId === r.userId;
+        const medal = MEDALS[r.rank];
         return (
-          <GlassCard key={r.userId} sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, ...(isMe && { borderColor: 'primary.main' }) }}>
-            <Typography className="mono" sx={{ fontWeight: 700, width: 32, textAlign: 'center', color: r.rank <= 3 ? 'primary.main' : 'text.secondary' }}>
-              {r.rank}
+          <GlassCard
+            key={r.userId}
+            component={RouterLink}
+            to={`/users/${r.userId}`}
+            aria-label={t('tools.quiz.seeProfile', { name: r.userName })}
+            sx={{
+              p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
+              textDecoration: 'none', color: 'inherit',
+              ...(medal && { borderColor: `${medal.color}55`, boxShadow: `0 0 14px ${medal.color}22` }),
+              ...(isMe && { borderColor: 'primary.main' }),
+              '&:hover': { borderColor: 'primary.main', '& .lb-name': { color: 'primary.main' } },
+            }}
+          >
+            <Typography className="mono" sx={{
+              fontWeight: 700, width: 34, textAlign: 'center', fontSize: medal ? 20 : undefined,
+              color: 'text.secondary',
+            }}>
+              {medal ? medal.emoji : r.rank}
             </Typography>
+            <UserAvatar username={r.username} url={r.avatarUrl} size={30} />
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-              <Typography sx={{ fontWeight: 600 }} noWrap>
-                {r.userName}{isMe ? ` · ${t('tools.quiz.you')}` : ''}
+              <Typography className="lb-name" sx={{ fontWeight: 600, transition: 'color .15s' }} noWrap>
+                {r.userName}
               </Typography>
             </Box>
+            {isMe && <Chip size="small" color="primary" label={t('tools.quiz.you')} sx={{ height: 20 }} />}
             <Typography variant="caption" color="text.secondary" className="mono">{(r.durationMs / 1000).toFixed(1)}s</Typography>
             <Chip size="small" color="primary" variant="outlined" label={`${r.score}/${r.total}`} className="mono" />
           </GlassCard>
@@ -1017,8 +1083,9 @@ function QuestionContent({ q }: { q: QuizPlayQuestion }) {
 }
 
 /** A focused play session: one question per screen, then a result + review. Grading is injected. */
-function PlaySession({ title, questions, grade, quizId, onExit }: {
-  title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number; onExit: () => void;
+function PlaySession({ title, questions, grade, quizId, courseId, onPlayOther, onExit }: {
+  title: string; questions: QuizPlayQuestion[]; grade: GradeFn; quizId?: number;
+  courseId?: number | null; onPlayOther?: (id: number) => Promise<void>; onExit: () => void;
 }) {
   const { t } = useTranslation();
   const [answers, setAnswers] = useState<(string | null)[]>(() => questions.map(() => null));
@@ -1058,7 +1125,12 @@ function PlaySession({ title, questions, grade, quizId, onExit }: {
   };
 
   if (result) {
-    return <ResultView title={title} questions={questions} answers={answers} result={result} quizId={quizId} onRestart={restart} onExit={onExit} />;
+    return (
+      <ResultView
+        title={title} questions={questions} answers={answers} result={result} quizId={quizId}
+        courseId={courseId} onPlayOther={onPlayOther} onRestart={restart} onExit={onExit}
+      />
+    );
   }
 
   return (
@@ -1120,13 +1192,23 @@ function PlaySession({ title, questions, grade, quizId, onExit }: {
 }
 
 /** Score + per-question review after a finished play (server/client-graded, type-agnostic). */
-function ResultView({ title, questions, answers, result, quizId, onRestart, onExit }: {
+function ResultView({ title, questions, answers, result, quizId, courseId, onPlayOther, onRestart, onExit }: {
   title: string; questions: QuizPlayQuestion[]; answers: (string | null)[]; result: PlayResult;
-  quizId?: number; onRestart: () => void; onExit: () => void;
+  quizId?: number; courseId?: number | null; onPlayOther?: (id: number) => Promise<void>;
+  onRestart: () => void; onExit: () => void;
 }) {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, isVerified } = useAuthStore();
   const pct = Math.round((result.score / Math.max(1, result.total)) * 100);
+
+  // « Signaler une erreur » (boucle qualité 2026-07-08) : un clic par question, notifie l'auteur.
+  // Le backend ignore silencieusement les auto-signalements (l'auteur qui rejoue son quiz).
+  const [reported, setReported] = useState<Set<number>>(new Set());
+  const reportQuestion = async (qi: number) => {
+    if (quizId == null || reported.has(qi)) return;
+    setReported((prev) => new Set(prev).add(qi)); // optimiste — un échec réseau n'est pas grave ici
+    try { await reportQuizQuestion(quizId, qi); } catch { /* rate-limit/hors-ligne : tant pis */ }
+  };
 
   const myAnswer = (q: QuizPlayQuestion, raw: string | null): string => {
     if (raw == null || raw === '') return t('tools.quiz.skipped');
@@ -1146,12 +1228,19 @@ function ResultView({ title, questions, answers, result, quizId, onRestart, onEx
         ) : null}
       </GlassCard>
 
-      {/* Classement affiché juste après le score (quiz backend) — « donne envie de faire mieux ». */}
-      {quizId != null && (
+      {/* Classement affiché juste après le score (quiz backend) — « donne envie de faire mieux ».
+          L'endpoint est réservé aux vérifiés : l'anonyme (qui vient de jouer hors classement)
+          voit à la place l'invitation à se connecter pour être classé. */}
+      {quizId != null && isVerified && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.finalLeaderboardTitle')}</Typography>
           <LeaderboardList quizId={quizId} highlightUserId={user?.id} />
         </Box>
+      )}
+      {quizId != null && !isVerified && (
+        <Alert severity="info" icon={<EmojiEvents fontSize="small" />} sx={{ mb: 2 }}>
+          {t('tools.quiz.anonRankHint')}
+        </Alert>
       )}
 
       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.review')}</Typography>
@@ -1161,7 +1250,24 @@ function ResultView({ title, questions, answers, result, quizId, onRestart, onEx
           const explanation = result.explanations?.[qi];
           return (
             <GlassCard key={qi} sx={{ p: 1.75, borderLeft: '3px solid', borderColor: ok ? 'success.main' : 'error.main' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, whiteSpace: 'pre-wrap' }}>{q.question}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, whiteSpace: 'pre-wrap', flexGrow: 1, minWidth: 0 }}>
+                  {q.question}
+                </Typography>
+                {/* Signalement d'erreur — seulement pour les quiz publiés, joueur vérifié */}
+                {quizId != null && isVerified && (
+                  reported.has(qi) ? (
+                    <Chip size="small" label={t('tools.quiz.reportedChip')} color="warning" variant="outlined" />
+                  ) : (
+                    <Tooltip title={t('tools.quiz.reportQuestion')}>
+                      <IconButton size="small" onClick={() => void reportQuestion(qi)}
+                        aria-label={t('tools.quiz.reportQuestion')}>
+                        <FlagOutlined fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )
+                )}
+              </Box>
               <Typography variant="caption" sx={{ display: 'block', color: ok ? 'success.main' : 'error.main' }}>
                 {ok ? '✓ ' : '✗ '}{myAnswer(q, answers[qi])}
               </Typography>
@@ -1183,6 +1289,56 @@ function ResultView({ title, questions, answers, result, quizId, onRestart, onEx
       <Box sx={{ display: 'flex', gap: 1, mt: 2.5 }}>
         <Button variant="contained" startIcon={<PlayArrow />} onClick={onRestart}>{t('tools.quiz.retry')}</Button>
         <Button variant="outlined" startIcon={<ArrowBack />} onClick={onExit}>{t('tools.quiz.backToList')}</Button>
+      </Box>
+
+      {/* « Continue avec… » : quiz/paquets publiés du MÊME cours — le moment idéal pour
+          enchaîner (interlinking systématique, 2026-07-08). Masqué si rien à proposer. */}
+      {quizId != null && courseId != null && (
+        <ContinueWith courseId={courseId} excludeQuizId={quizId} onPlayOther={onPlayOther} />
+      )}
+    </Box>
+  );
+}
+
+/** Bloc de fin de partie : autres quiz (jouables sur place) + paquets du même cours. */
+function ContinueWith({ courseId, excludeQuizId, onPlayOther }: {
+  courseId: number; excludeQuizId: number; onPlayOther?: (id: number) => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const quizzes = useQuery({
+    queryKey: ['quiz-related', courseId],
+    queryFn: () => listQuizzes({ courseId, size: 20 }),
+    staleTime: 5 * 60_000,
+  });
+  const decks = useQuery({
+    queryKey: ['deck-related', courseId],
+    queryFn: () => listSharedDecks({ courseId, size: 10 }),
+    staleTime: 5 * 60_000,
+  });
+
+  const otherQuizzes = (quizzes.data?.content ?? []).filter((q) => q.id !== excludeQuizId).slice(0, 3);
+  const otherDecks = (decks.data?.content ?? []).slice(0, 2);
+  if (otherQuizzes.length === 0 && otherDecks.length === 0) return null;
+
+  return (
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 0.5 }}>{t('tools.quiz.continueWith')}</Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.5 }}>
+        {otherQuizzes.map((q) => (
+          <RevisionTile
+            key={`q-${q.id}`} type="quiz" title={q.title}
+            unitCount={q.questionCount} attemptCount={q.attemptCount} ownerName={q.ownerName}
+            onClick={() => { onPlayOther?.(q.id); }}
+          />
+        ))}
+        {otherDecks.map((d) => (
+          <RevisionTile
+            key={`d-${d.id}`} type="deck" title={d.title}
+            unitCount={d.cardCount} ownerName={d.ownerName}
+            onClick={() => navigate(`/outils/flashcards#deck=${d.id}`)}
+          />
+        ))}
       </Box>
     </Box>
   );

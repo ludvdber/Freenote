@@ -8,7 +8,7 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { searchDocuments, getSections, getCourses, getCategoryCounts, listPublicDocuments } from '@/api/endpoints';
+import { searchDocuments, getSections, getCourses, getCategoryCounts, getNewDocsCount, listPublicDocuments } from '@/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CATEGORIES, STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
 import { categoryColor, categoryEmoji, formatRelativeDate } from '@/lib/utils';
@@ -135,12 +135,43 @@ function FullBrowse() {
   });
   const totalInScope = Object.values(catCounts ?? {}).reduce((sum, n) => sum + n, 0);
 
+  // « N nouveaux depuis ta dernière visite » : l'horodatage vit en localStorage — lu une fois au
+  // montage (state initializer), remis à maintenant aussitôt ; le chip garde le compte de la
+  // session courante. Heure LOCALE sans zone (le serveur compare en LocalDateTime belge).
+  const [lastVisit] = useState<string | null>(() => localStorage.getItem('freenote-browse-last-visit'));
+  useEffect(() => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
+    localStorage.setItem('freenote-browse-last-visit', local);
+  }, []);
+  const { data: newSince } = useQuery({
+    queryKey: ['new-since', lastVisit],
+    queryFn: () => getNewDocsCount(lastVisit!),
+    enabled: !!lastVisit,
+    staleTime: Infinity,
+  });
+
   return (
     <PageWrapper>
       <Helmet><title>{t('nav.browse')} · Freenote</title></Helmet>
-      <Typography variant="h4" sx={s.title}>
-        {t('nav.browse')}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+        <Typography variant="h4" sx={s.title}>
+          {t('nav.browse')}
+        </Typography>
+        {(newSince?.count ?? 0) > 0 && (
+          <Chip
+            clickable
+            color="secondary"
+            size="small"
+            label={`✨ ${t('search.newSinceVisit', { count: newSince!.count })}`}
+            onClick={() => {
+              setQuery(''); // sinon l'effet de debounce re-poserait ?q juste après le reset
+              patchParams({ cat: '', section: '', course: '', sort: '', q: '', page: 0 });
+            }}
+            sx={{ fontWeight: 700, mb: { xs: 1, sm: 0 } }}
+          />
+        )}
+      </Box>
 
       <Box sx={s.filtersRow}>
         <Box sx={s.searchCol}>

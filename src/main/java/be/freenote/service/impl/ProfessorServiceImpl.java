@@ -28,7 +28,7 @@ public class ProfessorServiceImpl implements ProfessorService {
 
     @Override
     public List<ProfessorResponse> getAll() {
-        return professorRepository.findByApprovedTrue().stream()
+        return professorRepository.findByApprovedTrueOrderByNameAsc().stream()
                 .map(professorMapper::toResponse)
                 .toList();
     }

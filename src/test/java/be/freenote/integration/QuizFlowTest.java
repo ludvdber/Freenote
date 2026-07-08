@@ -205,16 +205,56 @@ class QuizFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectUnverifiedUser() throws Exception {
+    void shouldRejectUnverifiedUserFromWritingButLetHimPlay() throws Exception {
         long id = createQuiz();
         String unverifiedJwt = jwtFor(createUser("quiz-newbie", false, "USER"));
 
+        // Écrire reste réservé aux vérifiés.
         mockMvc.perform(post("/api/quizzes")
                         .header("Authorization", "Bearer " + unverifiedJwt).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(CREATE_BODY))
                 .andExpect(status().isForbidden());
 
+        // Jouer est public (révision publique 2026-07-08) — mais l'essai d'un NON-vérifié n'est
+        // jamais persisté : son pseudo placeholder « membre-xxxx » ne doit pas polluer le classement.
         mockMvc.perform(get("/api/quizzes/{id}/play", id).header("Authorization", "Bearer " + unverifiedJwt))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/quizzes/{id}/attempts", id)
+                        .header("Authorization", "Bearer " + unverifiedJwt).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":[\"1\",\"0\"],\"durationMs\":1000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.score").value(2))
+                .andExpect(jsonPath("$.rank").value(0));
+        assertThat(attemptRepository.count()).isZero();
+    }
+
+    @Test
+    void anonymousCanBrowseAndPlayButIsNeverRanked() throws Exception {
+        long id = createQuiz();
+
+        // Bibliothèque + vue jouable accessibles sans le moindre JWT (hub /reviser public).
+        mockMvc.perform(get("/api/quizzes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/api/quizzes/{id}/play", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].answer").doesNotExist());
+
+        // Correction serveur OK, rang 0, AUCUN essai persisté — mais la popularité est bumpée.
+        mockMvc.perform(post("/api/quizzes/{id}/attempts", id).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":[\"1\",\"0\"],\"durationMs\":2000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.score").value(2))
+                .andExpect(jsonPath("$.rank").value(0));
+        assertThat(attemptRepository.count()).isZero();
+        assertThat(quizRepository.findById(id).orElseThrow().getAttemptCount()).isEqualTo(1);
+
+        // Le full (réponses) et le classement (pseudos) restent fermés aux anonymes.
+        mockMvc.perform(get("/api/quizzes/{id}/full", id)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/quizzes/{id}/leaderboard", id)).andExpect(status().isUnauthorized());
+        // « Mes quiz » anonyme : 401 (piège d'ordre des matchers — /mine ne doit pas matcher le wildcard).
+        mockMvc.perform(get("/api/quizzes/mine")).andExpect(status().isUnauthorized());
     }
 }

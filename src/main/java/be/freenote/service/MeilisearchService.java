@@ -7,7 +7,10 @@ import java.util.List;
 
 public interface MeilisearchService {
     void indexDocument(Document document);
-    SearchResult search(String query, Long sectionId, Long courseId, String category, String sort, Pageable pageable);
+
+    /** {@code courseIds} : groupe d'équivalence déjà expansé (V15) — null/vide = pas de filtre cours. */
+    SearchResult search(String query, Long sectionId, java.util.Collection<Long> courseIds,
+                        String category, String sort, Pageable pageable);
     void deleteDocument(Long documentId);
 
     /** A page of matching document ids (kept in relevance/sort order) plus the total hit count for pagination. */

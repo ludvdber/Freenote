@@ -15,14 +15,24 @@ public final class GuideMapper {
     public static GuideSummary toSummary(Guide g) {
         return new GuideSummary(
                 g.getId(), g.getSlug(), g.getTitle(), g.getSummary(), g.getCategory(), g.getRelatedTool(),
-                g.getAuthorName(), g.isPublished(), readMinutes(g.getContent()),
+                g.getAuthorName(), g.isPublished(), g.isMembersOnly(), readMinutes(g.getContent()),
                 g.getCreatedAt(), g.getUpdatedAt());
     }
 
     public static GuideResponse toResponse(Guide g) {
         return new GuideResponse(
                 g.getId(), g.getSlug(), g.getTitle(), g.getSummary(), g.getContent(), g.getCategory(),
-                g.getRelatedTool(), g.getAuthorName(), g.isPublished(), g.getCreatedAt(), g.getUpdatedAt());
+                g.getRelatedTool(), g.getAuthorName(), g.isPublished(), g.isMembersOnly(),
+                g.getCreatedAt(), g.getUpdatedAt());
+    }
+
+    /** Vue « verrouillée » d'un guide réservé : mêmes métadonnées, {@code content} null — le
+     *  Markdown ne quitte jamais le serveur pour un appelant non vérifié. */
+    public static GuideResponse toLockedResponse(Guide g) {
+        return new GuideResponse(
+                g.getId(), g.getSlug(), g.getTitle(), g.getSummary(), null, g.getCategory(),
+                g.getRelatedTool(), g.getAuthorName(), g.isPublished(), true,
+                g.getCreatedAt(), g.getUpdatedAt());
     }
 
     /** Word-count estimate over the raw Markdown (punctuation stripped), floored at 1 minute. */

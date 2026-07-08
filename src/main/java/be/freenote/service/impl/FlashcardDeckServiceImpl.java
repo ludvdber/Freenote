@@ -8,6 +8,7 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.entity.Course;
 import be.freenote.entity.FlashcardCardJson;
 import be.freenote.entity.FlashcardDeck;
+import be.freenote.entity.Section;
 import be.freenote.entity.User;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import be.freenote.mapper.FlashcardDeckMapper;
 import be.freenote.repository.CourseRepository;
 import be.freenote.repository.FlashcardDeckRepository;
 import be.freenote.repository.Repositories;
+import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.FlashcardDeckService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,8 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     private final FlashcardDeckRepository deckRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final SectionRepository sectionRepository;
+    private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
 
     @Override
     @Transactional
@@ -51,6 +55,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
                 .published(Boolean.TRUE.equals(request.published()))
                 .owner(user)
                 .course(course)
+                .section(resolveSection(course, request.sectionId()))
                 .build();
 
         return FlashcardDeckMapper.toResponse(deckRepository.save(deck), userId);
@@ -73,14 +78,17 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         deck.setCards(cards);
         deck.setCardCount(cards.size());
         deck.setCourse(course);
+        deck.setSection(resolveSection(course, request.sectionId()));
         deck.setPublished(Boolean.TRUE.equals(request.published()));
         return FlashcardDeckMapper.toResponse(deckRepository.save(deck), userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<FlashcardDeckSummary> list(Long courseId, Pageable pageable, Long callerId) {
-        Page<DeckListRow> page = deckRepository.findPublishedRows(courseId, pageable);
+    public PageResponse<FlashcardDeckSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
+        // Équivalences (V15) : les paquets de « Stats (Compta) » remontent aussi pour « Stats (Info) »
+        Page<DeckListRow> page = deckRepository.findPublishedRows(
+                courseEquivalenceService.expand(courseId), sectionId, ownerId, pageable);
         return PageResponse.from(page,
                 page.getContent().stream().map(r -> FlashcardDeckMapper.toSummary(r, callerId)).toList());
     }
@@ -117,6 +125,15 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     private static boolean isOwner(FlashcardDeck deck, Long userId) {
         return deck.getOwner() != null && deck.getOwner().getId().equals(userId);
+    }
+
+    /** Règle de cohérence V13 : un cours choisi impose SA section ; sans cours, la section libre
+     *  (nullable) permet le paquet multi-cours « toute la section ». */
+    private Section resolveSection(Course course, Long sectionId) {
+        if (course != null) {
+            return course.getSection();
+        }
+        return sectionId == null ? null : Repositories.findByIdOrThrow(sectionRepository, sectionId, "Section");
     }
 
     /** Trim + drop cards without a front; a deck must keep at least one valid card. */

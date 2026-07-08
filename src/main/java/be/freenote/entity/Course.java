@@ -32,6 +32,11 @@ public class Course {
     @Builder.Default
     private boolean approved = false;
 
+    /** Groupe d'équivalence (V15) : les cours partageant cette valeur sont « le même cours »
+     *  donné dans plusieurs sections — leurs filtres par cours sont mutualisés. NULL = non lié. */
+    @Column(name = "equivalence_group")
+    private Long equivalenceGroup;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "created_by")
     private User createdBy;

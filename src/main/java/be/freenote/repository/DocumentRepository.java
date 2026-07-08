@@ -63,30 +63,39 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         """)
     List<Document> findPopularPrioritizingSection(@Param("sectionId") Long sectionId, Pageable pageable);
 
-    /** Flexible filter: any combination of section / course / category. NULL params mean "no constraint".
-     *  Returns BOTH verified and unverified documents (verification is a visual aid, not access control),
-     *  always verified-first; the secondary sort (date/vues/note) comes from the Pageable — Spring Data
-     *  appends it to the ORDER BY below. Mapper associations fetch-joined (anti-N+1: without
-     *  them, a 20-doc page fired up to 80 lazy SELECTs — course, section, uploader profile, professor). */
+    /** Flexible filter: any combination of section / course(s) / category. NULL params mean "no
+     *  constraint" — the course filter is a COLLECTION since V15 (groupe d'équivalence : « Stats »
+     *  Info + Compta partagent leurs documents). Returns BOTH verified and unverified documents
+     *  (verification is a visual aid, not access control), always verified-first; the secondary
+     *  sort (date/vues/note) comes from the Pageable. Mapper associations fetch-joined (anti-N+1). */
+    default Page<Document> findFiltered(Long sectionId, Collection<Long> courseIds,
+                                        Category category, Pageable pageable) {
+        boolean allCourses = courseIds == null || courseIds.isEmpty();
+        // Sentinelle -1 quand le filtre est inactif : un IN vide générerait du SQL invalide.
+        return findFilteredByCourses(sectionId, allCourses,
+                allCourses ? List.of(-1L) : courseIds, category, pageable);
+    }
+
     @Query(value = """
         SELECT d FROM Document d
         LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section s
         LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
         LEFT JOIN FETCH d.professor
         WHERE (:sectionId IS NULL OR s.id = :sectionId)
-          AND (:courseId IS NULL OR c.id = :courseId)
+          AND (:allCourses = true OR c.id IN :courseIds)
           AND (:category IS NULL OR d.category = :category)
         ORDER BY d.verified DESC
         """,
         countQuery = """
         SELECT COUNT(d) FROM Document d
         WHERE (:sectionId IS NULL OR d.course.section.id = :sectionId)
-          AND (:courseId IS NULL OR d.course.id = :courseId)
+          AND (:allCourses = true OR d.course.id IN :courseIds)
           AND (:category IS NULL OR d.category = :category)
         """)
-    Page<Document> findFiltered(
+    Page<Document> findFilteredByCourses(
             @Param("sectionId") Long sectionId,
-            @Param("courseId") Long courseId,
+            @Param("allCourses") boolean allCourses,
+            @Param("courseIds") Collection<Long> courseIds,
             @Param("category") Category category,
             Pageable pageable);
 
@@ -136,15 +145,18 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     @Query("SELECT d.user.id, COUNT(d) FROM Document d WHERE d.user.id IN :userIds GROUP BY d.user.id")
     List<Object[]> countByUserIds(@Param("userIds") List<Long> userIds);
 
-    /** Verified docs of a user's public profile, mapper associations fetch-joined (anti-N+1). */
+    /** Verified docs of a user's public profile, mapper associations fetch-joined (anti-N+1).
+     *  Les documents ANONYMES sont exclus : les lister sur le profil de l'uploader révélerait
+     *  exactement ce que l'anonymat promet de cacher (fix 2026-07-08). */
     @Query(value = """
         SELECT d FROM Document d
         LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
         LEFT JOIN FETCH d.user u LEFT JOIN FETCH u.profile
         LEFT JOIN FETCH d.professor
-        WHERE u.id = :userId AND d.verified = true
+        WHERE u.id = :userId AND d.verified = true AND d.anonymous = false
+        ORDER BY d.createdAt DESC
         """,
-        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.user.id = :userId AND d.verified = true")
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.user.id = :userId AND d.verified = true AND d.anonymous = false")
     Page<Document> findByUserIdAndVerifiedTrue(@Param("userId") Long userId, Pageable pageable);
 
     /** ALL docs of a user (y compris en attente de vérification) — réservé à l'auteur lui-même :
@@ -211,14 +223,22 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     /** Répartition des docs par catégorie pour les filtres courants — alimente les compteurs des
      *  chips catégories de l'explorer (le paramètre de recherche `q` est volontairement ignoré :
-     *  les compteurs décrivent le périmètre structurel section/cours, pas le texte tapé). */
+     *  les compteurs décrivent le périmètre structurel section/cours, pas le texte tapé).
+     *  Filtre cours = collection depuis V15 (équivalences), même pattern que findFiltered. */
+    default List<Object[]> countByCategory(Long sectionId, Collection<Long> courseIds) {
+        boolean allCourses = courseIds == null || courseIds.isEmpty();
+        return countByCategoryByCourses(sectionId, allCourses, allCourses ? List.of(-1L) : courseIds);
+    }
+
     @Query("""
         SELECT d.category, COUNT(d) FROM Document d
         WHERE (:sectionId IS NULL OR d.course.section.id = :sectionId)
-          AND (:courseId IS NULL OR d.course.id = :courseId)
+          AND (:allCourses = true OR d.course.id IN :courseIds)
         GROUP BY d.category
         """)
-    List<Object[]> countByCategory(@Param("sectionId") Long sectionId, @Param("courseId") Long courseId);
+    List<Object[]> countByCategoryByCourses(@Param("sectionId") Long sectionId,
+                                            @Param("allCourses") boolean allCourses,
+                                            @Param("courseIds") Collection<Long> courseIds);
 
     /** Doc précédent du même cours (ordre chronologique, id en départage des createdAt égaux) —
      *  navigation « précédent/suivant » de la page document. Appeler avec PageRequest.of(0, 1). */

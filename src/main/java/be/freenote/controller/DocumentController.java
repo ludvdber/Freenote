@@ -70,6 +70,19 @@ public class DocumentController {
                 .body(documentService.getCategoryCounts(sectionId, courseId));
     }
 
+    /** Nombre de documents créés depuis un instant donné — chip « N nouveaux depuis ta dernière
+     *  visite » de l'explorer (l'horodatage de visite vit en localStorage côté client). */
+    @GetMapping("/new-count")
+    public ResponseEntity<java.util.Map<String, Long>> newCount(@RequestParam String since) {
+        final java.time.LocalDateTime ts;
+        try {
+            ts = java.time.LocalDateTime.parse(since);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid 'since' timestamp (ISO-8601 expected)");
+        }
+        return ResponseEntity.ok(java.util.Map.of("count", documentService.countNewSince(ts)));
+    }
+
     /** Soft duplicate signal for the upload form: is there already a same-titled doc in this course?
      *  Never blocks the upload — the frontend just shows a warning. */
     @GetMapping("/title-exists")

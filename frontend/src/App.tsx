@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import AuthPromptSnackbar from '@/components/common/AuthPromptSnackbar';
+import CommandPalette from '@/components/common/CommandPalette';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import TermsGate from '@/components/common/TermsGate';
 import OnboardingGate from '@/components/common/OnboardingGate';
@@ -19,6 +20,7 @@ const DocumentView = lazy(() => import('@/pages/DocumentView'));
 const Upload = lazy(() => import('@/pages/Upload'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
+const Reviser = lazy(() => import('@/pages/Reviser'));
 const News = lazy(() => import('@/pages/News'));
 const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
 const GuidesIndex = lazy(() => import('@/pages/GuidesIndex'));
@@ -93,6 +95,10 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <AuthPromptSnackbar />
+      {/* Recherche globale ⌘K — montée UNE fois au niveau du Router (elle navigue), pour TOUS les
+          layouts : quand elle vivait dans MainLayout, la loupe sur /outils (ToolsLayout) ouvrait le
+          store sans qu'aucun dialog ne soit monté — la palette « apparaissait » en arrivant sur l'accueil. */}
+      <CommandPalette />
       <Routes>
         {/* Tools — public, standalone layout (Navbar + Footer, no auth gate). One URL per tool for SEO. */}
         <Route element={<ToolsLayout />}>
@@ -115,6 +121,9 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/users/:id" element={<ProtectedRoute><UserPublic /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          {/* Hub « Réviser » : bibliothèque commune quiz + paquets publiés. PUBLIC (2026-07-08) —
+              un anonyme consulte et joue, hors classement (API GET permitAll côté backend). */}
+          <Route path="/reviser" element={<Reviser />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/guides" element={<GuidesIndex />} />

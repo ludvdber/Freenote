@@ -136,6 +136,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides", "/api/guides/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+                // Révision publique (2026-07-08) : la bibliothèque des quiz/paquets PUBLIÉS se
+                // consulte et se joue sans compte — hors classement (un POST attempts anonyme est
+                // corrigé côté serveur mais rien n'est enregistré). ⚠️ « /mine » DOIT précéder les
+                // wildcards : `/api/flashcard-decks/*` matche aussi « mine » (piège d'ordre documenté
+                // dans CLAUDE.md) — sinon le controller NPE sur un principal absent. Le `full`
+                // (réponses incluses) et le leaderboard (pseudos des élèves) restent VERIFIED.
+                .requestMatchers(HttpMethod.GET, "/api/quizzes/mine", "/api/flashcard-decks/mine").hasRole("VERIFIED")
+                .requestMatchers(HttpMethod.GET, "/api/quizzes", "/api/quizzes/*/play").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/quizzes/*/attempts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/flashcard-decks", "/api/flashcard-decks/*").permitAll()
                 // Compteurs agrégés de la home (docs, vues, membres) — aucune donnée personnelle,
                 // affichés aussi aux visiteurs anonymes (la home publique montre les stats).
                 .requestMatchers(HttpMethod.GET, "/api/stats").permitAll()

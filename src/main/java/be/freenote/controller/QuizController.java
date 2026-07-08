@@ -55,15 +55,18 @@ public class QuizController {
         return ResponseEntity.ok(service.update(userId, isAdmin(authentication), id, request));
     }
 
-    /** Bibliothèque : quiz publiés uniquement. */
+    /** Bibliothèque : quiz publiés uniquement. Public (lecture + jeu hors classement pour les
+     *  anonymes) ; {@code ownerId} filtre les quiz publiés d'un utilisateur (section du profil). */
     @GetMapping
     public ResponseEntity<PageResponse<QuizSummary>> list(
             Authentication authentication,
             @RequestParam(required = false) Long courseId,
+            @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) Long ownerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Long callerId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(service.list(courseId, pageable(page, size), callerId));
+        Long callerId = SecurityUtils.currentUserIdOrNull(authentication);
+        return ResponseEntity.ok(service.list(courseId, sectionId, ownerId, pageable(page, size), callerId));
     }
 
     /** « Mes quiz » : tout ce que le compte a enregistré (privés + publiés). */
@@ -78,7 +81,7 @@ public class QuizController {
 
     @GetMapping("/{id}/play")
     public ResponseEntity<QuizPlayResponse> play(Authentication authentication, @PathVariable Long id) {
-        return ResponseEntity.ok(service.play(id, SecurityUtils.currentUserId(authentication), isAdmin(authentication)));
+        return ResponseEntity.ok(service.play(id, SecurityUtils.currentUserIdOrNull(authentication), isAdmin(authentication)));
     }
 
     /** Vue complète (réponses incluses) — édition par le propriétaire, import depuis la bibliothèque. */
@@ -87,12 +90,16 @@ public class QuizController {
         return ResponseEntity.ok(service.full(id, SecurityUtils.currentUserId(authentication), isAdmin(authentication)));
     }
 
+    /** Correction serveur d'une partie. Sans compte VÉRIFIÉ ({@code userId} null) : corrigé mais
+     *  RIEN n'est enregistré — pas d'essai, pas de rang (le classement reste réservé aux étudiants ;
+     *  un compte pré-onboarding joue comme un anonyme, son pseudo placeholder n'y apparaît jamais).
+     *  Le compteur de popularité est bumpé dans tous les cas. */
     @PostMapping("/{id}/attempts")
     @RateLimit(max = 60, window = 3600)
     public ResponseEntity<AttemptResultResponse> submit(Authentication authentication,
                                                         @PathVariable Long id,
                                                         @Valid @RequestBody SubmitAttemptRequest request) {
-        Long userId = SecurityUtils.currentUserId(authentication);
+        Long userId = isVerified(authentication) ? SecurityUtils.currentUserIdOrNull(authentication) : null;
         return ResponseEntity.ok(service.submit(userId, id, request));
     }
 
@@ -111,12 +118,27 @@ public class QuizController {
         return ResponseEntity.noContent().build();
     }
 
+    /** « Signaler une erreur » sur une question (écran de fin de partie) → notification à l'auteur.
+     *  Hors du matcher permitAll de {@code /attempts} : réservé aux VÉRIFIÉS (règle globale). */
+    @PostMapping("/{id}/report-question")
+    @RateLimit(max = 5, window = 3600)
+    public ResponseEntity<Void> reportQuestion(Authentication authentication, @PathVariable Long id,
+                                               @Valid @RequestBody be.freenote.dto.request.ReportQuizQuestionRequest request) {
+        service.reportQuestion(SecurityUtils.currentUserId(authentication), id, request);
+        return ResponseEntity.noContent().build();
+    }
+
     private static Pageable pageable(int page, int size) {
         return PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE));
     }
 
     private static boolean isAdmin(Authentication authentication) {
-        return authentication.getAuthorities().stream()
+        return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private static boolean isVerified(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_VERIFIED") || a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

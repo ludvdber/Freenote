@@ -16,5 +16,7 @@ public record CreateGuideRequest(
         @NotBlank @Size(max = 50_000) String content,
         @Size(max = 40) String category,
         @Size(max = 40) @Pattern(regexp = "^[a-z0-9-]*$") String relatedTool,
-        boolean published
+        boolean published,
+        /** Réservé aux étudiants : contenu servi uniquement aux comptes vérifiés (V14). */
+        boolean membersOnly
 ) {}

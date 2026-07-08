@@ -7,7 +7,7 @@ import {
 import {
   Add, DeleteOutlined, EditOutlined, Check, MoreVert, FileDownload, FileUpload, Replay, Loop,
   ArrowBack, Style as StyleIcon, CloudUpload, CloudDone, CloudOff, CloudDownload, KeyboardArrowDown,
-  Search, Public,
+  Search,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,10 @@ import {
   newDeck, newCard, schedule, dueCards, isDue, toTsv, parseCards, decksToJson, decksFromJson,
 } from './flashcards/logic';
 import CourseSelect, { type CourseLink } from './CourseSelect';
+import AccountContract from './revision/AccountContract';
+import StatusLegend, { StatusPill } from './revision/StatusPills';
+import LibraryShell from './revision/LibraryShell';
+import { groupByCourse, groupBySection, statusOf } from './revision/lib';
 
 const STORAGE_KEY = 'freenote.flashcards.v1';
 /** Server cap (PublishDeckRequest @Size(max=1000)) — mirrored here for a precise message before the call. */
@@ -243,6 +247,7 @@ export default function Flashcards() {
     const body = {
       title: deck.name,
       courseId: deck.courseId ?? null,
+      sectionId: deck.sectionId ?? null,
       cards: deck.cards.map((c) => ({ front: c.front, back: c.back })),
       published,
     };
@@ -271,6 +276,8 @@ export default function Flashcards() {
     local.cards = shared.cards.map((c) => newCard(c.front, c.back));
     local.courseId = shared.courseId ?? undefined;
     local.courseName = shared.courseName ?? undefined;
+    local.sectionId = shared.sectionId ?? undefined;
+    local.sectionName = shared.sectionName ?? undefined;
     setDecks((ds) => [...ds, local]);
     setFeedback({ msg: t('tools.flashcards.importedToMine', { count: shared.cards.length }), severity: 'success' });
   };
@@ -284,6 +291,8 @@ export default function Flashcards() {
     local.published = shared.published;
     local.courseId = shared.courseId ?? undefined;
     local.courseName = shared.courseName ?? undefined;
+    local.sectionId = shared.sectionId ?? undefined;
+    local.sectionName = shared.sectionName ?? undefined;
     // Date serveur (pure) plutôt que Date.now() : plus juste pour « Publié le … » et conforme
     // à la règle react-hooks/purity qui interdit l'horloge dans le corps du composant.
     if (shared.published) local.sharedAt = new Date(shared.createdAt).getTime();
@@ -347,14 +356,24 @@ export default function Flashcards() {
         if (decks.length === 0 && onlineOnly.length === 0) {
           return (
             <>
-              {!isVerified && <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{t('tools.flashcards.anonHint')}</Alert>}
+              {!isVerified && (
+              <AccountContract
+                free={(t('tools.flashcards.contractFree', { returnObjects: true }) as string[])}
+                locked={(t('tools.flashcards.contractLocked', { returnObjects: true }) as string[])}
+              />
+            )}
               <EmptyDecks onCreate={() => setNameDialog('new')} onImport={() => deckFileInput.current?.click()} />
             </>
           );
         }
         return (
           <Box>
-            {!isVerified && <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>{t('tools.flashcards.anonHint')}</Alert>}
+            {!isVerified && (
+              <AccountContract
+                free={(t('tools.flashcards.contractFree', { returnObjects: true }) as string[])}
+                locked={(t('tools.flashcards.contractLocked', { returnObjects: true }) as string[])}
+              />
+            )}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{t('tools.flashcards.tabMine')}</Typography>
@@ -379,29 +398,54 @@ export default function Flashcards() {
 
             {importError && <Alert severity="warning" sx={{ my: 2 }} onClose={() => setImportError('')}>{importError}</Alert>}
 
-            <Stack spacing={1.25} sx={{ mt: 2 }}>
-              {visible.map((deck) => (
-                <DeckRow
-                  key={deck.id}
-                  deck={deck}
-                  isVerified={isVerified}
-                  publishing={publishingId === deck.id}
-                  onReview={() => startReview(deck, dueCards(deck).map((c) => c.id))}
-                  onStudyAll={() => startReview(deck, shuffled(deck.cards.map((c) => c.id)))}
-                  onOpen={() => { setOpenId(deck.id); setEditingCardId(null); }}
-                  onSaveOnline={() => saveOnline(deck, deck.published ?? false)}
-                  onPublish={() => saveOnline(deck, true)}
-                  onUnpublish={() => saveOnline(deck, false)}
-                  onRename={() => { setOpenId(deck.id); setNameDialog('rename'); }}
-                  onDelete={() => deleteDeck(deck)}
-                />
-              ))}
-              {q && visible.length === 0 && (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-                  {t('tools.flashcards.searchNoResult')}
-                </Typography>
-              )}
-            </Stack>
+            {isVerified && <Box sx={{ mt: 2 }}><StatusLegend /></Box>}
+
+            {/* Groupage identique à la bibliothèque (cohérence 2026-07-08) : sections les plus
+                fournies d'abord, « Sans section » en dernier, cours alphabétiques dans le groupe.
+                En-têtes seulement s'il y a un vrai groupage (tout-sans-section = liste plate). */}
+            {(() => {
+              const grouped = groupBySection(visible).map((g) => ({
+                ...g,
+                items: groupByCourse(g.items).flatMap((cg) => cg.items),
+              }));
+              const showHeaders = grouped.length > 1 || grouped[0]?.sectionId != null;
+              return (
+                <Stack spacing={1.25} sx={{ mt: 2 }}>
+                  {grouped.map((group) => (
+                    <Box key={group.sectionId ?? 'none'}>
+                      {showHeaders && (
+                        <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          {group.sectionName ?? t('tools.revision.noSection')}
+                        </Typography>
+                      )}
+                      <Stack spacing={1.25}>
+                        {group.items.map((deck) => (
+                          <DeckRow
+                            key={deck.id}
+                            deck={deck}
+                            isVerified={isVerified}
+                            publishing={publishingId === deck.id}
+                            onReview={() => startReview(deck, dueCards(deck).map((c) => c.id))}
+                            onStudyAll={() => startReview(deck, shuffled(deck.cards.map((c) => c.id)))}
+                            onOpen={() => { setOpenId(deck.id); setEditingCardId(null); }}
+                            onSaveOnline={() => saveOnline(deck, deck.published ?? false)}
+                            onPublish={() => saveOnline(deck, true)}
+                            onUnpublish={() => saveOnline(deck, false)}
+                            onRename={() => { setOpenId(deck.id); setNameDialog('rename'); }}
+                            onDelete={() => deleteDeck(deck)}
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+                  ))}
+                  {q && visible.length === 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                      {t('tools.flashcards.searchNoResult')}
+                    </Typography>
+                  )}
+                </Stack>
+              );
+            })()}
 
             {onlineOnly.length > 0 && (
               <Box sx={{ mt: 3 }}>
@@ -446,9 +490,19 @@ export default function Flashcards() {
           onSaveOnline={() => saveOnline(openDeck, openDeck.published ?? false)}
           onPublish={() => saveOnline(openDeck, true)}
           onUnpublish={() => saveOnline(openDeck, false)}
-          onCourseLink={(link) => patchDeck(openDeck.id, (d) => ({
-            ...d, sectionId: link.sectionId, courseId: link.courseId, courseName: link.courseName,
-          }))}
+          onCourseLink={(link) => {
+            // Le rattachement est une métadonnée de RANGEMENT : s'il existe une copie serveur,
+            // on la resynchronise tout de suite — sinon la bibliothèque garderait l'ancien
+            // rangement (« Sans section » alors que l'utilisateur voit une section en local,
+            // bug réel du 2026-07-08). sectionName inclus (il manquait — nom perdu en local).
+            const updated = {
+              ...openDeck,
+              sectionId: link.sectionId, sectionName: link.sectionName,
+              courseId: link.courseId, courseName: link.courseName,
+            };
+            patchDeck(openDeck.id, () => updated);
+            if (updated.serverId) saveOnline(updated, updated.published ?? false);
+          }}
           onRename={() => setNameDialog('rename')}
           onDelete={() => deleteDeck(openDeck)}
           onImportFile={() => csvInput.current?.click()}
@@ -493,30 +547,7 @@ function EmptyDecks({ onCreate, onImport }: { onCreate: () => void; onImport: ()
   );
 }
 
-/** Statut du paquet, sans ambiguïté « en ligne ou pas » : icône + libellé + tooltip explicatif.
- *  Navigateur uniquement (CloudOff) / Non publié = compte privé (CloudDone) / Publié = biblio (Public). */
-function DeckStatusChip({ deck }: { deck: Deck }) {
-  const { t } = useTranslation();
-  if (deck.serverId && deck.published) {
-    return (
-      <Tooltip title={t('tools.flashcards.publishedChipTooltip')}>
-        <Chip size="small" color="success" variant="outlined" icon={<Public />} label={t('tools.flashcards.publishedChip')} sx={{ height: 22 }} />
-      </Tooltip>
-    );
-  }
-  if (deck.serverId) {
-    return (
-      <Tooltip title={t('tools.flashcards.savedChipTooltip')}>
-        <Chip size="small" color="info" variant="outlined" icon={<CloudDone />} label={t('tools.flashcards.savedChip')} sx={{ height: 22 }} />
-      </Tooltip>
-    );
-  }
-  return (
-    <Tooltip title={t('tools.flashcards.localChipTooltip')}>
-      <Chip size="small" color="warning" variant="outlined" icon={<CloudOff />} label={t('tools.flashcards.localChip')} sx={{ height: 22 }} />
-    </Tooltip>
-  );
-}
+// Statut du paquet (Cet appareil / Enregistré / Publié) : pill partagé quiz/paquets — revision/StatusPills.
 
 /** One deck in the "Mes paquets" overview: stats + quick study + open + kebab. */
 function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, onSaveOnline, onPublish, onUnpublish, onRename, onDelete }: {
@@ -537,7 +568,7 @@ function DeckRow({ deck, isVerified, publishing, onReview, onStudyAll, onOpen, o
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography sx={{ fontWeight: 700 }} noWrap>{deck.name}</Typography>
-            <DeckStatusChip deck={deck} />
+            <StatusPill status={statusOf(deck.serverId, deck.published)} />
           </Box>
           <Typography variant="caption" color="text.secondary">
             {t('tools.flashcards.cardsCount', { count: deck.cards.length })} · {t('tools.flashcards.dueCount', { count: due })}
@@ -655,7 +686,7 @@ function DeckDetail(props: {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <DeckStatusChip deck={deck} />
+          <StatusPill status={statusOf(deck.serverId, deck.published)} />
           <Box sx={{ flexGrow: 1 }} />
           {/* Save/publish — clearly visible, not buried in a menu */}
           {isVerified ? (
@@ -808,24 +839,17 @@ function LibraryPanel({ isVerified, onImport, highlightId }: {
   const [done, setDone] = useState<Set<number>>(new Set()); // ids imported this session → "Importé ✓"
 
   useEffect(() => {
-    if (!isVerified) return;
-    listSharedDecks({ size: 50 }).then((p) => setDecks(p.content)).catch(() => setError(true));
-  }, [isVerified]);
+    // Tout charger puis grouper côté client (compteurs de chips + groupes section → cours).
+    // PUBLIC depuis 2026-07-08 : un anonyme consulte ET importe (l'import ne fait que copier
+    // les cartes dans SON localStorage — aucun compte requis).
+    listSharedDecks({ size: 100 }).then((p) => setDecks(p.content)).catch(() => setError(true));
+  }, []);
 
   // Amène le paquet ciblé par le deep-link à l'écran une fois la liste chargée.
   useEffect(() => {
     if (highlightId == null || !decks?.length) return;
     document.getElementById(`lib-deck-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [highlightId, decks]);
-
-  if (!isVerified) {
-    return (
-      <GlassCard sx={{ p: 3, textAlign: 'center' }}>
-        <CloudDownload sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} aria-hidden="true" />
-        <Typography variant="body2" color="text.secondary">{t('tools.flashcards.shareLoginHint')}</Typography>
-      </GlassCard>
-    );
-  }
 
   const handleImport = async (d: FlashcardDeckSummary) => {
     setImportingId(d.id);
@@ -842,13 +866,17 @@ function LibraryPanel({ isVerified, onImport, highlightId }: {
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('tools.flashcards.libraryIntro')}</Typography>
-      {decks === null && !error && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={32} /></Box>
-      )}
-      {error && <Typography color="error">{t('tools.flashcards.sharedError')}</Typography>}
-      {decks?.length === 0 && <Typography color="text.secondary" sx={{ py: 2 }}>{t('tools.flashcards.sharedEmpty')}</Typography>}
-      <Stack spacing={1}>
-        {decks?.map((d) => {
+      <LibraryShell
+        items={decks}
+        loading={decks === null && !error}
+        error={error}
+        // ToolPage affiche déjà le 728×90 de la page — sans ça, l'onglet cumulait DEUX pubs.
+        showAd={false}
+        searchPlaceholder={t('tools.flashcards.searchLibrary')}
+        emptyLabel={t('tools.flashcards.sharedEmpty')}
+        // Deep-link #deck= : démarrer sur « Tout » pour que le paquet ciblé soit forcément visible.
+        forceAllScope={highlightId != null}
+        renderItem={(d) => {
           const imported = done.has(d.id);
           return (
             <GlassCard
@@ -862,7 +890,7 @@ function LibraryPanel({ isVerified, onImport, highlightId }: {
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                 <Typography sx={{ fontWeight: 600 }} noWrap>{d.title}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {t('tools.flashcards.cardsCount', { count: d.cardCount })} · {d.ownerName}{d.courseName ? ` · ${d.courseName}` : ''}
+                  {t('tools.flashcards.cardsCount', { count: d.cardCount })} · {d.ownerName}
                 </Typography>
               </Box>
               {imported ? (
@@ -880,8 +908,18 @@ function LibraryPanel({ isVerified, onImport, highlightId }: {
               )}
             </GlassCard>
           );
-        })}
-      </Stack>
+        }}
+      />
+
+      {/* Anonyme : il peut importer et réviser en local — le contrat explique le reste. */}
+      {!isVerified && (
+        <Box sx={{ mt: 4 }}>
+          <AccountContract
+            free={(t('tools.flashcards.contractFree', { returnObjects: true }) as string[])}
+            locked={(t('tools.flashcards.contractLocked', { returnObjects: true }) as string[])}
+          />
+        </Box>
+      )}
     </Box>
   );
 }
@@ -923,7 +961,12 @@ function FeedbackBar({ feedback, onClose }: { feedback: Feedback | null; onClose
   );
 }
 
-/** Focused review session over a given queue of card ids. Keyboard: Space/Enter flips; 1-4 rate. */
+/** Clé localStorage du mode inversé — un choix d'étude qui colle aux habitudes entre sessions. */
+const REVERSED_KEY = 'freenote.flashcards.reversed';
+
+/** Focused review session over a given queue of card ids. Keyboard: Space/Enter flips; 1-4 rate.
+ *  Mode 🔁 inversé (2026-07-08) : le VERSO devient la question, on devine le recto — étudier
+ *  dans les deux sens (déf ↔ terme). La planification SM-2 reste par carte, sens confondus. */
 function ReviewSession({ deck, initialQueue, onRate, onExit }: {
   deck: Deck;
   initialQueue: string[];
@@ -935,6 +978,14 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
   const [extra, setExtra] = useState<string[]>([]);
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [reversed, setReversed] = useState(() => localStorage.getItem(REVERSED_KEY) === '1');
+  const toggleReversed = () => {
+    setReversed((r) => {
+      localStorage.setItem(REVERSED_KEY, r ? '0' : '1');
+      return !r;
+    });
+    setFlipped(false); // ne jamais révéler la réponse du nouveau sens par accident
+  };
   // Première note donnée à chaque carte (honnête « la savais-tu du premier coup ? ») → bilan de fin.
   // En state (pas en ref) pour être lu proprement au rendu de l'écran final sans violer react-hooks/refs.
   const [firstRating, setFirstRating] = useState<Record<string, Rating>>({});
@@ -1007,6 +1058,17 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Button size="small" startIcon={<ArrowBack />} onClick={onExit}>{t('tools.flashcards.backToCards')}</Button>
         <Box sx={{ flexGrow: 1 }} />
+        <Tooltip title={t('tools.flashcards.reverseMode')}>
+          <Chip
+            size="small"
+            variant="outlined"
+            color={reversed ? 'primary' : 'default'}
+            label={`🔁 ${t('tools.flashcards.reverseChip')}`}
+            clickable
+            onClick={toggleReversed}
+            aria-pressed={reversed}
+          />
+        </Tooltip>
         <Typography variant="caption" color="text.secondary" className="mono">{pos + 1} / {fullQueue.length}</Typography>
       </Box>
       <LinearProgress variant="determinate" value={(pos / fullQueue.length) * 100} sx={{ mb: 2, borderRadius: 1 }} />
@@ -1024,13 +1086,19 @@ function ReviewSession({ deck, initialQueue, onRate, onExit }: {
             }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {flipped ? t('tools.flashcards.back') : t('tools.flashcards.front')}
+              {flipped
+                ? t(reversed ? 'tools.flashcards.front' : 'tools.flashcards.back')
+                : t(reversed ? 'tools.flashcards.back' : 'tools.flashcards.front')}
             </Typography>
-            <Typography sx={{ fontSize: 24, fontWeight: 600, whiteSpace: 'pre-wrap' }}>{card.front}</Typography>
+            <Typography sx={{ fontSize: 24, fontWeight: 600, whiteSpace: 'pre-wrap' }}>
+              {reversed ? (card.back || '—') : card.front}
+            </Typography>
             {flipped && (
               <>
                 <Box sx={{ width: '60%', my: 2.5, borderTop: '1px solid', borderColor: 'divider' }} />
-                <Typography sx={{ fontSize: 21, whiteSpace: 'pre-wrap' }} color="text.secondary">{card.back || '—'}</Typography>
+                <Typography sx={{ fontSize: 21, whiteSpace: 'pre-wrap' }} color="text.secondary">
+                  {reversed ? card.front : (card.back || '—')}
+                </Typography>
               </>
             )}
           </GlassCard>

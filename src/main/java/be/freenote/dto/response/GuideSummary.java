@@ -16,6 +16,7 @@ public record GuideSummary(
         String relatedTool,
         String authorName,
         boolean published,
+        boolean membersOnly,
         int readMinutes,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

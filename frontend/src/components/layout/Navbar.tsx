@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box, Menu, MenuItem, Tooltip, useMediaQuery } from '@mui/material';
-import { DarkMode, LightMode } from '@mui/icons-material';
+import { DarkMode, LightMode, Search } from '@mui/icons-material';
 import DiscordIcon from '@/components/icons/DiscordIcon';
 import FreenoteMark from '@/components/icons/FreenoteMark';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAuthPromptStore } from '@/stores/useAuthPromptStore';
+import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { DISCORD_OAUTH_URL, DISCORD_INVITE_URL } from '@/lib/constants';
 import DevLoginButton from '@/components/common/DevLoginButton';
@@ -22,6 +23,7 @@ export default function Navbar() {
   const { user, token, isAdmin } = useAuthStore();
   const logout = useLogout();
   const promptLogin = useAuthPromptStore((s) => s.show);
+  const openSearch = useCommandPaletteStore((s) => s.show);
   const { theme, toggle } = useThemeStore();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const navigate = useNavigate();
@@ -39,7 +41,12 @@ export default function Navbar() {
         </Box>
 
         {isMobile ? (
-          <MobileMenu />
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton onClick={openSearch} color="inherit" aria-label={t('globalSearch.title')}>
+              <Search />
+            </IconButton>
+            <MobileMenu />
+          </Box>
         ) : (
           <Box sx={s.actionsRow}>
             {NAV_LINKS.map((link) => {
@@ -66,6 +73,12 @@ export default function Navbar() {
                 </Button>
               );
             })}
+
+            <Tooltip title={`${t('globalSearch.title')} (Ctrl+K)`}>
+              <IconButton onClick={openSearch} size="small" color="inherit" aria-label={t('globalSearch.title')}>
+                <Search fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             <Tooltip title={t('nav.toggleTheme')}>
               <IconButton onClick={toggle} size="small" color="inherit" aria-label={t('nav.toggleTheme')}>

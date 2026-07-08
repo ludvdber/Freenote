@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Box, IconButton, Typography, CircularProgress, Button } from '@mui/material';
-import { ZoomIn, ZoomOut, OpenInNew } from '@mui/icons-material';
+import { Box, IconButton, InputBase, Typography, CircularProgress, Button } from '@mui/material';
+import { ZoomIn, ZoomOut, OpenInNew, Search, Close, KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
@@ -32,6 +32,21 @@ export interface PdfOutlineEntry {
 /** Contrôle imperatif exposé au parent (saut de page depuis le sommaire du rail). */
 export interface PdfViewerHandle {
   scrollToPage: (page: number) => void;
+}
+
+/** Normalisation de la recherche dans le PDF : accents/casse ignorés (même règle que ⌘K). */
+function normText(s: string): string {
+  return s.normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase();
+}
+
+function countOccurrences(text: string, q: string): number {
+  let n = 0;
+  let i = text.indexOf(q);
+  while (i !== -1) {
+    n++;
+    i = text.indexOf(q, i + q.length);
+  }
+  return n;
 }
 
 /** Aplati l'outline pdf.js (2 niveaux max) en résolvant chaque destination en numéro de page. */
@@ -96,6 +111,17 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
+  // Recherche dans le PDF (zone visible — pensée pour qui ne connaît pas Ctrl+F) : `hl` est la
+  // requête EXÉCUTÉE (normalisée) qui pilote le surlignage ; la navigation saute de page en page
+  // parmi celles qui contiennent le mot. Texte extrait une fois par page (cache par docId).
+  const [query, setQuery] = useState('');
+  const [hl, setHl] = useState('');
+  const [matchPages, setMatchPages] = useState<number[]>([]);
+  const [matchPos, setMatchPos] = useState(0);
+  const [totalHits, setTotalHits] = useState<number | null>(null);
+  const [searching, setSearching] = useState(false);
+  const textCacheRef = useRef<(string | undefined)[]>([]);
+
   // Reset to the loading state when the document changes (the component stays mounted when navigating
   // between docs). Adjusting state during render — React's recommended pattern — keeps it out of an
   // effect, same as DocumentView does for favStatus.
@@ -107,9 +133,14 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
     setNumPages(0);
     setZoom(1);
     setCurrentPage(1);
+    setQuery('');
+    setHl('');
+    setMatchPages([]);
+    setMatchPos(0);
+    setTotalHits(null);
     // The ref arrays are NOT reset here (writing a ref during render is disallowed): setting numPages
     // to 0 unmounts the old pages, whose ref callbacks null out their slots, and the load effect's
-    // cleanup cancels any in-flight render tasks.
+    // cleanup cancels any in-flight render tasks. Le cache texte est vidé dans l'effet de chargement.
   }
 
   // Latest-ref : l'identité de onOutline ne doit pas invalider l'effet de chargement (sinon un
@@ -123,6 +154,7 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
     let cancelled = false;
     let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
     const tasks = renderTasks.current; // stable array instance — safe to reference in cleanup
+    textCacheRef.current = []; // texte extrait par page — propre au document courant
     onOutlineRef.current?.([]); // reset : pas de sommaire périmé pendant le chargement du doc suivant
     (async () => {
       try {
@@ -158,21 +190,77 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
     };
   }, [docId]);
 
-  // Saut de page depuis le sommaire : scroll du conteneur interne vers la page demandée
-  // (le rendu suit tout seul — l'IntersectionObserver rend les pages qui entrent en vue).
+  // Scroll du conteneur interne vers une page — partagé entre le sommaire du rail (controllerRef)
+  // et la navigation de la recherche (le rendu suit tout seul via l'IntersectionObserver).
+  const scrollToPage = useCallback((page: number) => {
+    const container = containerRef.current;
+    const wrap = wrapRefs.current[page - 1];
+    if (!container || !wrap) return;
+    const delta = wrap.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollTo({ top: container.scrollTop + delta - 8, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     if (!controllerRef) return;
-    controllerRef.current = {
-      scrollToPage: (page: number) => {
-        const container = containerRef.current;
-        const wrap = wrapRefs.current[page - 1];
-        if (!container || !wrap) return;
-        const delta = wrap.getBoundingClientRect().top - container.getBoundingClientRect().top;
-        container.scrollTo({ top: container.scrollTop + delta - 8, behavior: 'smooth' });
-      },
-    };
+    controllerRef.current = { scrollToPage };
     return () => { controllerRef.current = null; };
-  }, [controllerRef]);
+  }, [controllerRef, scrollToPage]);
+
+  // Exécute la recherche : extrait (et met en cache) le texte de chaque page, compte les
+  // occurrences, active le surlignage et saute à la première page qui matche.
+  const runSearch = useCallback(async () => {
+    const q = normText(query.trim());
+    const pdf = pdfRef.current;
+    if (!q || !pdf) {
+      setHl('');
+      setMatchPages([]);
+      setMatchPos(0);
+      setTotalHits(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      const pages: number[] = [];
+      let hits = 0;
+      for (let p = 1; p <= pdf.numPages; p++) {
+        let text = textCacheRef.current[p];
+        if (text == null) {
+          const tc = await pdf.getPage(p).then((pg) => pg.getTextContent());
+          text = normText((tc.items as Array<{ str?: string }>).map((it) => it.str ?? '').join(' '));
+          textCacheRef.current[p] = text;
+        }
+        const n = countOccurrences(text, q);
+        if (n > 0) {
+          pages.push(p);
+          hits += n;
+        }
+      }
+      setHl(q);
+      setMatchPages(pages);
+      setMatchPos(0);
+      setTotalHits(hits);
+      if (pages.length) scrollToPage(pages[0]);
+    } catch {
+      setTotalHits(0); // extraction impossible (PDF scanné sans texte) — « aucun résultat » honnête
+    } finally {
+      setSearching(false);
+    }
+  }, [query, scrollToPage]);
+
+  const gotoMatch = useCallback((dir: 1 | -1) => {
+    if (!matchPages.length) return;
+    const next = (matchPos + dir + matchPages.length) % matchPages.length;
+    setMatchPos(next);
+    scrollToPage(matchPages[next]);
+  }, [matchPages, matchPos, scrollToPage]);
+
+  const clearSearch = () => {
+    setQuery('');
+    setHl('');
+    setMatchPages([]);
+    setMatchPos(0);
+    setTotalHits(null);
+  };
 
   // Available width for fit-to-width — measured on a width:100% ruler so it stays the *visible* inner
   // width even when a zoomed page overflows and makes the scroll container wider than the viewport.
@@ -187,12 +275,13 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
   }, [loaded]);
 
   // Render a single page into its canvas at the current fit-width × zoom. Idempotent per scale via a
-  // data-attr key, so an already-rendered page is skipped until the zoom/width actually changes.
+  // data-attr key (qui inclut la requête surlignée), so an already-rendered page is skipped until
+  // the zoom/width/recherche actually changes.
   const renderPage = useCallback(async (page: number) => {
     const pdf = pdfRef.current;
     const canvas = canvasRefs.current[page - 1];
     if (!pdf || !canvas || !availWidth) return;
-    const key = `${availWidth}:${zoom}`;
+    const key = `${availWidth}:${zoom}:${hl}`;
     if (canvas.dataset.k === key) return;
 
     let proxy;
@@ -219,11 +308,38 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
     renderTasks.current[page - 1] = task;
     try {
       await task.promise;
+      // Surlignage best-effort de la recherche : rectangle jaune sur chaque occurrence, positionné
+      // depuis la géométrie des items texte (approximation proportionnelle dans l'item — suffisant
+      // pour du texte horizontal ; un mot coupé entre deux items est compté mais pas surligné).
+      if (hl) {
+        try {
+          const tc = await proxy.getTextContent();
+          ctx.save();
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.fillStyle = 'rgba(255, 213, 0, 0.4)';
+          for (const raw of tc.items as Array<{ str?: string; transform?: number[]; width?: number }>) {
+            if (!raw.str || !raw.transform) continue;
+            const text = normText(raw.str);
+            let idx = text.indexOf(hl);
+            if (idx === -1) continue;
+            const tx = pdfjsLib.Util.transform(viewport.transform, raw.transform);
+            const fontH = Math.hypot(tx[2], tx[3]);
+            const itemW = (raw.width ?? 0) * viewport.scale;
+            while (idx !== -1) {
+              const x = tx[4] + (idx / text.length) * itemW;
+              const w = Math.max(4, (hl.length / text.length) * itemW);
+              ctx.fillRect(x, tx[5] - fontH, w, fontH * 1.2);
+              idx = text.indexOf(hl, idx + hl.length);
+            }
+          }
+          ctx.restore();
+        } catch { /* géométrie illisible — la page reste rendue sans surlignage */ }
+      }
       canvas.dataset.k = key;
     } catch {
       /* RenderingCancelledException on fast zoom/scroll — expected, ignore */
     }
-  }, [availWidth, zoom]);
+  }, [availWidth, zoom, hl]);
 
   // Lazy-render the pages entering the viewport (+ a margin so they're ready before you reach them),
   // and keep the "current page" indicator in sync with the most-visible page. Re-created when the
@@ -280,6 +396,48 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
         <Typography variant="body2" className="mono" sx={s.pageLabel}>
           {loaded ? `${currentPage} / ${numPages}` : '—'}
         </Typography>
+
+        {/* Recherche dans le document — zone visible, pas seulement Ctrl+F (demande 2026-07-08) */}
+        <Box sx={s.searchBox}>
+          <Search fontSize="small" sx={{ color: 'text.secondary' }} aria-hidden="true" />
+          <InputBase
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              // Enter relance la recherche ; re-Enter sur la même requête = résultat suivant.
+              if (normText(query.trim()) === hl && matchPages.length) gotoMatch(1);
+              else void runSearch();
+            }}
+            placeholder={t('document.searchInPdf')}
+            disabled={!loaded}
+            sx={s.searchInput}
+            inputProps={{ 'aria-label': t('document.searchInPdf') }}
+          />
+          {query && (
+            <IconButton size="small" onClick={clearSearch} aria-label={t('document.searchClear')}>
+              <Close fontSize="inherit" />
+            </IconButton>
+          )}
+        </Box>
+        {searching && <CircularProgress size={14} />}
+        {!searching && totalHits != null && (
+          <Typography variant="caption" color={totalHits === 0 ? 'text.secondary' : 'primary'} sx={{ whiteSpace: 'nowrap' }}>
+            {totalHits === 0 ? t('document.searchNoHits') : t('document.searchHits', { count: totalHits })}
+          </Typography>
+        )}
+        {matchPages.length > 0 && (
+          <>
+            <IconButton size="small" onClick={() => gotoMatch(-1)} aria-label={t('document.searchPrev')}>
+              <KeyboardArrowUp fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={() => gotoMatch(1)} aria-label={t('document.searchNext')}>
+              <KeyboardArrowDown fontSize="small" />
+            </IconButton>
+          </>
+        )}
+
         <Box sx={{ flexGrow: 1 }} />
         <IconButton size="small" onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP))} disabled={!loaded || zoom <= MIN_ZOOM} aria-label={t('document.zoomOut')}>
           <ZoomOut />

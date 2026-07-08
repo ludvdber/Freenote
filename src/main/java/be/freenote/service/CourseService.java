@@ -15,4 +15,11 @@ public interface CourseService {
     CourseResponse adminCreate(CreateCourseRequest request);
     CourseResponse rename(Long id, String name);
     void adminDelete(Long id);
+
+    /** Cours équivalents (même groupe V15), le cours lui-même exclu — bandeau page cours + dialog admin. */
+    List<CourseResponse> getEquivalents(Long courseId);
+
+    /** Redéfinit le groupe d'équivalence du cours : {@code otherCourseIds} devient exactement la
+     *  liste de ses équivalents (liste vide = délier). Admin uniquement. */
+    List<CourseResponse> setEquivalents(Long courseId, List<Long> otherCourseIds);
 }

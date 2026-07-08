@@ -69,7 +69,7 @@ export default function RecentAndShortcuts() {
             <Typography variant="h5" component="h2" sx={s.colTitle}>
               <span aria-hidden="true">⚡</span> {t('home.shortcuts.title')}
             </Typography>
-            <GlassCard sx={s.card}>
+            <GlassCard sx={s.shortcutsCard}>
               <Box sx={s.shortcutsGrid}>
                 {SHORTCUTS.map((sc) => {
                   const disabled = Boolean(sc.requireVerified && !user?.verified);

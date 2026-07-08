@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { getSections, getCourses } from '@/api/endpoints';
 import { STALE_15M } from '@/lib/constants';
 
-/** Rattachement optionnel d'un quiz/paquet à un cours du catalogue. */
+/** Rattachement optionnel d'un quiz/paquet à un cours du catalogue — ou à une SECTION seule
+ *  (contenu multi-cours « toute la section », V13). */
 export interface CourseLink {
   sectionId?: number;
+  sectionName?: string;
   courseId?: number;
   courseName?: string;
 }
@@ -50,7 +52,9 @@ export default function CourseSelect({ value, onChange }: {
         value={value.sectionId ?? ''}
         onChange={(e) => {
           const sid = e.target.value === '' ? undefined : Number(e.target.value);
-          onChange({ sectionId: sid, courseId: undefined, courseName: undefined });
+          const sec = (sections ?? []).find((x) => x.id === sid);
+          // Section seule = choix valide (contenu multi-cours) — le cours reste facultatif.
+          onChange({ sectionId: sid, sectionName: sec?.name, courseId: undefined, courseName: undefined });
         }}
       >
         <MenuItem value="">{t('tools.courseLink.none')}</MenuItem>

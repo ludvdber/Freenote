@@ -14,8 +14,9 @@ public interface FlashcardDeckService {
     /** Met à jour un paquet possédé (titre, cartes, cours, statut publié). Admin : modération. */
     FlashcardDeckResponse update(Long userId, boolean isAdmin, Long id, PublishDeckRequest request);
 
-    /** Bibliothèque : paquets publiés uniquement. {@code callerId} sert à marquer {@code owned}. */
-    PageResponse<FlashcardDeckSummary> list(Long courseId, Pageable pageable, Long callerId);
+    /** Bibliothèque : paquets publiés uniquement. {@code callerId} (nullable — accès anonyme) sert
+     *  à marquer {@code owned} ; {@code ownerId} filtre les paquets publiés d'un utilisateur (profil). */
+    PageResponse<FlashcardDeckSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId);
 
     /** « Mes paquets » : tous les paquets du compte (privés + publiés), dernier modifié d'abord. */
     PageResponse<FlashcardDeckSummary> mine(Long userId, Pageable pageable);

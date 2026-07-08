@@ -37,9 +37,10 @@ export interface Quiz {
   serverId?: number;
   /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
   published?: boolean;
-  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents).
-   *  sectionId sert uniquement a re-remplir les dropdowns du selecteur a la reouverture. */
+  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents) —
+   *  ou a une SECTION seule (contenu multi-cours « toute la section », V13). */
   sectionId?: number;
+  sectionName?: string;
   courseId?: number;
   courseName?: string;
 }
@@ -181,6 +182,7 @@ function healQuiz(input: unknown, now: number): Quiz {
     serverId: Number.isFinite(q.serverId) ? (q.serverId as number) : undefined,
     published: typeof q.published === 'boolean' ? q.published : undefined,
     sectionId: Number.isFinite(q.sectionId) ? (q.sectionId as number) : undefined,
+    sectionName: typeof q.sectionName === 'string' ? q.sectionName : undefined,
     courseId: Number.isFinite(q.courseId) ? (q.courseId as number) : undefined,
     courseName: typeof q.courseName === 'string' ? q.courseName : undefined,
     questions: q.questions.map(healQuestion),

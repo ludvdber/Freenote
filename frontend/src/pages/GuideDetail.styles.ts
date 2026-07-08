@@ -135,6 +135,39 @@ export const sidebar: Sx = {
   top: { md: 88 },
 };
 
+// ——— Sommaire du guide (rail) — h2/h3 du Markdown, même grammaire que l'outline PDF. ———
+
+export const tocCard: Sx = { p: 2.5 };
+
+export const tocList = (scrollable: boolean): Sx => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 0.25,
+  ...(scrollable ? { maxHeight: 320, overflowY: 'auto', pr: 0.5 } : {}),
+});
+
+export const tocEntry = (level: number): Sx => ({
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  borderRadius: 1,
+  px: 1,
+  py: 0.5,
+  pl: level === 0 ? 1 : 2.5,
+  fontSize: '0.82rem',
+  fontWeight: level === 0 ? 600 : 400,
+  color: level === 0 ? 'text.primary' : 'text.secondary',
+  fontFamily: 'inherit',
+  lineHeight: 1.4,
+  '&:hover': {
+    color: 'primary.main',
+    backgroundColor: (t) => (t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'),
+  },
+});
+
 // ——— Encart « Pratique avec l'outil » (rail) — rendu uniquement si le guide a un outil lié. ———
 
 export const toolCard: Sx = { p: 2.5 };

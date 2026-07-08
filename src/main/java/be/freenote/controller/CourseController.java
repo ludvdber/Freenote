@@ -26,6 +26,12 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getBySectionId(sectionId));
     }
 
+    /** Cours équivalents (V15) — alimente le bandeau « Inclut aussi les documents de… » de la page cours. */
+    @GetMapping("/{id}/equivalents")
+    public ResponseEntity<List<CourseResponse>> getEquivalents(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getEquivalents(id));
+    }
+
     @PostMapping
     @RateLimit(max = 5, window = 3600)
     public ResponseEntity<CourseResponse> create(Authentication authentication,

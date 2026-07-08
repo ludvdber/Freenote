@@ -14,6 +14,7 @@ import be.freenote.entity.Course;
 import be.freenote.entity.Quiz;
 import be.freenote.entity.QuizAttempt;
 import be.freenote.entity.QuizQuestionJson;
+import be.freenote.entity.Section;
 import be.freenote.entity.User;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.ResourceNotFoundException;
@@ -23,6 +24,7 @@ import be.freenote.repository.CourseRepository;
 import be.freenote.repository.QuizAttemptRepository;
 import be.freenote.repository.QuizRepository;
 import be.freenote.repository.Repositories;
+import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.QuizService;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,9 @@ public class QuizServiceImpl implements QuizService {
     private final QuizAttemptRepository attemptRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final SectionRepository sectionRepository;
+    private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
+    private final be.freenote.service.NotificationService notificationService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @Override
@@ -77,6 +82,7 @@ public class QuizServiceImpl implements QuizService {
                 .published(Boolean.TRUE.equals(request.published()))
                 .owner(user)
                 .course(course)
+                .section(resolveSection(course, request.sectionId()))
                 .build();
 
         return QuizMapper.toSummary(quizRepository.save(quiz), userId);
@@ -99,14 +105,17 @@ public class QuizServiceImpl implements QuizService {
         quiz.setQuestions(questions);
         quiz.setQuestionCount(questions.size());
         quiz.setCourse(course);
+        quiz.setSection(resolveSection(course, request.sectionId()));
         quiz.setPublished(Boolean.TRUE.equals(request.published()));
         return QuizMapper.toSummary(quizRepository.save(quiz), userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<QuizSummary> list(Long courseId, Pageable pageable, Long callerId) {
-        Page<QuizListRow> page = quizRepository.findPublishedRows(courseId, pageable);
+    public PageResponse<QuizSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
+        // Équivalences (V15) : les quiz de « Stats (Compta) » remontent aussi pour « Stats (Info) »
+        Page<QuizListRow> page = quizRepository.findPublishedRows(
+                courseEquivalenceService.expand(courseId), sectionId, ownerId, pageable);
         return PageResponse.from(page, page.getContent().stream().map(r -> QuizMapper.toSummary(r, callerId)).toList());
     }
 
@@ -144,7 +153,9 @@ public class QuizServiceImpl implements QuizService {
     @Transactional
     public AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request) {
         Quiz quiz = accessibleQuiz(quizId, userId, false);
-        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        // Joueur anonyme (révision publique) : la partie est corrigée serveur comme les autres,
+        // mais AUCUN essai n'est persisté — hors classement par construction, rang 0.
+        User user = userId == null ? null : Repositories.findByIdOrThrow(userRepository, userId, "User");
 
         List<QuizQuestionJson> questions = quiz.getQuestions();
         List<String> answers = request.answers();
@@ -174,13 +185,19 @@ public class QuizServiceImpl implements QuizService {
             correctAnswers.add(display);
             explanations.add(q.explanation());
         }
-        long duration = resolveDuration(quizId, userId, request.durationMs());
+        // Anonyme : pas d'horodatage Redis posé par play() → durée client bornée, sans plus
+        // (aucun enjeu anti-triche hors classement).
+        long duration = user == null
+                ? Math.min(Math.max(0, request.durationMs()), MAX_DURATION_MS)
+                : resolveDuration(quizId, userId, request.durationMs());
 
-        attemptRepository.save(QuizAttempt.builder()
-                .quiz(quiz).user(user).score(score).total(total).durationMs(duration).build());
+        if (user != null) {
+            attemptRepository.save(QuizAttempt.builder()
+                    .quiz(quiz).user(user).score(score).total(total).durationMs(duration).build());
+        }
         quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
 
-        int rank = rankOf(quizId, userId);
+        int rank = user == null ? 0 : rankOf(quizId, userId);
         return new AttemptResultResponse(score, total, duration, correct, correctAnswers, explanations, rank);
     }
 
@@ -196,6 +213,8 @@ public class QuizServiceImpl implements QuizService {
             User u = a.getUser();
             entries.add(new QuizLeaderboardEntry(
                     i + 1, u.getId(), UserMapper.resolveDisplayName(u.getProfile(), u.getUsername()),
+                    u.getUsername(),
+                    UserMapper.resolveAvatarUrl(u.getProfile(), u.getUsername()),
                     a.getScore(), a.getTotal(), a.getDurationMs(), a.getCreatedAt()));
         }
         return entries;
@@ -211,6 +230,33 @@ public class QuizServiceImpl implements QuizService {
         quizRepository.delete(quiz);
     }
 
+    @Override
+    @Transactional
+    public void reportQuestion(Long reporterId, Long quizId, be.freenote.dto.request.ReportQuizQuestionRequest request) {
+        Quiz quiz = Repositories.findByIdOrThrow(quizRepository, quizId, "Quiz");
+        if (!quiz.isPublished()) {
+            // Même règle 404 que accessibleQuiz : ne pas révéler l'existence d'un quiz privé.
+            throw new ResourceNotFoundException("Quiz", "id", quizId);
+        }
+        if (request.questionIndex() >= quiz.getQuestionCount()) {
+            throw new IllegalArgumentException("Index de question invalide");
+        }
+        User owner = quiz.getOwner();
+        if (owner == null || owner.getId().equals(reporterId)) {
+            return; // quiz orphelin ou auto-signalement : personne à prévenir, mais pas une erreur
+        }
+        User reporter = Repositories.findByIdOrThrow(userRepository, reporterId, "User");
+        String message = request.message() == null ? "" : request.message().trim();
+        // La notification porte l'essentiel (titre + n° de question + qui) — payload rendu par
+        // la cloche via i18n `notifications.quiz.questionReported`.
+        notificationService.push(owner.getId(), "quiz.questionReported", java.util.Map.of(
+                "quizId", quiz.getId(),
+                "title", quiz.getTitle(),
+                "question", request.questionIndex() + 1,
+                "by", reporter.getUsername(),
+                "message", message));
+    }
+
     /** Le quiz s'il est accessible à l'appelant : publié, ou possédé, ou admin — sinon 404
      *  (jamais 403 : ne pas révéler l'existence d'un contenu privé, même pattern que les Gantt). */
     private Quiz accessibleQuiz(Long id, Long callerId, boolean isAdmin) {
@@ -223,6 +269,16 @@ public class QuizServiceImpl implements QuizService {
 
     private static boolean isOwner(Quiz quiz, Long userId) {
         return quiz.getOwner() != null && quiz.getOwner().getId().equals(userId);
+    }
+
+    /** Règle de cohérence V13 : un cours choisi impose SA section (jamais un quiz « cours X »
+     *  rangé dans une autre section) ; sans cours, la section libre — nullable — permet le
+     *  quiz multi-cours « toute la section ». */
+    private Section resolveSection(Course course, Long sectionId) {
+        if (course != null) {
+            return course.getSection();
+        }
+        return sectionId == null ? null : Repositories.findByIdOrThrow(sectionRepository, sectionId, "Section");
     }
 
     private static String playKey(Long quizId, Long userId) {

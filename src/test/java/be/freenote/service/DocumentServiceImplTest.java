@@ -37,6 +37,7 @@ class DocumentServiceImplTest {
     @Mock private DocumentRepository documentRepository;
     @Mock private UserRepository userRepository;
     @Mock private CourseRepository courseRepository;
+    @Mock private CourseEquivalenceService courseEquivalenceService;
     @Mock private ProfessorRepository professorRepository;
     @Mock private RatingRepository ratingRepository;
     @Mock private DocumentMapper documentMapper;

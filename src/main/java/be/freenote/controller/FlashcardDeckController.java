@@ -49,15 +49,18 @@ public class FlashcardDeckController {
         return ResponseEntity.ok(service.update(userId, isAdmin(authentication), id, request));
     }
 
-    /** Bibliothèque : paquets publiés uniquement. */
+    /** Bibliothèque : paquets publiés uniquement. Public (lecture + import local pour les
+     *  anonymes) ; {@code ownerId} filtre les paquets publiés d'un utilisateur (section du profil). */
     @GetMapping
     public ResponseEntity<PageResponse<FlashcardDeckSummary>> list(
             Authentication authentication,
             @RequestParam(required = false) Long courseId,
+            @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) Long ownerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Long callerId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(service.list(courseId, pageable(page, size), callerId));
+        Long callerId = SecurityUtils.currentUserIdOrNull(authentication);
+        return ResponseEntity.ok(service.list(courseId, sectionId, ownerId, pageable(page, size), callerId));
     }
 
     /** « Mes paquets » : tout ce que le compte a enregistré (privés + publiés). */
@@ -70,9 +73,11 @@ public class FlashcardDeckController {
         return ResponseEntity.ok(service.mine(userId, pageable(page, size)));
     }
 
+    /** Paquet complet (cartes incluses). Public pour un paquet PUBLIÉ — l'import anonyme copie les
+     *  cartes en localStorage ; un paquet privé reste introuvable (404) pour tout autre appelant. */
     @GetMapping("/{id}")
     public ResponseEntity<FlashcardDeckResponse> get(Authentication authentication, @PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id, SecurityUtils.currentUserId(authentication), isAdmin(authentication)));
+        return ResponseEntity.ok(service.get(id, SecurityUtils.currentUserIdOrNull(authentication), isAdmin(authentication)));
     }
 
     @DeleteMapping("/{id}")
@@ -87,7 +92,7 @@ public class FlashcardDeckController {
     }
 
     private static boolean isAdmin(Authentication authentication) {
-        return authentication.getAuthorities().stream()
+        return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

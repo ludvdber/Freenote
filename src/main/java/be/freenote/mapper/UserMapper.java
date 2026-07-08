@@ -127,6 +127,7 @@ public abstract class UserMapper {
     public ProfileCardResponse toProfileCard(User user) {
         UserProfile p = user.getProfile();
         return new ProfileCardResponse(
+                user.getId(),
                 user.getUsername(),
                 resolveDisplayName(p, user.getUsername()),
                 user.getRole(),

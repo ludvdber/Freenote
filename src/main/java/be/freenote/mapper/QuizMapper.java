@@ -29,7 +29,8 @@ public final class QuizMapper {
         boolean owned = r.ownerId() != null && r.ownerId().equals(callerId);
         return new QuizSummary(
                 r.id(), r.title(), r.description(), r.questionCount(), r.attemptCount(),
-                ownerName, r.courseId(), r.courseName(), r.createdAt(), r.published(), owned);
+                ownerName, r.courseId(), r.courseName(), r.sectionId(), r.sectionName(),
+                r.createdAt(), r.published(), owned);
     }
 
     /** From the entity (create/update responses, where the row is already in memory). */
@@ -37,7 +38,8 @@ public final class QuizMapper {
         boolean owned = q.getOwner() != null && q.getOwner().getId().equals(callerId);
         return new QuizSummary(
                 q.getId(), q.getTitle(), q.getDescription(), q.getQuestionCount(), q.getAttemptCount(),
-                ownerName(q), courseId(q), courseName(q), q.getCreatedAt(), q.isPublished(), owned);
+                ownerName(q), courseId(q), courseName(q), sectionId(q), sectionName(q),
+                q.getCreatedAt(), q.isPublished(), owned);
     }
 
     public static QuizPlayResponse toPlay(Quiz q) {
@@ -45,7 +47,7 @@ public final class QuizMapper {
                 .map(qq -> new QuizPlayQuestion(
                         qq.type(), qq.question(), qq.choices(), qq.image(), qq.code(), qq.language()))
                 .toList();
-        return new QuizPlayResponse(q.getId(), q.getTitle(), q.getDescription(), questions);
+        return new QuizPlayResponse(q.getId(), q.getTitle(), q.getDescription(), courseId(q), questions);
     }
 
     /** Full editable view, answers + explanations included — see {@link QuizFullResponse} for access rules. */
@@ -56,7 +58,8 @@ public final class QuizMapper {
                         qq.openAnswer(), qq.image(), qq.code(), qq.language(), qq.explanation()))
                 .toList();
         return new QuizFullResponse(q.getId(), q.getTitle(), q.getDescription(),
-                courseId(q), courseName(q), q.isPublished(), owned, q.getCreatedAt(), questions);
+                courseId(q), courseName(q), sectionId(q), sectionName(q),
+                q.isPublished(), owned, q.getCreatedAt(), questions);
     }
 
     private static String ownerName(Quiz q) {
@@ -70,5 +73,13 @@ public final class QuizMapper {
 
     private static String courseName(Quiz q) {
         return q.getCourse() == null ? null : q.getCourse().getName();
+    }
+
+    private static Long sectionId(Quiz q) {
+        return q.getSection() == null ? null : q.getSection().getId();
+    }
+
+    private static String sectionName(Quiz q) {
+        return q.getSection() == null ? null : q.getSection().getName();
     }
 }

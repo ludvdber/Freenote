@@ -78,9 +78,21 @@ export const recentSubtitle: Sx = {
 
 export const empty: Sx = { p: 3, textAlign: 'center' };
 
+/** La carte Accès rapide est une colonne flex : la grille absorbe TOUTE la hauteur de la carte,
+ *  elle-même étirée à la hauteur de « Reprise de lecture » — plus de vide en bas quand la liste
+ *  de lecture est longue (les tuiles grandissent avec `gridAutoRows: 1fr`). */
+export const shortcutsCard: Sx = {
+  p: 2.5,
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+};
+
 export const shortcutsGrid: Sx = {
   display: 'grid',
   gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+  gridAutoRows: '1fr',
+  flex: 1,
   gap: 1.5,
 };
 

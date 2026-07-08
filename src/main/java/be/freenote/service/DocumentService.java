@@ -35,4 +35,6 @@ public interface DocumentService {
     AdjacentDocumentsResponse getAdjacent(Long documentId);
     /** Docs par catégorie dans le périmètre section/cours — compteurs des chips de l'explorer. */
     java.util.Map<String, Long> getCategoryCounts(Long sectionId, Long courseId);
+    /** Documents créés depuis un instant — chip « N nouveaux depuis ta dernière visite ». */
+    long countNewSince(java.time.LocalDateTime since);
 }

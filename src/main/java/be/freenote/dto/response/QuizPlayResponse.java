@@ -10,6 +10,8 @@ public record QuizPlayResponse(
         Long id,
         String title,
         String description,
+        /** Cours rattaché (nullable) — alimente le « Continue avec… » de l'écran de fin. */
+        Long courseId,
         List<QuizPlayQuestion> questions
 ) {
     /** A question stripped of its answer — keeps the renderable content (choices, image, code). */

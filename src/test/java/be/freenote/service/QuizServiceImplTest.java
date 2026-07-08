@@ -12,9 +12,12 @@ import be.freenote.entity.QuizQuestionJson;
 import be.freenote.entity.User;
 import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.ResourceNotFoundException;
+import be.freenote.entity.Course;
+import be.freenote.entity.Section;
 import be.freenote.repository.CourseRepository;
 import be.freenote.repository.QuizAttemptRepository;
 import be.freenote.repository.QuizRepository;
+import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.impl.QuizServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +43,9 @@ class QuizServiceImplTest {
     @Mock private QuizAttemptRepository attemptRepository;
     @Mock private UserRepository userRepository;
     @Mock private CourseRepository courseRepository;
+    @Mock private CourseEquivalenceService courseEquivalenceService;
+    @Mock private NotificationService notificationService;
+    @Mock private SectionRepository sectionRepository;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
 
@@ -69,7 +75,7 @@ class QuizServiceImplTest {
     }
 
     private CreateQuizRequest request(String title, String description, List<QuizQuestionDto> questions) {
-        return new CreateQuizRequest(title, description, null, questions, true);
+        return new CreateQuizRequest(title, description, null, null, questions, true);
     }
 
     private QuizAttempt attempt(Long userId, int score, long durationMs) {
@@ -97,11 +103,47 @@ class QuizServiceImplTest {
     }
 
     @Test
+    void sectionOnlyQuizKeepsTheSection() {
+        // Quiz multi-cours « toute la section » : sectionId sans courseId (V13).
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
+        Section marketing = Section.builder().id(6L).name("Marketing").build();
+        when(sectionRepository.findById(6L)).thenReturn(Optional.of(marketing));
+
+        var request = new CreateQuizRequest("Multi-cours", null, null, 6L,
+                List.of(mcq("Q", 0, "A", "B")), true);
+
+        QuizSummary res = service.create(1L, request);
+
+        assertThat(res.sectionId()).isEqualTo(6L);
+        assertThat(res.sectionName()).isEqualTo("Marketing");
+        assertThat(res.courseId()).isNull();
+    }
+
+    @Test
+    void chosenCourseImposesItsOwnSection() {
+        // Règle de cohérence : le cours choisi impose SA section — le sectionId envoyé est ignoré.
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
+        Section info = Section.builder().id(4L).name("Informatique").build();
+        Course java = Course.builder().id(9L).name("Java").section(info).build();
+        when(courseRepository.findById(9L)).thenReturn(Optional.of(java));
+
+        var request = new CreateQuizRequest("Java", null, 9L, 999L,
+                List.of(mcq("Q", 0, "A", "B")), true);
+
+        QuizSummary res = service.create(1L, request);
+
+        assertThat(res.sectionId()).isEqualTo(4L);
+        verify(sectionRepository, never()).findById(any());
+    }
+
+    @Test
     void shouldCreatePrivateQuizWhenPublishedFalse() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new CreateQuizRequest("Privé", null, null,
+        var request = new CreateQuizRequest("Privé", null, null, null,
                 List.of(mcq("Q", 0, "A", "B")), false);
 
         QuizSummary res = service.create(1L, request);
@@ -315,7 +357,7 @@ class QuizServiceImplTest {
         when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> inv.getArgument(0));
 
         QuizSummary res = service.update(1L, false, 7L,
-                new CreateQuizRequest("Nouveau", null, null,
+                new CreateQuizRequest("Nouveau", null, null, null,
                         List.of(mcq("Q1", 0, "A", "B"), mcq("Q2", 1, "A", "B")), true));
 
         assertThat(res.title()).isEqualTo("Nouveau");
@@ -361,5 +403,36 @@ class QuizServiceImplTest {
         service.delete(99L, true, 7L);
 
         verify(quizRepository).delete(quiz);
+    }
+
+    @Test
+    void reportQuestion_notifies_the_author_with_the_question_number() {
+        Quiz quiz = Quiz.builder().id(7L).title("Réseaux").owner(testUser(2L))
+                .published(true).questionCount(5).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
+
+        service.reportQuestion(1L, 7L,
+                new be.freenote.dto.request.ReportQuizQuestionRequest(2, "faute dans le choix B"));
+
+        verify(notificationService).push(eq(2L), eq("quiz.questionReported"), argThat(payload ->
+                payload.get("question").equals(3) && payload.get("title").equals("Réseaux")
+                        && payload.get("by").equals("user1")));
+    }
+
+    @Test
+    void reportQuestion_is_silent_for_self_reports_and_rejects_bad_indexes() {
+        Quiz quiz = Quiz.builder().id(7L).title("Réseaux").owner(testUser(1L))
+                .published(true).questionCount(5).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+
+        // Auto-signalement : pas d'erreur, pas de notification
+        service.reportQuestion(1L, 7L, new be.freenote.dto.request.ReportQuizQuestionRequest(0, null));
+        verify(notificationService, never()).push(any(), any(), any());
+
+        // Index hors bornes : 400
+        assertThatThrownBy(() -> service.reportQuestion(1L, 7L,
+                new be.freenote.dto.request.ReportQuizQuestionRequest(5, null)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

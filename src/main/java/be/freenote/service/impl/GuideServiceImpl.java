@@ -31,17 +31,24 @@ public class GuideServiceImpl implements GuideService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<GuideSummary> listPublished(Pageable pageable) {
-        Page<Guide> page = guideRepository.findByPublishedTrueOrderByCreatedAtDesc(pageable);
+    public PageResponse<GuideSummary> listPublished(Long authorId, Pageable pageable) {
+        Page<Guide> page = authorId == null
+                ? guideRepository.findByPublishedTrueOrderByCreatedAtDesc(pageable)
+                : guideRepository.findByPublishedTrueAndAuthor_IdOrderByCreatedAtDesc(authorId, pageable);
         return PageResponse.from(page, page.getContent().stream().map(GuideMapper::toSummary).toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public GuideResponse getPublishedBySlug(String slug) {
+    public GuideResponse getPublishedBySlug(String slug, boolean callerVerified) {
         Guide guide = guideRepository.findBySlug(slug)
                 .filter(Guide::isPublished)
                 .orElseThrow(() -> new ResourceNotFoundException("Guide", "slug", slug));
+        // Guide réservé aux étudiants : les métadonnées restent visibles (la page affiche le
+        // panneau « réservé » + CTA connexion), le Markdown ne part jamais vers un non-vérifié.
+        if (guide.isMembersOnly() && !callerVerified) {
+            return GuideMapper.toLockedResponse(guide);
+        }
         return GuideMapper.toResponse(guide);
     }
 
@@ -70,6 +77,7 @@ public class GuideServiceImpl implements GuideService {
                 .category(blankToNull(request.category()))
                 .relatedTool(blankToNull(request.relatedTool()))
                 .published(request.published())
+                .membersOnly(request.membersOnly())
                 .author(admin)
                 .authorName(UserMapper.resolveDisplayName(admin.getProfile(), admin.getUsername()))
                 .build();
@@ -87,6 +95,7 @@ public class GuideServiceImpl implements GuideService {
         guide.setCategory(blankToNull(request.category()));
         guide.setRelatedTool(blankToNull(request.relatedTool()));
         guide.setPublished(request.published());
+        guide.setMembersOnly(request.membersOnly());
         return GuideMapper.toResponse(guideRepository.save(guide));
     }
 

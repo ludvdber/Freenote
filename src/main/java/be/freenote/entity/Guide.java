@@ -52,6 +52,12 @@ public class Guide {
     @Column(nullable = false)
     private boolean published;
 
+    /** Réservé aux étudiants (V14) : la carte reste listée publiquement (titre + résumé, cadenas)
+     *  mais le CONTENU n'est servi qu'aux comptes vérifiés — guides avec éléments de cours. */
+    @Column(name = "members_only", nullable = false)
+    @Builder.Default
+    private boolean membersOnly = false;
+
     /** Nullable: the guide survives the author's deletion (anonymised via the name snapshot). */
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "author_id")

@@ -1,12 +1,16 @@
-import type { ReactNode } from 'react';
-import { Typography, Box, Chip, Grid, Button, useTheme } from '@mui/material';
+import { useState, type ReactNode } from 'react';
+import { Typography, Box, Chip, Grid, Button, Pagination, useTheme } from '@mui/material';
 import { GitHub, LinkedIn, Language, Edit, School, EmojiEvents, Bolt, Description, Visibility, Star } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getUserById, getDelegateHistory, getDocumentsByUser, getUserRank, getUserStats } from '@/api/endpoints';
+import {
+  getUserById, getDelegateHistory, getDocumentsByUser, getUserRank, getUserStats,
+  listQuizzes, listSharedDecks, listGuides,
+} from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import DocumentCard from '@/components/common/DocumentCard';
@@ -15,6 +19,8 @@ import UserAvatar from '@/components/common/UserAvatar';
 import UserBadges from '@/components/common/UserBadges';
 import DelegateMandates from '@/components/common/DelegateMandates';
 import LevelChip, { levelNameSx } from '@/components/common/LevelChip';
+import RevisionTile from '@/components/tools/revision/RevisionTile';
+import GuideMiniCard from '@/components/common/GuideMiniCard';
 
 /** Tuile de stat cliquable (ou non) — le corps du profil public était « 2 chiffres et une liste ». */
 function StatTile({ icon, label, value, extra, to, hint }: {
@@ -55,6 +61,7 @@ function StatTile({ icon, label, value, extra, to, hint }: {
 export default function UserPublic() {
   const { t } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
   const currentUser = useAuthStore((s) => s.user);
@@ -85,9 +92,39 @@ export default function UserPublic() {
     enabled: !!user,
   });
 
+  // Pagination des documents : les gros contributeurs dépassent vite les 6 par page —
+  // sans elle, le profil n'en montrait JAMAIS plus de 6 (fix 2026-07-08).
+  const [docPage, setDocPage] = useState(0);
+  // Naviguer d'un profil à l'autre ne remonte pas le composant : reset de la page (render-adjust).
+  const [prevUserId, setPrevUserId] = useState(userId);
+  if (prevUserId !== userId) {
+    setPrevUserId(userId);
+    setDocPage(0);
+  }
   const { data: docs } = useQuery({
-    queryKey: ['user-docs', userId],
-    queryFn: () => getDocumentsByUser(userId),
+    queryKey: ['user-docs', userId, docPage],
+    queryFn: () => getDocumentsByUser(userId, docPage),
+    enabled: !!user,
+  });
+
+  // Ses contributions au-delà des documents : quiz/paquets PUBLIÉS + guides écrits (2026-07-08).
+  // Trois requêtes filtrées serveur (ownerId/authorId) — sections masquées quand vides.
+  const { data: userQuizzes } = useQuery({
+    queryKey: ['user-quizzes', userId],
+    queryFn: () => listQuizzes({ ownerId: userId, size: 50 }),
+    staleTime: STALE_15M,
+    enabled: !!user,
+  });
+  const { data: userDecks } = useQuery({
+    queryKey: ['user-decks', userId],
+    queryFn: () => listSharedDecks({ ownerId: userId, size: 50 }),
+    staleTime: STALE_15M,
+    enabled: !!user,
+  });
+  const { data: userGuides } = useQuery({
+    queryKey: ['user-guides', userId],
+    queryFn: () => listGuides({ authorId: userId, size: 50 }),
+    staleTime: STALE_15M,
     enabled: !!user,
   });
 
@@ -115,7 +152,8 @@ export default function UserPublic() {
 
   // « Contribution la plus appréciée » : son doc le mieux noté (parmi ceux ayant des votes),
   // départagé par le nombre de votes — données déjà chargées, zéro requête en plus.
-  const ratedDocs = (docs?.content ?? []).filter((d) => d.ratingCount > 0);
+  // Uniquement en page 1 : au-delà, la page courante ne contient pas forcément son best-of.
+  const ratedDocs = docPage === 0 ? (docs?.content ?? []).filter((d) => d.ratingCount > 0) : [];
   const bestDoc = ratedDocs.length > 0
     ? ratedDocs.reduce((best, d) =>
         d.averageRating > best.averageRating
@@ -306,6 +344,66 @@ export default function UserPublic() {
             {otherDocs.map((doc) => (
               <Grid key={doc.id} size={{ xs: 12, sm: 6 }}>
                 <DocumentCard document={doc} />
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+      {/* Gros contributeurs : plus de 6 docs = pagination (avant, tout au-delà était invisible). */}
+      {(docs?.totalPages ?? 0) > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5 }}>
+          <Pagination
+            count={docs!.totalPages}
+            page={docPage + 1}
+            onChange={(_, p) => setDocPage(p - 1)}
+            color="primary"
+            size="small"
+          />
+        </Box>
+      )}
+
+      {/* Ses quiz et paquets publiés — mêmes tuiles que le hub /reviser, clic = jouer/réviser. */}
+      {((userQuizzes?.content.length ?? 0) > 0 || (userDecks?.content.length ?? 0) > 0) && (
+        <>
+          <Typography variant="h6" sx={{ fontWeight: 700, mt: 4, mb: 2 }}>
+            {t('userPublic.revisionsTitle')}
+          </Typography>
+          <Grid container spacing={2}>
+            {(userQuizzes?.content ?? []).map((q) => (
+              <Grid key={`q-${q.id}`} size={{ xs: 12, sm: 6, md: 4 }}>
+                <RevisionTile
+                  type="quiz"
+                  title={q.title}
+                  unitCount={q.questionCount}
+                  attemptCount={q.attemptCount}
+                  onClick={() => navigate(`/outils/quiz#play=${q.id}`)}
+                />
+              </Grid>
+            ))}
+            {(userDecks?.content ?? []).map((d) => (
+              <Grid key={`d-${d.id}`} size={{ xs: 12, sm: 6, md: 4 }}>
+                <RevisionTile
+                  type="deck"
+                  title={d.title}
+                  unitCount={d.cardCount}
+                  onClick={() => navigate(`/outils/flashcards#deck=${d.id}`)}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+
+      {/* Ses guides (auteurs = admins/rédacteurs — la section n'apparaît que s'il en a). */}
+      {(userGuides?.content.length ?? 0) > 0 && (
+        <>
+          <Typography variant="h6" sx={{ fontWeight: 700, mt: 4, mb: 2 }}>
+            {t('userPublic.guidesTitle')}
+          </Typography>
+          <Grid container spacing={2}>
+            {(userGuides?.content ?? []).map((g) => (
+              <Grid key={g.id} size={{ xs: 12, sm: 6 }}>
+                <GuideMiniCard guide={g} />
               </Grid>
             ))}
           </Grid>

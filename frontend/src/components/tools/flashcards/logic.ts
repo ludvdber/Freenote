@@ -31,9 +31,10 @@ export interface Deck {
   serverId?: number;
   /** Etat publie de la copie serveur (bibliotheque) ; false/absent = enregistrement prive. */
   published?: boolean;
-  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents).
-   *  sectionId sert uniquement a re-remplir les dropdowns du selecteur a la reouverture. */
+  /** Rattachement optionnel a un cours (surface « Reviser ce cours » des pages documents) —
+   *  ou a une SECTION seule (contenu multi-cours « toute la section », V13). */
   sectionId?: number;
+  sectionName?: string;
   courseId?: number;
   courseName?: string;
 }
@@ -160,6 +161,7 @@ export function decksFromJson(text: string, now: number = Date.now()): Deck[] {
       serverId: Number.isFinite(deck.serverId) ? (deck.serverId as number) : undefined,
       published: typeof deck.published === 'boolean' ? deck.published : undefined,
       sectionId: Number.isFinite(deck.sectionId) ? (deck.sectionId as number) : undefined,
+      sectionName: typeof deck.sectionName === 'string' ? deck.sectionName : undefined,
       courseId: Number.isFinite(deck.courseId) ? (deck.courseId as number) : undefined,
       courseName: typeof deck.courseName === 'string' ? deck.courseName : undefined,
     };

@@ -91,6 +91,8 @@ export interface Course {
   sectionName: string;
   documentCount: number;
   approved: boolean;
+  /** Groupe d'équivalence V15 (même cours dans plusieurs sections) — null = non lié. */
+  equivalenceGroup: number | null;
 }
 
 export interface StatsResponse {
@@ -181,6 +183,8 @@ export interface NewsItem {
 }
 
 export interface ProfileCardResponse {
+  /** Pour le lien « Voir le profil » du popup carrousel (/users/{id}). */
+  id: number;
   username: string;
   displayName: string;
   role: string;
@@ -301,6 +305,8 @@ export interface PublishDeckRequest {
   title: string;
   description?: string | null;
   courseId?: number | null;
+  /** Section visee pour un paquet multi-cours (ignoree si courseId est fourni). */
+  sectionId?: number | null;
   cards: FlashcardCardDto[];
   /** true = bibliotheque partagee ; false/absent = enregistrement prive (compte seul). */
   published: boolean;
@@ -314,6 +320,9 @@ export interface FlashcardDeckSummary {
   ownerName: string;
   courseId: number | null;
   courseName: string | null;
+  /** Section visee (V13) — renseignee aussi quand elle derive du cours. */
+  sectionId: number | null;
+  sectionName: string | null;
   createdAt: string;
   published: boolean;
   /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
@@ -346,6 +355,8 @@ export interface CreateQuizRequest {
   title: string;
   description?: string | null;
   courseId?: number | null;
+  /** Section visee pour un quiz multi-cours (ignoree si courseId est fourni). */
+  sectionId?: number | null;
   questions: QuizQuestionDto[];
   /** true = bibliotheque partagee (jouable + classement) ; false = enregistrement prive. */
   published: boolean;
@@ -366,6 +377,9 @@ export interface QuizSummary {
   ownerName: string;
   courseId: number | null;
   courseName: string | null;
+  /** Section visee (V13) — renseignee aussi quand elle derive du cours. */
+  sectionId: number | null;
+  sectionName: string | null;
   createdAt: string;
   published: boolean;
   /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
@@ -379,6 +393,8 @@ export interface QuizFullResponse {
   description: string | null;
   courseId: number | null;
   courseName: string | null;
+  sectionId: number | null;
+  sectionName: string | null;
   published: boolean;
   owned: boolean;
   createdAt: string;
@@ -399,6 +415,8 @@ export interface QuizPlayResponse {
   id: number;
   title: string;
   description: string | null;
+  /** Cours rattaché (nullable) — alimente le « Continue avec… » de l'écran de fin. */
+  courseId: number | null;
   questions: QuizPlayQuestion[];
 }
 
@@ -419,6 +437,10 @@ export interface QuizLeaderboardEntry {
   rank: number;
   userId: number;
   userName: string;
+  /** Identifiant technique brut — seed stable de l'avatar (convention UserAvatar). */
+  username: string;
+  /** Avatar résolu (null = cercle-lettre côté client), pour la ligne décorée du classement. */
+  avatarUrl: string | null;
   score: number;
   total: number;
   durationMs: number;
@@ -436,6 +458,8 @@ export interface GuideSummary {
   relatedTool: string | null;
   authorName: string;
   published: boolean;
+  /** Réservé aux étudiants (V14) : contenu servi uniquement aux comptes vérifiés. */
+  membersOnly: boolean;
   /** Temps de lecture estimé, calculé côté serveur (les cartes n'embarquent pas le Markdown). */
   readMinutes: number;
   createdAt: string;
@@ -443,8 +467,9 @@ export interface GuideSummary {
 }
 
 export interface GuideResponse extends Omit<GuideSummary, 'readMinutes'> {
-  /** Raw Markdown — rendered + sanitised on the client. */
-  content: string;
+  /** Raw Markdown — rendered + sanitised on the client. NULL quand le guide est membersOnly et
+   *  l'appelant non vérifié : la page affiche alors le panneau « réservé aux étudiants ». */
+  content: string | null;
 }
 
 export interface CreateGuideRequest {
@@ -454,6 +479,7 @@ export interface CreateGuideRequest {
   category: string;
   relatedTool: string;
   published: boolean;
+  membersOnly: boolean;
 }
 
 // --- Gantt charts (saved + shared, verified-only) ---

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Typography, Grid, Box, Pagination, Breadcrumbs } from '@mui/material';
+import { Typography, Grid, Box, Pagination, Breadcrumbs, Alert } from '@mui/material';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { NavigateNext } from '@mui/icons-material';
-import { searchDocuments } from '@/api/endpoints';
+import { getCourseEquivalents, searchDocuments } from '@/api/endpoints';
+import { STALE_15M } from '@/lib/constants';
 import PageWrapper from '@/components/layout/PageWrapper';
 import DocumentCard from '@/components/common/DocumentCard';
 import Shimmer from '@/components/ui/Shimmer';
@@ -19,6 +20,15 @@ export default function CoursePage() {
     queryKey: ['course-docs', courseId, page],
     queryFn: () => searchDocuments({ courseId: Number(courseId), page, size: 18 }),
     enabled: !!courseId,
+  });
+
+  // Équivalences (V15) : le listing inclut déjà les docs des cours liés (expansion backend) —
+  // le bandeau explique pourquoi des docs d'une autre section apparaissent ici.
+  const { data: equivalents } = useQuery({
+    queryKey: ['course-equivalents', courseId],
+    queryFn: () => getCourseEquivalents(Number(courseId)),
+    enabled: !!courseId,
+    staleTime: STALE_15M,
   });
 
   const courseName = data?.content[0]?.courseName;
@@ -35,6 +45,14 @@ export default function CoursePage() {
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>
         {t('document.courseDocuments')}
       </Typography>
+
+      {!!equivalents?.length && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('document.equivalentCourses', {
+            courses: equivalents.map((c) => `${c.name} (${c.sectionName})`).join(', '),
+          })}
+        </Alert>
+      )}
 
       {isLoading ? (
         <Shimmer count={6} />

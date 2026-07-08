@@ -88,8 +88,8 @@ test.describe('Visiteur non connecté', () => {
 
   test('routes protégées redirigent vers l\'accueil', async ({ page }) => {
     collectConsole(page, 'visitor-blocked');
-    // /news, /guides, /browse, /documents/:id, /outils, /a-propos sont PUBLIQUES (vitrine
-    // anonyme pour les deux premières du catalogue) — ne pas les tester ici.
+    // /news, /guides, /browse, /documents/:id, /outils, /a-propos ET /reviser (2026-07-08 :
+    // hub public, jouable hors classement) sont PUBLIQUES — ne pas les tester ici.
     for (const route of ['/courses/1', '/users/2', '/leaderboard', '/upload']) {
       await page.goto(route);
       // Should redirect to home
@@ -131,11 +131,12 @@ test.describe('Visiteur non connecté', () => {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-tools.png'), fullPage: true });
   });
 
-  test('quiz : hint local visible pour un anonyme', async ({ page }) => {
+  test('quiz : contrat sans-compte visible pour un anonyme', async ({ page }) => {
     collectConsole(page, 'visitor-quiz');
     await page.goto('/outils/quiz');
-    // Le nouvel encart explique le modèle local/en-ligne aux non-connectés.
-    await expect(page.getByText(either('tout reste sur cet appareil', 'stays on this device'))).toBeVisible({ timeout: 10_000 });
+    // Le contrat deux colonnes (2026-07-08) explique ce qui marche sans compte vs vérifié.
+    await expect(page.getByText(either('Sans compte, ici et maintenant', 'No account needed'))).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(either('Avec un compte ISFCE vérifié', 'With a verified ISFCE account'))).toBeVisible();
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'visitor-quiz.png'), fullPage: true });
   });
 
@@ -301,15 +302,17 @@ test.describe('API Health', () => {
     expect(json.totalDocs).toBeGreaterThan(0);
   });
 
-  test('endpoints publics : news, guides, catalogue teaser', async ({ request }) => {
-    for (const ep of ['/api/news', '/api/guides', '/api/public/documents']) {
+  test('endpoints publics : news, guides, catalogue teaser, révision, SEO', async ({ request }) => {
+    // /api/quizzes et /api/flashcard-decks sont PUBLICS depuis la révision publique (2026-07-08) ;
+    // /sitemap.xml et /rss.xml sont servis dynamiquement par le backend (SeoController).
+    for (const ep of ['/api/news', '/api/guides', '/api/public/documents', '/api/quizzes', '/api/flashcard-decks', '/sitemap.xml', '/rss.xml']) {
       const res = await request.get(`http://localhost:8080${ep}`);
       expect(res.status(), ep).toBe(200);
     }
   });
 
   test('endpoints métier refusés aux anonymes (401)', async ({ request }) => {
-    for (const ep of ['/api/sections', '/api/documents/popular', '/api/documents/search', '/api/quizzes', '/api/leaderboard']) {
+    for (const ep of ['/api/sections', '/api/documents/popular', '/api/documents/search', '/api/quizzes/mine', '/api/leaderboard']) {
       const res = await request.get(`http://localhost:8080${ep}`);
       expect(res.status(), ep).toBe(401);
     }

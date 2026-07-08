@@ -8,11 +8,13 @@ import org.springframework.data.domain.Pageable;
 
 public interface GuideService {
 
-    /** Public: published guides only. */
-    PageResponse<GuideSummary> listPublished(Pageable pageable);
+    /** Public: published guides only. {@code authorId} (nullable) filtre les guides d'un auteur
+     *  (section du profil public). */
+    PageResponse<GuideSummary> listPublished(Long authorId, Pageable pageable);
 
-    /** Public: a published guide by slug (404 if missing or still a draft). */
-    GuideResponse getPublishedBySlug(String slug);
+    /** Public: a published guide by slug (404 if missing or still a draft). Pour un guide
+     *  {@code membersOnly} et un appelant non vérifié, le contenu est retiré de la réponse. */
+    GuideResponse getPublishedBySlug(String slug, boolean callerVerified);
 
     /** Admin: all guides, drafts included. */
     PageResponse<GuideSummary> listAll(Pageable pageable);

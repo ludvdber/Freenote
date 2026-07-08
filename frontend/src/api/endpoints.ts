@@ -147,6 +147,14 @@ export const getCourses = (sectionId: number) =>
 export const createCourse = (data: CreateCourseRequest) =>
   api.post<Course>('/courses', data).then((r) => r.data);
 
+/** Cours équivalents (V15) — bandeau « Inclut aussi… » de la page cours. */
+export const getCourseEquivalents = (id: number) =>
+  api.get<Course[]>(`/courses/${id}/equivalents`).then((r) => r.data);
+
+/** Docs créés depuis un instant ISO local — chip « N nouveaux depuis ta dernière visite ». */
+export const getNewDocsCount = (since: string) =>
+  api.get<{ count: number }>('/documents/new-count', { params: { since } }).then((r) => r.data);
+
 // --- Professors ---
 export const getProfessors = () =>
   api.get<Professor[]>('/professors').then((r) => r.data);
@@ -280,6 +288,13 @@ export const adminRenameCourse = (id: number, name: string) =>
 export const adminDeleteCourse = (id: number) =>
   api.delete(`/admin/courses/${id}`);
 
+export const adminGetCourseEquivalents = (id: number) =>
+  api.get<Course[]>(`/admin/courses/${id}/equivalents`).then((r) => r.data);
+
+/** Le body est la liste EXACTE des ids équivalents (vide = délier). */
+export const adminSetCourseEquivalents = (id: number, courseIds: number[]) =>
+  api.put<Course[]>(`/admin/courses/${id}/equivalents`, courseIds).then((r) => r.data);
+
 // --- Admin: Users ---
 export const adminSearchUsers = (q = '', limit = 30, sectionId?: number) =>
   api.get<User[]>('/admin/users', { params: { q, limit, ...(sectionId ? { sectionId } : {}) } }).then((r) => r.data);
@@ -385,7 +400,7 @@ export const updateDeck = (id: number, body: PublishDeckRequest) =>
 export const listMyDecks = (params: { page?: number; size?: number } = {}) =>
   api.get<PageResponse<FlashcardDeckSummary>>('/flashcard-decks/mine', { params }).then((r) => r.data);
 
-export const listSharedDecks = (params: { courseId?: number; page?: number; size?: number } = {}) =>
+export const listSharedDecks = (params: { courseId?: number; sectionId?: number; ownerId?: number; page?: number; size?: number } = {}) =>
   api.get<PageResponse<FlashcardDeckSummary>>('/flashcard-decks', { params }).then((r) => r.data);
 
 export const getSharedDeck = (id: number) =>
@@ -404,7 +419,7 @@ export const updateQuiz = (id: number, body: CreateQuizRequest) =>
 export const listMyQuizzes = (params: { page?: number; size?: number } = {}) =>
   api.get<PageResponse<QuizSummary>>('/quizzes/mine', { params }).then((r) => r.data);
 
-export const listQuizzes = (params: { courseId?: number; page?: number; size?: number } = {}) =>
+export const listQuizzes = (params: { courseId?: number; sectionId?: number; ownerId?: number; page?: number; size?: number } = {}) =>
   api.get<PageResponse<QuizSummary>>('/quizzes', { params }).then((r) => r.data);
 
 export const getQuizPlay = (id: number) =>
@@ -420,8 +435,12 @@ export const submitQuizAttempt = (id: number, body: SubmitAttemptRequest) =>
 export const getQuizLeaderboard = (id: number, size = 20) =>
   api.get<QuizLeaderboardEntry[]>(`/quizzes/${id}/leaderboard`, { params: { size } }).then((r) => r.data);
 
+/** Signale une erreur possible dans une question (écran de fin) → notification à l'auteur. */
+export const reportQuizQuestion = (id: number, questionIndex: number, message?: string) =>
+  api.post(`/quizzes/${id}/report-question`, { questionIndex, message });
+
 // --- Guides (public read) ---
-export const listGuides = (params: { page?: number; size?: number } = {}) =>
+export const listGuides = (params: { authorId?: number; page?: number; size?: number } = {}) =>
   api.get<PageResponse<GuideSummary>>('/guides', { params }).then((r) => r.data);
 
 export const getGuide = (slug: string) =>

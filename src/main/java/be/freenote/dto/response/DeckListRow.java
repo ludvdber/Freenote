@@ -17,5 +17,7 @@ public record DeckListRow(
         String ownerFirstName,
         String ownerLastName,
         Long courseId,
-        String courseName
+        String courseName,
+        Long sectionId,
+        String sectionName
 ) {}

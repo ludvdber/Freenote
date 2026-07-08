@@ -16,7 +16,8 @@
     "lightMode": "Eclipse",
     "toggleTheme": "Toggle theme",
     "toggleLanguage": "Toggle language",
-    "goHome": "Back to home"
+    "goHome": "Back to home",
+    "reviser": "Study"
   },
   "hero": {
     "title": "Learn faster",
@@ -106,7 +107,12 @@
     "practiceTitle": "Practice with the tool",
     "practiceCta": "Open the tool",
     "backToList": "Back to guides",
-    "notFound": "Guide not found."
+    "notFound": "Guide not found.",
+    "lockedTitle": "Guide reserved for students",
+    "lockedBody": "This guide contains course material reserved for ISFCE students. Sign in with your verified account to read it.",
+    "lockedChip": "ISFCE students only",
+    "continueWith": "Continue with…",
+    "tocTitle": "Contents"
   },
   "resources": {
     "title": "Public resources",
@@ -135,7 +141,8 @@
     "carousel": "Community",
     "empty": "The community's waiting for you.",
     "pauseCarousel": "Pause carousel",
-    "playCarousel": "Resume carousel"
+    "playCarousel": "Resume carousel",
+    "seeProfile": "See profile"
   },
   "ad": {
     "disclaimer": "Ad — one coffee = 30 days ad-free."
@@ -214,7 +221,15 @@
     "tocPage": "p. {{page}}",
     "prevDoc": "Previous",
     "nextDoc": "Next",
-    "sameCourse": "From the same course"
+    "sameCourse": "From the same course",
+    "equivalentCourses": "This course is linked with: {{courses}} — their documents are shown together.",
+    "searchInPdf": "Search in the PDF…",
+    "searchHits_one": "{{count}} match",
+    "searchHits_other": "{{count}} matches",
+    "searchNoHits": "No matches",
+    "searchPrev": "Previous page with a match",
+    "searchNext": "Next page with a match",
+    "searchClear": "Clear search"
   },
   "admin": {
     "tabs": {
@@ -264,7 +279,10 @@
       "preview": "Preview",
       "bodyPlaceholder": "Write your guide in Markdown: # headings, **bold**, lists, links, images and ``` code blocks with highlighting.",
       "markdownHelp": "Markdown supported: headings (#), bold (**), lists, links, images, and ``` code blocks (automatic syntax highlighting).",
-      "previewEmpty": "Nothing to preview."
+      "previewEmpty": "Nothing to preview.",
+      "membersOnlyLabel": "Students only",
+      "membersOnlyHelp": "The card stays publicly visible, but the guide content requires a verified ISFCE account — for guides containing course material.",
+      "membersOnlyChip": "Students only"
     },
     "docs": {
       "pending": "Pending documents",
@@ -303,7 +321,13 @@
       "filterSection": "Filter by section",
       "allSections": "All sections",
       "docCount_one": "{{count}} document",
-      "docCount_other": "{{count}} documents"
+      "docCount_other": "{{count}} documents",
+      "equivalents": "Equivalent courses",
+      "equivalentsTitle": "Equivalent courses of “{{name}}”",
+      "equivalentsHelp": "The same course taught in several sections (e.g. Statistics in IT AND in Accounting). Linked courses share their documents, quizzes and decks in every course filter.",
+      "equivalentsPlaceholder": "Add a course…",
+      "linkedChip": "linked",
+      "linkedTip": "This course shares its documents with equivalent courses from other sections"
     },
     "profs": {
       "all": "All professors",
@@ -552,9 +576,9 @@
         "leaderboard": "Leaderboard",
         "tools": "Tools",
         "news": "News",
-        "profile": "My profile",
         "bug": "Report a bug",
-        "kofi": "Buy a coffee"
+        "kofi": "Buy a coffee",
+        "reviser": "Revise"
       }
     },
     "tools": {
@@ -591,7 +615,9 @@
     "viewList": "List view",
     "allCategories": "All",
     "pageSize": "Documents per page",
-    "perPage": "{{n}} / page"
+    "perPage": "{{n}} / page",
+    "newSinceVisit_one": "{{count}} new since your last visit",
+    "newSinceVisit_other": "{{count}} new since your last visit"
   },
   "common": {
     "loading": "Loading...",
@@ -1291,12 +1317,8 @@
           "a": "Yes, as many as you like: one per course, chapter or exam. The selector at the top lets you switch between them."
         }
       ],
-      "localChip": "This browser only",
       "savedChip": "Not published",
       "publishedChip": "Published",
-      "localChipTooltip": "Saved only in this browser. Export a JSON backup before clearing your cache or switching devices.",
-      "savedChipTooltip": "Saved to your account (private): available on your devices, but not visible in the library.",
-      "publishedChipTooltip": "Published in the library: visible and reviewable by other verified students.",
       "saveOnline": "Save to my account",
       "updateOnline": "Update on my account",
       "saveOnlineOk": "Deck saved to your account (private) ✓",
@@ -1305,9 +1327,21 @@
       "confirmDeleteLinked": "Delete “{{name}}”? Its online copy will also be deleted.",
       "onlineOnlyTitle": "Saved online (not on this device)",
       "importToDevice": "Get on this device",
-      "anonHint": "Everything here stays on this device (export regularly!). Sign in with your ISFCE account to save your decks online and publish them to the library.",
       "searchDecks": "Search a deck…",
-      "searchNoResult": "No deck matches your search."
+      "searchNoResult": "No deck matches your search.",
+      "contractFree": [
+        "✏️ Create decks and study with spaced repetition",
+        "📥 Import an Anki deck (.apkg) or CSV",
+        "💾 Back up / restore as a JSON file"
+      ],
+      "contractLocked": [
+        "📚 Decks shared by your class",
+        "☁️ Your decks on all your devices",
+        "🌍 Publish for your whole section"
+      ],
+      "searchLibrary": "Search decks…",
+      "reverseMode": "Reversed mode: the back becomes the question, guess the front",
+      "reverseChip": "Reversed"
     },
     "quiz": {
       "tab": "Quiz",
@@ -1377,7 +1411,6 @@
       "removeChoice": "Remove this answer",
       "addChoice": "Add an answer",
       "addQuestion": "Add a question",
-      "libraryLoginHint": "Sign in (verified ISFCE account) to play and publish shared quizzes.",
       "libraryIntro": "Quizzes shared by other verified students. Play, then compare your score on the leaderboard.",
       "libraryError": "Couldn't load shared quizzes.",
       "libraryEmpty": "No shared quiz yet. Be the first to publish one!",
@@ -1400,7 +1433,6 @@
       "shareTitle": "Share this quiz",
       "shareHint": "Anyone can open this link and play, even without an account. The quiz is fully contained in the link: nothing is stored on the server, and it doesn't appear on the leaderboard.",
       "shareRankedHint": "This link opens your published quiz: every verified student who plays it appears on the leaderboard.",
-      "playLinkLoginHint": "Sign in with your verified ISFCE account to play this quiz and appear on the leaderboard.",
       "copy": "Copy",
       "close": "Close",
       "about": [
@@ -1431,12 +1463,8 @@
           "a": "A quiz shared by link is fully contained in the address: a curious user could technically decode it. That's harmless for a practice quiz, but for a reliable leaderboard, prefer publishing the quiz to the library (the answers then stay on the server)."
         }
       ],
-      "localChip": "This browser only",
       "savedChip": "Not published",
       "publishedChip": "Published",
-      "localChipTooltip": "Saved only in this browser. Export a backup before clearing your cache or switching devices.",
-      "savedChipTooltip": "Saved to your account (private): available on your devices, but not in the library and not ranked.",
-      "publishedChipTooltip": "Published in the library: playable by verified students, with a leaderboard.",
       "saveOnline": "Save to my account",
       "updateOnline": "Update on my account",
       "saveOnlineOk": "Quiz saved to your account (private) ✓",
@@ -1450,8 +1478,48 @@
       "explanationLabel": "Explanation (optional, shown after grading)",
       "addExplanation": "Add an explanation",
       "removeExplanation": "Remove the explanation",
-      "anonHint": "Everything here stays on this device and can be shared by link. Sign in with your ISFCE account to save your quizzes online, publish them to the library and enter the leaderboard.",
-      "editorAnonHint": "Sign in to save online and publish."
+      "editorAnonHint": "Sign in to save online and publish.",
+      "contractFree": [
+        "✏️ Create and edit your quizzes (stored in this browser)",
+        "▶️ Play them without limits, even offline",
+        "🔗 Play a quiz received through a share link",
+        "💾 Back up / restore as a JSON file"
+      ],
+      "contractLocked": [
+        "📚 Your class’s quiz library",
+        "🏆 Ranked plays and the leaderboard",
+        "☁️ Your quizzes on all your devices",
+        "🌍 Publish for your whole section"
+      ],
+      "playOfflineFallback": "Server unreachable — played locally, not ranked.",
+      "searchLibrary": "Search quizzes…",
+      "anonRankHint": "Nice run! Sign in with a verified ISFCE account to appear on the leaderboard.",
+      "seeProfile": "See {{name}}'s profile",
+      "continueWith": "Continue with…",
+      "reportQuestion": "Report an error in this question",
+      "reportedChip": "Reported ✓"
+    },
+    "revision": {
+      "mySection": "My section",
+      "noSection": "No section",
+      "allSections": "All",
+      "wholeSection": "Whole section",
+      "multiCourse": "multi-course",
+      "seeAll": "See all",
+      "loadError": "Could not load the library.",
+      "statusLegend": "Statuses:",
+      "status": {
+        "device": "This device",
+        "saved": "Saved",
+        "published": "Published"
+      },
+      "statusHint": {
+        "device": "only in this browser",
+        "saved": "on your account, private",
+        "published": "visible to your class"
+      },
+      "freeTitle": "No account needed",
+      "lockedTitle": "With a verified ISFCE account"
     }
   },
   "about": {
@@ -1546,6 +1614,9 @@
     "empty": "No notifications yet.",
     "document": {
       "verified": "Your document \"{{title}}\" has been verified!"
+    },
+    "quiz": {
+      "questionReported": "{{by}} reports a possible error in “{{title}}” (question {{question}})"
     }
   },
   "userPublic": {
@@ -1557,7 +1628,9 @@
     "statAvgRating": "Average rating received",
     "statXpHint": "See the leaderboard",
     "statDocsHint": "See their documents",
-    "bestContribution": "Most appreciated contribution"
+    "bestContribution": "Most appreciated contribution",
+    "revisionsTitle": "Their quizzes & decks",
+    "guidesTitle": "Their guides"
   },
   "notFound": {
     "title": "Page not found",
@@ -1572,5 +1645,46 @@
     "COURS": "Course material",
     "TFE": "Thesis (TFE)",
     "DIVERS": "Miscellaneous"
+  },
+  "reviser": {
+    "title": "Study",
+    "heroTitle": "Everything your class prepared",
+    "heroHighlight": "to help you study.",
+    "intro": "Quizzes and flashcard decks published by students, organised by section and course. One click to play or study — in the right tool.",
+    "search": "Search for a quiz or a deck…",
+    "empty": "Nothing in this scope yet.",
+    "typeFilter": "Content type",
+    "typeAll": "All",
+    "typeQuiz": "Quiz",
+    "typeDecks": "Decks",
+    "typeDeck": "Deck",
+    "play": "Play",
+    "study": "Study",
+    "createQuiz": "Create a quiz",
+    "createDeck": "Create a deck",
+    "contractFree": [
+      "Play every published quiz — graded live",
+      "Study shared decks, imported onto this device",
+      "Build your own quizzes and flashcards in the tools"
+    ],
+    "contractLocked": [
+      "Appear on each quiz leaderboard",
+      "Publish your quizzes and decks for your section",
+      "Keep your content across all your devices"
+    ]
+  },
+  "globalSearch": {
+    "title": "Search",
+    "placeholder": "Docs, quizzes, decks, guides, tools…",
+    "empty": "No results. Try a doc title, a course, a tool…",
+    "emptyAnon": "No results. Sign in to also search documents.",
+    "group": {
+      "docs": "Documents",
+      "quizzes": "Quizzes",
+      "decks": "Decks",
+      "guides": "Guides",
+      "tools": "Tools",
+      "pages": "Pages"
+    }
   }
 }

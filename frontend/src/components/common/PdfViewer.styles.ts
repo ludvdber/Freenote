@@ -13,6 +13,7 @@ export const wrapper: Sx = {
 export const toolbar: Sx = {
   display: 'flex',
   alignItems: 'center',
+  flexWrap: 'wrap', // la zone de recherche passe à la ligne sur mobile plutôt que d'écraser le zoom
   gap: 0.5,
   px: 1,
   py: 0.5,
@@ -21,6 +22,26 @@ export const toolbar: Sx = {
   top: 0,
   zIndex: 1,
   backdropFilter: 'blur(8px)',
+};
+
+// Zone « Rechercher dans le PDF » de la barre d'outils — visible (pas seulement Ctrl+F).
+export const searchBox: Sx = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 0.5,
+  px: 1,
+  py: 0.25,
+  borderRadius: 2,
+  minWidth: 160,
+  flex: '0 1 260px',
+  border: (t) => (t.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.15)'),
+  bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+};
+
+export const searchInput: Sx = {
+  fontSize: 13,
+  flex: 1,
+  minWidth: 0,
 };
 
 // Hauteur passée par le composant = une page entière au fit-width (fallback vh avant mesure).

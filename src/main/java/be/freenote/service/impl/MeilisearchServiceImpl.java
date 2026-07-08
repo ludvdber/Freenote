@@ -242,7 +242,8 @@ public class MeilisearchServiceImpl implements MeilisearchService {
     }
 
     @Override
-    public SearchResult search(String query, Long sectionId, Long courseId, String category, String sort, Pageable pageable) {
+    public SearchResult search(String query, Long sectionId, java.util.Collection<Long> courseIds,
+                               String category, String sort, Pageable pageable) {
         try {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("q", query);
@@ -253,8 +254,11 @@ public class MeilisearchServiceImpl implements MeilisearchService {
             if (sectionId != null) {
                 filters.add("sectionId = " + sectionId);
             }
-            if (courseId != null) {
-                filters.add("courseId = " + courseId);
+            if (courseIds != null && !courseIds.isEmpty()) {
+                // OR explicite (pas l'opérateur IN) : supporté par toutes les versions de Meilisearch
+                filters.add(courseIds.stream()
+                        .map(id -> "courseId = " + id)
+                        .collect(java.util.stream.Collectors.joining(" OR ", "(", ")")));
             }
             if (category != null) {
                 filters.add("category = " + category);

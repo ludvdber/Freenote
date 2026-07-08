@@ -149,7 +149,15 @@ export const popupClose: Sx = {
   right: 8,
 };
 
-export const popupBody: Sx = { textAlign: 'center' };
+// Colonne flex : chaque élément (nom, rôle, bouton profil, liens) occupe SA ligne — la caption
+// du rôle est un <span> inline, sans ça elle partageait sa ligne avec le bouton « Voir le
+// profil » (chevauchement vu en capture le 2026-07-08).
+export const popupBody: Sx = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textAlign: 'center',
+};
 
 export const popupAvatar: Sx = {
   mx: 'auto',

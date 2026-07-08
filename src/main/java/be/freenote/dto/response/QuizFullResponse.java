@@ -18,6 +18,8 @@ public record QuizFullResponse(
         String description,
         Long courseId,
         String courseName,
+        Long sectionId,
+        String sectionName,
         boolean published,
         boolean owned,
         LocalDateTime createdAt,

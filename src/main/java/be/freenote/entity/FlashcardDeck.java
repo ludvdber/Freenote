@@ -52,6 +52,12 @@ public class FlashcardDeck {
     @JoinColumn(name = "course_id")
     private Course course;
 
+    /** Optional link to a section (paquet « toute la section », multi-cours) — V13. When a course
+     *  is set, the service forces this to the course's section (coherence rule). */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "section_id")
+    private Section section;
+
     /** false = paquet privé enregistré sur le compte (visible du seul propriétaire),
      *  true = publié dans la bibliothèque partagée. */
     @Column(nullable = false)

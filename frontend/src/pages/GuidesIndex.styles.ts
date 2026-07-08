@@ -90,6 +90,18 @@ export const featuredNew: Sx = {
   letterSpacing: 1,
 };
 
+/** Cadenas d'un guide réservé aux étudiants (V14), posé en haut-droite de la couverture. */
+export const lockChip: Sx = {
+  position: 'absolute',
+  top: 10,
+  right: 10,
+  height: 22,
+  fontSize: 12,
+  bgcolor: 'rgba(10,10,26,0.55)',
+  backdropFilter: 'blur(4px)',
+  border: '1px solid rgba(255,217,61,0.35)',
+};
+
 export const featuredBody: Sx = {
   p: { xs: 2.5, md: 4 },
   display: 'flex',

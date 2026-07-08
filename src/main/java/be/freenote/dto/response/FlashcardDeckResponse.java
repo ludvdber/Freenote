@@ -14,6 +14,8 @@ public record FlashcardDeckResponse(
         String ownerName,
         Long courseId,
         String courseName,
+        Long sectionId,
+        String sectionName,
         LocalDateTime createdAt,
         List<FlashcardCardDto> cards,
         boolean published,

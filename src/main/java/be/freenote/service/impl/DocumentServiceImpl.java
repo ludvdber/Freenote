@@ -15,6 +15,7 @@ import be.freenote.repository.*;
 import be.freenote.repository.Repositories;
 import be.freenote.event.XpEvent;
 import be.freenote.service.ActivityLogService;
+import be.freenote.service.CourseEquivalenceService;
 import be.freenote.service.DocumentService;
 import be.freenote.service.ImageToPdfService;
 import be.freenote.service.MeilisearchService;
@@ -61,6 +62,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final PdfValidationService pdfValidationService;
     private final ImageToPdfService imageToPdfService;
     private final MeilisearchService meilisearchService;
+    private final CourseEquivalenceService courseEquivalenceService;
     private final StatsService statsService;
     private final ApplicationEventPublisher eventPublisher;
     private final StringRedisTemplate redisTemplate;
@@ -192,10 +194,12 @@ public class DocumentServiceImpl implements DocumentService {
         // expression, sort into the sort array). Clean 400s without internal messages.
         Category cat = parseCategory(category);
         String safeSort = parseSort(sort);
+        // Équivalences (V15) : filtrer sur « Stats (Info) » inclut les docs de « Stats (Compta) »
+        List<Long> courseIds = courseEquivalenceService.expand(courseId);
 
         if (query != null && !query.isBlank()) {
             MeilisearchService.SearchResult result = meilisearchService.search(
-                    query, sectionId, courseId, cat != null ? cat.name() : null, safeSort, pageable);
+                    query, sectionId, courseIds, cat != null ? cat.name() : null, safeSort, pageable);
             List<Long> ids = result.ids();
             if (ids.isEmpty()) {
                 return new PageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
@@ -213,7 +217,7 @@ public class DocumentServiceImpl implements DocumentService {
             return new PageResponse<>(content, pageable.getPageNumber(), pageable.getPageSize(), total, totalPages);
         }
 
-        Page<Document> page = documentRepository.findFiltered(sectionId, courseId, cat,
+        Page<Document> page = documentRepository.findFiltered(sectionId, courseIds, cat,
                 withDbSort(pageable, safeSort));
 
         List<DocumentResponse> content = page.getContent().stream()
@@ -506,8 +510,13 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public long countNewSince(java.time.LocalDateTime since) {
+        return documentRepository.countByCreatedAtAfter(since);
+    }
+
+    @Override
     public Map<String, Long> getCategoryCounts(Long sectionId, Long courseId) {
-        return documentRepository.countByCategory(sectionId, courseId).stream()
+        return documentRepository.countByCategory(sectionId, courseEquivalenceService.expand(courseId)).stream()
                 .collect(Collectors.toMap(
                         row -> ((Category) row[0]).name(),
                         row -> (Long) row[1]));

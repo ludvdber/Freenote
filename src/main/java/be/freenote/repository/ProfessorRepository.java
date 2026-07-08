@@ -9,7 +9,8 @@ import java.util.List;
 @Repository
 public interface ProfessorRepository extends JpaRepository<Professor, Long> {
     List<Professor> findByApprovedFalse();
-    List<Professor> findByApprovedTrue();
+    /** Dropdown de l'upload : alphabétique par défaut (règle 2026-07-08 sur tous les dropdowns). */
+    List<Professor> findByApprovedTrueOrderByNameAsc();
     List<Professor> findAllByOrderByNameAsc();
     boolean existsByNameIgnoreCase(String name);
 }

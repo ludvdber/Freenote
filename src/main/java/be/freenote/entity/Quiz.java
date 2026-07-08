@@ -56,6 +56,12 @@ public class Quiz {
     @JoinColumn(name = "course_id")
     private Course course;
 
+    /** Optional link to a section (quiz « toute la section », multi-cours) — V13. When a course
+     *  is set, the service forces this to the course's section (coherence rule). */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "section_id")
+    private Section section;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

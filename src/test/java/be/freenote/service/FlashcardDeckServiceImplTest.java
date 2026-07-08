@@ -30,6 +30,7 @@ class FlashcardDeckServiceImplTest {
     @Mock private FlashcardDeckRepository deckRepository;
     @Mock private UserRepository userRepository;
     @Mock private CourseRepository courseRepository;
+    @Mock private CourseEquivalenceService courseEquivalenceService;
 
     @InjectMocks private FlashcardDeckServiceImpl service;
 
@@ -46,7 +47,7 @@ class FlashcardDeckServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         when(deckRepository.save(any(FlashcardDeck.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new PublishDeckRequest("  Compta — TVA  ", "  ma desc  ", null,
+        var request = new PublishDeckRequest("  Compta — TVA  ", "  ma desc  ", null, null,
                 List.of(new FlashcardCardDto("  Q1  ", "  A1  "),
                         new FlashcardCardDto("Q2", null),            // null back → ""
                         new FlashcardCardDto("   ", "ignored")),      // blank front filtered out
@@ -71,7 +72,7 @@ class FlashcardDeckServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
         when(deckRepository.save(any(FlashcardDeck.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new PublishDeckRequest("Privé", null, null,
+        var request = new PublishDeckRequest("Privé", null, null, null,
                 List.of(new FlashcardCardDto("Q", "A")), false);
 
         assertThat(service.save(1L, request).published()).isFalse();
@@ -80,7 +81,7 @@ class FlashcardDeckServiceImplTest {
     @Test
     void shouldRejectDeckWithNoValidCard() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser(1L)));
-        var request = new PublishDeckRequest("Empty", null, null,
+        var request = new PublishDeckRequest("Empty", null, null, null,
                 List.of(new FlashcardCardDto("   ", "x")), true);
 
         assertThatThrownBy(() -> service.save(1L, request))
@@ -106,7 +107,7 @@ class FlashcardDeckServiceImplTest {
     void shouldForbidUpdatingSomeoneElsesDeck() {
         when(deckRepository.findById(5L)).thenReturn(Optional.of(deckOwnedBy(2L)));
 
-        var request = new PublishDeckRequest("X", null, null,
+        var request = new PublishDeckRequest("X", null, null, null,
                 List.of(new FlashcardCardDto("Q", "A")), true);
         assertThatThrownBy(() -> service.update(1L, false, 5L, request))
                 .isInstanceOf(ForbiddenException.class);
@@ -119,7 +120,7 @@ class FlashcardDeckServiceImplTest {
         when(deckRepository.findById(5L)).thenReturn(Optional.of(deck));
         when(deckRepository.save(any(FlashcardDeck.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new PublishDeckRequest("Nouveau", null, null,
+        var request = new PublishDeckRequest("Nouveau", null, null, null,
                 List.of(new FlashcardCardDto("Q1", "A1"), new FlashcardCardDto("Q2", "A2")), true);
         FlashcardDeckResponse res = service.update(1L, false, 5L, request);
 

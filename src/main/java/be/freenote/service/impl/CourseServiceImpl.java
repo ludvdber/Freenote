@@ -162,6 +162,65 @@ public class CourseServiceImpl implements CourseService {
                 });
     }
 
+    // --- Équivalences de cours (V15) : « le même cours donné dans plusieurs sections » ---
+
+    @Override
+    public List<CourseResponse> getEquivalents(Long courseId) {
+        Course course = Repositories.findByIdOrThrow(courseRepository, courseId, "Course");
+        if (course.getEquivalenceGroup() == null) {
+            return List.of();
+        }
+        return courseRepository.findByEquivalenceGroupWithSection(course.getEquivalenceGroup()).stream()
+                .filter(c -> !c.getId().equals(courseId))
+                .map(c -> courseMapper.toResponse(c, 0))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<CourseResponse> setEquivalents(Long courseId, List<Long> otherCourseIds) {
+        Course anchor = Repositories.findByIdOrThrow(courseRepository, courseId, "Course");
+
+        java.util.Set<Long> targetIds = new java.util.LinkedHashSet<>(
+                otherCourseIds == null ? List.of() : otherCourseIds);
+        targetIds.remove(courseId);
+        if (targetIds.size() > 20) {
+            throw new IllegalArgumentException("Too many equivalent courses (max 20)");
+        }
+        List<Course> targets = courseRepository.findAllById(targetIds);
+        if (targets.size() != targetIds.size()) {
+            throw new ResourceNotFoundException("Course", "id", "one of the equivalent course ids");
+        }
+
+        // Le dialog admin est LA vérité du groupe de l'ancre : ses anciens membres sont tous
+        // détachés d'abord (ceux repris dans la nouvelle liste seront ré-attachés juste après).
+        if (anchor.getEquivalenceGroup() != null) {
+            courseRepository.findByEquivalenceGroupWithSection(anchor.getEquivalenceGroup())
+                    .forEach(c -> c.setEquivalenceGroup(null));
+        }
+        anchor.setEquivalenceGroup(null);
+        if (targets.isEmpty()) {
+            log.info("Course equivalence group dissolved: anchor={}", courseId);
+            return List.of();
+        }
+
+        // Id de groupe FRAIS à chaque réécriture (séquence — jamais un id de cours, cf. V15) ;
+        // l'équivalence est transitive : lier A à B alors que B ~ C met A, B et C ensemble.
+        Long group = courseRepository.nextEquivalenceGroup();
+        java.util.Set<Course> members = new java.util.LinkedHashSet<>(targets);
+        members.add(anchor);
+        for (Course target : targets) {
+            Long g = target.getEquivalenceGroup();
+            if (g != null) {
+                members.addAll(courseRepository.findByEquivalenceGroupWithSection(g));
+            }
+        }
+        members.forEach(c -> c.setEquivalenceGroup(group));
+        log.info("Course equivalence group set: anchor={}, group={}, members={}",
+                courseId, group, members.stream().map(Course::getId).toList());
+        return getEquivalents(courseId);
+    }
+
     /** Nom stocké brut (trim seul) — React échappe au rendu, comme les titres de documents. */
     private static String requireName(String input) {
         String trimmed = input == null ? "" : input.trim();

@@ -14,6 +14,8 @@ public record QuizSummary(
         String ownerName,
         Long courseId,
         String courseName,
+        Long sectionId,
+        String sectionName,
         LocalDateTime createdAt,
         boolean published,
         boolean owned

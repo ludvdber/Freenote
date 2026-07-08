@@ -15,8 +15,10 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  Autocomplete,
+  Chip,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, Link as LinkIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -24,6 +26,8 @@ import {
   adminCreateCourse,
   adminRenameCourse,
   adminDeleteCourse,
+  adminGetCourseEquivalents,
+  adminSetCourseEquivalents,
   getSections,
 } from '@/api/endpoints';
 import { STALE_15M } from '@/lib/constants';
@@ -52,6 +56,8 @@ export default function AdminCourses() {
   const [editTarget, setEditTarget] = useState<Course | null>(null);
   const [editName, setEditName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
+  const [linkTarget, setLinkTarget] = useState<Course | null>(null);
+  const [linkSelection, setLinkSelection] = useState<Course[]>([]);
   const [error, setError] = useState('');
 
   const invalidate = () => {
@@ -90,6 +96,27 @@ export default function AdminCourses() {
       setDeleteTarget(null);
       invalidate();
     },
+  });
+
+  // Équivalences (V15) : pré-remplit le dialog avec les cours déjà liés.
+  const openLink = async (c: Course) => {
+    setLinkTarget(c);
+    setLinkSelection([]);
+    try {
+      setLinkSelection(await adminGetCourseEquivalents(c.id));
+    } catch (e) {
+      setError(extractApiError(e));
+    }
+  };
+
+  const linkMut = useMutation({
+    mutationFn: () => adminSetCourseEquivalents(linkTarget!.id, linkSelection.map((c) => c.id)),
+    onSuccess: () => {
+      setLinkTarget(null);
+      setError('');
+      invalidate();
+    },
+    onError: (e: unknown) => setError(extractApiError(e)),
   });
 
   return (
@@ -151,11 +178,23 @@ export default function AdminCourses() {
       {filtered.map((c) => (
         <GlassCard key={c.id} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>{c.name}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>{c.name}</Typography>
+              {c.equivalenceGroup != null && (
+                <Tooltip title={t('admin.courses.linkedTip')}>
+                  <Chip size="small" label={`≈ ${t('admin.courses.linkedChip')}`} color="info" variant="outlined" />
+                </Tooltip>
+              )}
+            </Box>
             <Typography variant="caption" color="text.secondary">
               {c.sectionName} · {t('admin.courses.docCount', { count: c.documentCount })}
             </Typography>
           </Box>
+          <Tooltip title={t('admin.courses.equivalents')}>
+            <IconButton size="small" onClick={() => void openLink(c)}>
+              <LinkIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={t('admin.courses.rename')}>
             <IconButton size="small" onClick={() => { setEditTarget(c); setEditName(c.name); }}>
               <Edit fontSize="small" />
@@ -183,6 +222,32 @@ export default function AdminCourses() {
         <DialogActions>
           <Button onClick={() => setEditTarget(null)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={() => renameMut.mutate()} disabled={!editName.trim() || renameMut.isPending}>
+            {t('common.save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(linkTarget)} onClose={() => setLinkTarget(null)} fullWidth maxWidth="sm">
+        <DialogTitle>{t('admin.courses.equivalentsTitle', { name: linkTarget?.name })}</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('admin.courses.equivalentsHelp')}
+          </Typography>
+          <Autocomplete
+            multiple
+            options={(courses ?? []).filter((c) => c.id !== linkTarget?.id)}
+            value={linkSelection}
+            onChange={(_, value) => setLinkSelection(value)}
+            getOptionLabel={(c) => `${c.name} (${c.sectionName})`}
+            isOptionEqualToValue={(o, v) => o.id === v.id}
+            renderInput={(params) => (
+              <TextField {...params} label={t('admin.courses.equivalents')} placeholder={t('admin.courses.equivalentsPlaceholder')} />
+            )}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLinkTarget(null)}>{t('common.cancel')}</Button>
+          <Button variant="contained" onClick={() => linkMut.mutate()} disabled={linkMut.isPending}>
             {t('common.save')}
           </Button>
         </DialogActions>

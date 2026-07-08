@@ -64,6 +64,9 @@ export default function AdminGuides() {
                 variant={g.published ? 'filled' : 'outlined'}
                 sx={{ height: 20 }}
               />
+              {g.membersOnly && (
+                <Chip size="small" label={`🔒 ${t('admin.guides.membersOnlyChip')}`} color="warning" variant="outlined" sx={{ height: 20 }} />
+              )}
               {g.category && <Chip size="small" label={g.category} variant="outlined" sx={{ height: 20 }} />}
             </Box>
             <Typography variant="caption" color="text.secondary">/guides/{g.slug}</Typography>
@@ -102,6 +105,7 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
   const [relatedTool, setRelatedTool] = useState('');
   const [content, setContent] = useState('');
   const [published, setPublished] = useState(false);
+  const [membersOnly, setMembersOnly] = useState(false);
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [error, setError] = useState('');
   const [loaded, setLoaded] = useState(isNew);
@@ -115,8 +119,9 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
       setSummary(g.summary ?? '');
       setCategory(g.category ?? '');
       setRelatedTool(g.relatedTool ?? '');
-      setContent(g.content);
+      setContent(g.content ?? ''); // jamais null via l'endpoint admin — le ?? apaise le type partagé
       setPublished(g.published);
+      setMembersOnly(g.membersOnly);
       setLoaded(true);
       return g;
     },
@@ -126,7 +131,7 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
 
   const save = useMutation({
     mutationFn: () => {
-      const body = { title: title.trim(), summary: summary.trim(), category: category.trim(), relatedTool, content, published };
+      const body = { title: title.trim(), summary: summary.trim(), category: category.trim(), relatedTool, content, published, membersOnly };
       return isNew ? adminCreateGuide(body) : adminUpdateGuide(id as number, body);
     },
     onSuccess: () => {
@@ -145,6 +150,13 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button size="small" startIcon={<ArrowBack />} onClick={onClose}>{t('common.back')}</Button>
         <Box sx={{ flexGrow: 1 }} />
+        {/* Réservé aux étudiants (V14) : la carte reste listée, le contenu exige un compte vérifié. */}
+        <Tooltip title={t('admin.guides.membersOnlyHelp')}>
+          <FormControlLabel
+            control={<Switch checked={membersOnly} onChange={(e) => setMembersOnly(e.target.checked)} />}
+            label={`🔒 ${t('admin.guides.membersOnlyLabel')}`}
+          />
+        </Tooltip>
         <FormControlLabel
           control={<Switch checked={published} onChange={(e) => setPublished(e.target.checked)} />}
           label={t('admin.guides.publishedLabel')}
@@ -176,9 +188,13 @@ function GuideEditor({ id, onClose }: { id: number | 'new'; onClose: () => void 
                 size="small" sx={{ width: 240 }} helperText={t('admin.guides.relatedToolHelp')}
               >
                 <MenuItem value="">{t('admin.guides.relatedToolNone')}</MenuItem>
-                {TOOLS.map((tool) => (
-                  <MenuItem key={tool.slug} value={tool.slug}>{t(`tools.${tool.key}.tab`)}</MenuItem>
-                ))}
+                {/* Alphabétique par label (règle dropdowns 2026-07-08) — l'ordre du tableau TOOLS
+                    est celui de la grille /outils, pas un ordre de lecture. */}
+                {[...TOOLS]
+                  .sort((a, b) => t(`tools.${a.key}.tab`).localeCompare(t(`tools.${b.key}.tab`), 'fr'))
+                  .map((tool) => (
+                    <MenuItem key={tool.slug} value={tool.slug}>{t(`tools.${tool.key}.tab`)}</MenuItem>
+                  ))}
               </TextField>
               <TextField
                 label={t('admin.guides.summary')} value={summary} onChange={(e) => setSummary(e.target.value)}

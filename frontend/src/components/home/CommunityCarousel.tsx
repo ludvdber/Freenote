@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, IconButton, useMediaQuery } from '@mui/material';
-import { GitHub, LinkedIn, Close, Pause, PlayArrow } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
+import { Box, Typography, IconButton, Button, useMediaQuery } from '@mui/material';
+import { GitHub, LinkedIn, Close, Pause, PlayArrow, ArrowForward } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -141,6 +142,19 @@ export default function CommunityCarousel() {
                   <Typography variant="caption" color="text.secondary">
                     {selected.role}
                   </Typography>
+
+                  {/* Le carrousel n'avait AUCUN chemin vers le profil (fix 2026-07-08) — pour un
+                      anonyme, la route protégée /users/:id déclenche l'invite de connexion. */}
+                  <Button
+                    component={RouterLink}
+                    to={`/users/${selected.id}`}
+                    size="small"
+                    variant="outlined"
+                    endIcon={<ArrowForward />}
+                    sx={{ mt: 1.5 }}
+                  >
+                    {t('community.seeProfile')}
+                  </Button>
 
                   {token && (
                     <Box sx={s.popupActions}>
