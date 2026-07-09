@@ -60,10 +60,37 @@ export default function OnboardingGate({ children }: { children: React.ReactNode
             {t('onboarding.subtitle')}
           </Typography>
 
-          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+          <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
             <Step><StepLabel>{t('onboarding.stepProfile')}</StepLabel></Step>
             <Step><StepLabel>{t('onboarding.stepVerify')}</StepLabel></Step>
           </Stepper>
+
+          {/* Une promesse par étape : l'écran était le seul moment où un nouveau voyait le produit
+              avant d'y entrer, sans rien qui dise ce qui l'attend derrière. */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              mb: 3,
+              px: 2,
+              py: 1.25,
+              borderRadius: 2,
+              background: (th) =>
+                th.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(0,210,255,0.07), rgba(123,47,247,0.07))'
+                  : 'linear-gradient(135deg, rgba(0,150,199,0.06), rgba(123,47,247,0.06))',
+              border: (th) =>
+                `1px solid ${th.palette.mode === 'dark' ? 'rgba(0,210,255,0.2)' : 'rgba(0,150,199,0.25)'}`,
+            }}
+          >
+            <Typography sx={{ fontSize: 26, lineHeight: 1 }} aria-hidden="true">
+              {activeStep === 0 ? '👋' : '📬'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t(activeStep === 0 ? 'onboarding.promiseProfile' : 'onboarding.promiseVerify')}
+            </Typography>
+          </Box>
 
           {activeStep === 0 ? (
             <ProfileStep onDone={setUser} />

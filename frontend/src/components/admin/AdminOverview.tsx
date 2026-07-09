@@ -117,17 +117,23 @@ export default function AdminOverview({ onNavigate }: { onNavigate: (pane: Admin
             </Button>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {(recentLogs?.content ?? []).map((log) => (
-              <Box key={log.id} sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>
-                <Typography variant="caption" color="text.secondary" className="mono" sx={{ flexShrink: 0 }}>
-                  {formatDate(log.createdAt, i18n.language)}
-                </Typography>
-                <Typography variant="caption" noWrap title={`${log.actorName ?? ''} ${log.message ?? ''}`}>
-                  <strong>{log.actorName ?? '—'}</strong> · {t(`admin.activity.types.${log.type}`, log.type)}
-                  {log.message ? ` — ${log.message}` : ''}
-                </Typography>
-              </Box>
-            ))}
+            {(recentLogs?.content ?? []).map((log) => {
+              const typeLabel = t(`admin.activity.types.${log.type}`, log.type);
+              // Le message d'un LOGIN répète le libellé du type (« Connexion — Connexion ») : on ne
+              // l'ajoute que s'il apporte autre chose.
+              const detail = log.message && log.message !== typeLabel ? ` — ${log.message}` : '';
+              return (
+                <Box key={log.id} sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary" className="mono" sx={{ flexShrink: 0 }}>
+                    {formatDate(log.createdAt, i18n.language)}
+                  </Typography>
+                  <Typography variant="caption" noWrap title={`${log.actorName ?? ''} ${log.message ?? ''}`}>
+                    <strong>{log.actorName ?? '—'}</strong> · {typeLabel}
+                    {detail}
+                  </Typography>
+                </Box>
+              );
+            })}
             {recentLogs && recentLogs.content.length === 0 && (
               <Typography variant="caption" color="text.secondary">{t('admin.overview.recentEmpty')}</Typography>
             )}

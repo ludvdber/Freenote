@@ -49,6 +49,15 @@ export const fadeEdgeRight: Sx = {
   pointerEvents: 'none',
 };
 
+/* Quand une seule copie des profils tient dans le viewport, le marquee dupliquerait des cartes
+   visibles côte à côte (« Admin Freenote » deux fois à l'écran) : rangée statique centrée à la place. */
+export const staticTrack: Sx = {
+  display: 'flex',
+  gap: 2,
+  justifyContent: 'center',
+  flexWrap: 'wrap',
+};
+
 export const marqueeTrack = (paused: boolean): Sx => ({
   display: 'flex',
   gap: 2,

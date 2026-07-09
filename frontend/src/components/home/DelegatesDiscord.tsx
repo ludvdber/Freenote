@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Chip, Avatar, Button, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import { Box, Typography, Chip, Avatar, Button, Dialog, DialogTitle, DialogContent, useTheme } from '@mui/material';
 import { History } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -10,7 +10,6 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { formatDate } from '@/lib/utils';
 import type { DelegateMember } from '@/types';
 import GlassCard from '@/components/ui/GlassCard';
-import AdSlot from '@/components/ui/AdSlot';
 import * as s from './DelegatesDiscord.styles';
 
 const formerYearRange = (m: DelegateMember) => {
@@ -21,6 +20,7 @@ const formerYearRange = (m: DelegateMember) => {
 
 export default function DelegatesDiscord() {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const { token } = useAuthStore();
   const { data: delegates } = useQuery({ queryKey: ['delegates'], queryFn: getDelegates });
   const { data: former } = useQuery({ queryKey: ['delegates-former'], queryFn: getFormerDelegates });
@@ -68,38 +68,45 @@ export default function DelegatesDiscord() {
                     </Typography>
                   </Box>
                 )}
-                {delegates?.map((delegate) => (
-                  <Box key={delegate.sectionName} sx={s.delegateBlock}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={s.delegateSectionName}>
-                      {delegate.sectionName}
-                    </Typography>
-                    <Box sx={s.delegateMembers}>
-                      {delegate.members.map((m) => {
-                        const label = m.displayName
-                          ? `${m.displayName} (${m.username})`
-                          : m.username;
-                        const initial = (m.displayName ?? m.username).charAt(0).toUpperCase();
-                        return (
-                          <Chip
-                            key={m.username}
-                            avatar={<Avatar sx={{ width: 24, height: 24 }}>{initial}</Avatar>}
-                            label={label}
-                            variant="outlined"
-                            size="small"
-                            component={token && m.userId ? Link : 'div'}
-                            {...(token && m.userId ? { to: `/users/${m.userId}` } : {})}
-                            clickable={Boolean(token && m.userId)}
-                            onClick={!token || !m.userId
-                              ? () => setSelectedDelegate(selectedDelegate?.username === m.username ? null : m)
-                              : undefined}
-                            aria-label={`${t('delegates.title')}: ${label}`}
-                            sx={s.delegateChip}
-                          />
-                        );
-                      })}
-                    </Box>
+                {hasDelegates && (
+                  <Box sx={s.delegatesGrid}>
+                    {delegates!.map((delegate) => {
+                      const color = s.sectionColor(delegate.sectionName, theme.palette.mode);
+                      return (
+                        <Box key={delegate.sectionName} sx={s.delegateBlock(color)}>
+                          <Typography variant="subtitle2" sx={s.delegateSectionName(color)}>
+                            {delegate.sectionName}
+                          </Typography>
+                          <Box sx={s.delegateMembers}>
+                            {delegate.members.map((m) => {
+                              const label = m.displayName
+                                ? `${m.displayName} (${m.username})`
+                                : m.username;
+                              const initial = (m.displayName ?? m.username).charAt(0).toUpperCase();
+                              return (
+                                <Chip
+                                  key={m.username}
+                                  avatar={<Avatar sx={{ width: 24, height: 24, bgcolor: color, color: '#fff' }}>{initial}</Avatar>}
+                                  label={label}
+                                  variant="outlined"
+                                  size="small"
+                                  component={token && m.userId ? Link : 'div'}
+                                  {...(token && m.userId ? { to: `/users/${m.userId}` } : {})}
+                                  clickable={Boolean(token && m.userId)}
+                                  onClick={!token || !m.userId
+                                    ? () => setSelectedDelegate(selectedDelegate?.username === m.username ? null : m)
+                                    : undefined}
+                                  aria-label={`${t('delegates.title')}: ${label}`}
+                                  sx={s.delegateChip}
+                                />
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      );
+                    })}
                   </Box>
-                ))}
+                )}
 
                 <AnimatePresence>
                   {selectedDelegate && (
@@ -147,10 +154,6 @@ export default function DelegatesDiscord() {
                 </Button>
               </Box>
             )}
-          </Box>
-
-          <Box sx={s.adCol}>
-            <AdSlot width={300} height={250} />
           </Box>
         </Box>
       </Box>

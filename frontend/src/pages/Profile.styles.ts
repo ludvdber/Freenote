@@ -178,13 +178,18 @@ export const paletteSwatch = (colors: [string, string], selected: boolean, disab
   height: 44,
   borderRadius: '50%',
   background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`,
-  border: '3px solid',
-  borderColor: selected ? 'primary.main' : 'transparent',
-  outline: (t) => (t.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.15)'),
+  border: '3px solid transparent',
+  // Anneau DÉTACHÉ (espace couleur de fond) : l'ancien anneau collé en primary.main était
+  // invisible sur la pastille « défaut » — elle-même aux couleurs primaires — donc rien ne
+  // semblait sélectionné tant qu'on n'avait jamais choisi de palette.
+  boxShadow: selected
+    ? (t) => `0 0 0 2px ${t.palette.background.default}, 0 0 0 4px ${t.palette.primary.main}`
+    : 'none',
+  outline: (t) => (selected ? 'none' : t.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.15)'),
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.4 : 1,
   p: 0,
-  transition: 'transform 0.15s, border-color 0.15s',
+  transition: 'transform 0.15s, box-shadow 0.15s',
   '&:hover': disabled ? {} : { transform: 'scale(1.1)' },
 });
 

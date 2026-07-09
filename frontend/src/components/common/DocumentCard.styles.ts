@@ -62,10 +62,16 @@ const COVER_GRADIENTS: Record<string, string> = {
   DIVERS: 'linear-gradient(130deg, rgba(177,140,255,0.28), rgba(62,35,120,0.45))',
 };
 
-export const coverBg = (category: string): Sx => ({
+/**
+ * `hueShift` (degrés, optionnel) : nuance déterministe DANS la famille de couleur de la catégorie.
+ * Utilisé par la vitrine anonyme, où 2 catégories publiques seulement rendaient la grille monotone
+ * (8 couvertures jaunes identiques) — la teinte reste reconnaissable, la répétition disparaît.
+ */
+export const coverBg = (category: string, hueShift = 0): Sx => ({
   position: 'absolute',
   inset: 0,
   background: COVER_GRADIENTS[category] ?? COVER_GRADIENTS.DIVERS,
+  ...(hueShift !== 0 ? { filter: `hue-rotate(${hueShift}deg)` } : {}),
   transition: 'transform 0.35s ease-out',
 });
 

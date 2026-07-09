@@ -6,6 +6,33 @@ export const title: Sx = { fontWeight: 700, mb: 3 };
 
 export const errorAlert: Sx = { mb: 2 };
 
+// Formulaire + rail « Ce que ça rapporte » : la page n'annonçait nulle part la récompense XP
+// (LA carotte du système) ni les attentes de qualité.
+export const layout: Sx = {
+  display: 'grid',
+  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px' },
+  gap: { xs: 3, md: 4 },
+  alignItems: 'start',
+};
+
+export const asideCard: Sx = {
+  p: 2.5,
+  position: { md: 'sticky' },
+  top: { md: 88 },
+};
+
+export const asideTitle: Sx = { fontWeight: 800, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 };
+
+export const asideList: Sx = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 1,
+  m: 0,
+  p: 0,
+  listStyle: 'none',
+  '& li': { display: 'flex', gap: 1, alignItems: 'baseline', fontSize: '0.875rem' },
+};
+
 export const form: Sx = {
   display: 'flex',
   flexDirection: 'column',

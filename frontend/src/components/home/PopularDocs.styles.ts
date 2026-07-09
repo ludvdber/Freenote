@@ -1,4 +1,5 @@
 import type { SxProps, Theme } from '@mui/material';
+import { accentGradientAlpha } from '@/theme/accent';
 
 type Sx = SxProps<Theme>;
 
@@ -43,6 +44,46 @@ export const viewAllLink: Sx = {
 };
 
 export const listCard: Sx = { p: 0, flex: 1 };
+
+// Colonne outils (aperçu anonyme) : la carte s'étire à la hauteur de la colonne catalogue (6 lignes),
+// donc les tuiles GRANDISSENT (flex: 1) pour remplir — sans ça, grand vide sous le CTA.
+export const toolsCard: Sx = { p: 0, flex: 1, display: 'flex', flexDirection: 'column' };
+
+export const toolRow: Sx = {
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 2,
+  px: 2.5,
+  py: 1.5,
+  borderBottom: (t) => `1px solid ${t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)'}`,
+  textDecoration: 'none',
+  color: 'inherit',
+  transition: 'background-color 0.15s',
+  '&:hover': { bgcolor: 'action.hover' },
+};
+
+export const toolIcon: Sx = {
+  width: 40,
+  height: 40,
+  borderRadius: 1.5,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: (t) => accentGradientAlpha(t, 0.18),
+  color: 'primary.main',
+  '& svg': { fontSize: 22 },
+};
+
+export const toolShort: Sx = {
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+};
+
+export const toolsCta: Sx = { p: 2 };
 
 export const docRow = (isFirst: boolean): Sx => ({
   display: 'flex',

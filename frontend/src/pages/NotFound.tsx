@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import PageWrapper from '@/components/layout/PageWrapper';
+import { ShootingStar, OrbitRing } from '@/components/ui/EmptySky';
+import { accentGradient } from '@/theme/accent';
 
 export default function NotFound() {
   const { t } = useTranslation();
@@ -11,23 +13,27 @@ export default function NotFound() {
   return (
     <PageWrapper maxWidth="sm">
       <Helmet><title>{t('notFound.title')} · Freenote</title></Helmet>
-      <Box sx={{ textAlign: 'center', py: { xs: 6, md: 12 } }}>
-        <Typography
-          variant="h1"
-          className="mono"
-          sx={{
-            fontSize: { xs: 80, md: 120 },
-            fontWeight: 900,
-            background: 'linear-gradient(135deg, #00d2ff, #7b2ff7)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            lineHeight: 1,
-            mb: 2,
-          }}
-        >
-          404
-        </Typography>
+      {/* relative + overflow hidden : le conteneur est la scène de l'étoile filante. */}
+      <Box sx={{ textAlign: 'center', py: { xs: 6, md: 12 }, position: 'relative', overflow: 'hidden' }}>
+        <ShootingStar />
+        <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+          <OrbitRing />
+          <Typography
+            variant="h1"
+            className="mono"
+            sx={{
+              fontSize: { xs: 80, md: 120 },
+              fontWeight: 900,
+              background: (t) => accentGradient(t),
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              lineHeight: 1,
+            }}
+          >
+            404
+          </Typography>
+        </Box>
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
           {t('notFound.title')}
         </Typography>

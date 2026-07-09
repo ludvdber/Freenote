@@ -93,10 +93,10 @@ export const userCell: Sx = {
   gap: 1.5,
 };
 
-// Roughly 7 rows + sticky header — the AdSlot sits in the right sidebar so we can be a touch
-// shorter than before without losing rows above the fold on a 1080p screen.
+// Sticky header (~41px) + 7 lignes entières (~65px) : 480 coupait la 7e ligne à mi-hauteur,
+// ce qui donnait l'impression d'un rendu cassé. La scrollbar signale la suite du classement.
 export const scrollableTable: Sx = {
-  maxHeight: 480,
+  maxHeight: 500,
   '& .MuiTableCell-head': {
     bgcolor: (t) =>
       t.palette.mode === 'dark' ? 'rgba(18, 22, 36, 0.98)' : 'rgba(255, 255, 255, 0.98)',

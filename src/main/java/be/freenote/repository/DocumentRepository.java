@@ -29,9 +29,29 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
         countQuery = "SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.category IN :categories")
     Page<Document> findPublicExcerpts(@Param("categories") Collection<Category> categories, Pageable pageable);
 
-    /** Titre seul d'un doc VÉRIFIÉ — statut public « existe mais réservé » d'un lien partagé. */
-    @Query("SELECT d.title FROM Document d WHERE d.id = :id AND d.verified = true")
-    Optional<String> findVerifiedTitleById(@Param("id") Long id);
+    /** Teaser public filtré par cours (groupe d'équivalence V15) — même contrat que findPublicExcerpts. */
+    @Query(value = """
+        SELECT d FROM Document d
+        LEFT JOIN FETCH d.course c LEFT JOIN FETCH c.section
+        WHERE d.verified = true AND d.category IN :categories AND d.course.id IN :courseIds
+        ORDER BY d.createdAt DESC
+        """,
+        countQuery = "SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.category IN :categories AND d.course.id IN :courseIds")
+    Page<Document> findPublicExcerptsByCourse(@Param("categories") Collection<Category> categories,
+                                              @Param("courseIds") Collection<Long> courseIds,
+                                              Pageable pageable);
+
+    /** Compteurs du teaser public de la page cours (docs vérifiés / dont publics). */
+    @Query("SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.course.id IN :courseIds")
+    long countVerifiedByCourseIds(@Param("courseIds") Collection<Long> courseIds);
+
+    @Query("SELECT COUNT(d) FROM Document d WHERE d.verified = true AND d.category IN :categories AND d.course.id IN :courseIds")
+    long countPublicByCourseIds(@Param("categories") Collection<Category> categories,
+                                @Param("courseIds") Collection<Long> courseIds);
+
+    /** Cours ayant au moins un doc public — alimente le sitemap (pas de page cours « vide » indexée). */
+    @Query("SELECT DISTINCT d.course.id FROM Document d WHERE d.verified = true AND d.category IN :categories ORDER BY d.course.id")
+    List<Long> findCourseIdsWithPublicDocs(@Param("categories") Collection<Category> categories);
 
     /** A single public teaser by id — present only if verified AND in an allowed public category. */
     @Query("""
@@ -156,6 +176,26 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Query("SELECT COUNT(d) FROM Document d WHERE d.course.section.id = :sectionId")
     long countBySectionId(@Param("sectionId") Long sectionId);
+
+    /** Projection des stats agrégées d'un cours (bandeau page cours). */
+    interface CourseStatsRow {
+        long getDocCount();
+        long getTotalViews();
+        Double getAvgRating();
+        java.time.LocalDateTime getLastUpload();
+    }
+
+    /** Stats agrégées sur un groupe de cours équivalents (V15) en UNE requête — la moyenne
+     *  ignore les documents encore sans note (CASE → null, AVG saute les null). */
+    @Query("""
+        SELECT COUNT(d) AS docCount,
+               COALESCE(SUM(d.downloadCount), 0) AS totalViews,
+               AVG(CASE WHEN d.ratingCount > 0 THEN d.averageRating END) AS avgRating,
+               MAX(d.createdAt) AS lastUpload
+        FROM Document d
+        WHERE d.course.id IN :courseIds
+        """)
+    CourseStatsRow aggregateStatsByCourseIds(@Param("courseIds") java.util.Collection<Long> courseIds);
 
     /** Batch count: returns a map of userId → documentCount for all given user IDs in one query. */
     @Query("SELECT d.user.id, COUNT(d) FROM Document d WHERE d.user.id IN :userIds GROUP BY d.user.id")

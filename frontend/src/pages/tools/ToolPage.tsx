@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import {
   Container, Typography, Box, Breadcrumbs, Link as MuiLink,
   Accordion, AccordionSummary, AccordionDetails,
@@ -19,6 +19,9 @@ interface Faq {
   a: string;
 }
 
+/** Une session est en cours quand l'URL porte un deep-link de jeu (quiz publié, paquet, quiz éphémère). */
+const isSessionHash = () => /#(play|deck|quiz)=/.test(window.location.hash);
+
 export default function ToolPage({ tool }: { tool: ToolDef }) {
   const { t, i18n } = useTranslation();
   const base = `tools.${tool.key}`;
@@ -28,6 +31,17 @@ export default function ToolPage({ tool }: { tool: ToolDef }) {
   useEffect(() => {
     trackUse('tool', tool.slug);
   }, [tool.slug]);
+
+  // Le contenu SEO reste monté (indexable) mais se replie pendant une partie : ouvert par
+  // défaut, replié à l'arrivée sur un deep-link de session et quand le hash en devient un.
+  const [seoOpen, setSeoOpen] = useState(() => !isSessionHash());
+  useEffect(() => {
+    const onHash = () => {
+      if (isSessionHash()) setSeoOpen(false);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   const getArray = <T,>(key: string): T[] => {
     const value = t(key, { returnObjects: true });
@@ -109,44 +123,61 @@ export default function ToolPage({ tool }: { tool: ToolDef }) {
 
       <AdSlot width={728} height={90} sx={{ my: 4 }} />
 
-      {/* SEO / educational content */}
-      <Box component="section">
-        {about.length > 0 && (
-          <>
-            <Typography variant="h5" component="h2" sx={s.sectionHeading}>{t('tools.aboutTitle')}</Typography>
-            {about.map((para, i) => (
-              <Typography key={i} component="p" sx={s.paragraph}>{para}</Typography>
-            ))}
-          </>
-        )}
+      {/* SEO / educational content — repliable pour ne pas distraire pendant une partie ;
+          les enfants d'un Accordion restent montés, le contenu reste donc dans le DOM (SEO). */}
+      {(about.length > 0 || examples.length > 0 || faq.length > 0) && (
+        <Accordion
+          component="section"
+          expanded={seoOpen}
+          onChange={(_, open) => setSeoOpen(open)}
+          disableGutters
+          elevation={0}
+          sx={{ bgcolor: 'transparent', '&::before': { display: 'none' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography component="h2" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
+              {t('tools.aboutAccordion')}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            {about.length > 0 && (
+              <>
+                <Typography variant="h5" component="h3" sx={s.sectionHeading}>{t('tools.aboutTitle')}</Typography>
+                {about.map((para, i) => (
+                  <Typography key={i} component="p" sx={s.paragraph}>{para}</Typography>
+                ))}
+              </>
+            )}
 
-        {examples.length > 0 && (
-          <>
-            <Typography variant="h5" component="h2" sx={s.sectionHeading}>{t('tools.examplesTitle')}</Typography>
-            <Box component="ul" sx={s.exampleList}>
-              {examples.map((ex, i) => (
-                <Box component="li" key={i} sx={s.exampleItem}>{ex}</Box>
-              ))}
-            </Box>
-          </>
-        )}
+            {examples.length > 0 && (
+              <>
+                <Typography variant="h5" component="h3" sx={s.sectionHeading}>{t('tools.examplesTitle')}</Typography>
+                <Box component="ul" sx={s.exampleList}>
+                  {examples.map((ex, i) => (
+                    <Box component="li" key={i} sx={s.exampleItem}>{ex}</Box>
+                  ))}
+                </Box>
+              </>
+            )}
 
-        {faq.length > 0 && (
-          <>
-            <Typography variant="h5" component="h2" sx={s.sectionHeading}>{t('tools.faqTitle')}</Typography>
-            {faq.map((f, i) => (
-              <Accordion key={i} disableGutters elevation={0} sx={{ bgcolor: 'transparent' }}>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography component="h3" sx={{ fontWeight: 600, fontSize: '1rem' }}>{f.q}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography component="p" color="text.secondary" sx={{ lineHeight: 1.7 }}>{f.a}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </>
-        )}
-      </Box>
+            {faq.length > 0 && (
+              <>
+                <Typography variant="h5" component="h3" sx={s.sectionHeading}>{t('tools.faqTitle')}</Typography>
+                {faq.map((f, i) => (
+                  <Accordion key={i} disableGutters elevation={0} sx={{ bgcolor: 'transparent' }}>
+                    <AccordionSummary expandIcon={<ExpandMore />}>
+                      <Typography component="h4" sx={{ fontWeight: 600, fontSize: '1rem' }}>{f.q}</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Typography component="p" color="text.secondary" sx={{ lineHeight: 1.7 }}>{f.a}</Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </>
+            )}
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       <MuiLink component={Link} to="/outils" underline="hover" sx={s.backLink}>
         <ArrowBack fontSize="small" /> {t('tools.allTools')}

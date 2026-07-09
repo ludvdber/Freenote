@@ -8,6 +8,7 @@ import { getPopularDocuments, getLeaderboard } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { categoryColor, formatNumber } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
+import LevelChip from '@/components/common/LevelChip';
 import { RANK_COLORS } from './PopularDocs.data';
 import * as s from './PopularDocs.styles';
 
@@ -128,10 +129,13 @@ export default function PopularDocs() {
                       )}
                     </Box>
                     <Box sx={s.docInfo}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         <Typography variant="body2" sx={s.docTitle}>
                           {entry.displayName}
                         </Typography>
+                        {/* Palier céleste — même repère que sur /leaderboard et les profils, il
+                            manquait uniquement ici (incohérence gamification relevée à l'audit). */}
+                        <LevelChip xp={entry.xp} dense />
                         {entry.supporter && (
                           <Chip
                             icon={<FavoriteBorder sx={{ fontSize: '12px !important' }} />}

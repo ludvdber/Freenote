@@ -47,7 +47,7 @@ export const quickCat = (active: boolean, color: string): Sx => ({
 
 export const pageSizeControl: Sx = { ml: 'auto', minWidth: 108 };
 
-export const emptyText: Sx = { textAlign: 'center', py: 8 };
+export const emptyText: Sx = { textAlign: 'center' };
 
 // Barre au-dessus de la grille : « N documents » + chips des filtres actifs (supprimables).
 export const resultsBar: Sx = {

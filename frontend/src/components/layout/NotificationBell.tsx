@@ -1,21 +1,43 @@
 import { useState } from 'react';
-import { IconButton, Badge as MuiBadge, Menu, MenuItem, Typography, Box } from '@mui/material';
+import { IconButton, Badge as MuiBadge, Popover, Typography, Box, ButtonBase } from '@mui/material';
 import { Notifications } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { getNotifications } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useMarkAllNotificationsRead, useUnreadNotificationsCount } from '@/hooks/useNotifications';
+import { SleepyMoon } from '@/components/ui/EmptySky';
+import { formatRelativeDate } from '@/lib/utils';
+import type { NotificationItem } from '@/types';
+import * as s from './NotificationBell.styles';
 
+const TYPE_ICONS: Record<string, string> = {
+  'document.verified': '⭐',
+  'quiz.questionReported': '🚩',
+};
+
+/** Cible de navigation d'une notification (null = ligne non cliquable). */
+function targetFor(n: NotificationItem): string | null {
+  if (n.type === 'document.verified' && n.payload?.documentId != null) return `/documents/${n.payload.documentId}`;
+  if (n.type === 'quiz.questionReported') return '/outils/quiz';
+  return null;
+}
+
+/**
+ * Cloche + vrai panneau de notifications (remplace l'ancien Menu minimal — maquette « Moments de
+ * lumière ») : lignes typées avec icône + heure relative, non-lu marqué au liseré cyan, état vide
+ * illustré (lune EmptySky). Le « tout lu » part à la FERMETURE du panneau : pendant qu'il est
+ * ouvert, les lignes non lues restent marquées (pas de course entre le fetch et l'invalidation).
+ */
 export default function NotificationBell() {
   const { t, i18n } = useTranslation();
-  const token = useAuthStore((s) => s.token);
-  const isVerified = useAuthStore((s) => s.isVerified);
+  const navigate = useNavigate();
+  const token = useAuthStore((st) => st.token);
+  const isVerified = useAuthStore((st) => st.isVerified);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  // Badge + liste = historique persisté serveur (plus le store local de session, qui repartait à
-  // zéro à chaque reload et laissait la table `notifications` inutilisée).
   const count = useUnreadNotificationsCount();
   const markAllRead = useMarkAllNotificationsRead();
   const { data } = useQuery({
@@ -25,9 +47,16 @@ export default function NotificationBell() {
   });
   const items = data?.content ?? [];
 
-  const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(e.currentTarget);
+  const handleClose = () => {
+    setAnchorEl(null);
     if (count > 0) markAllRead.mutate();
+  };
+
+  const openItem = (n: NotificationItem) => {
+    const target = targetFor(n);
+    if (!target) return;
+    handleClose();
+    navigate(target);
   };
 
   return (
@@ -35,44 +64,68 @@ export default function NotificationBell() {
       <IconButton
         size="small"
         color="inherit"
-        onClick={handleOpen}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
         aria-label={t('notifications.title')}
+        aria-expanded={open}
+        aria-haspopup="true"
       >
         <MuiBadge badgeContent={count} color="error" max={9}>
           <Notifications fontSize="small" />
         </MuiBadge>
       </IconButton>
 
-      <Menu
+      <Popover
         anchorEl={anchorEl}
         open={open}
-        onClose={() => setAnchorEl(null)}
-        slotProps={{ paper: { sx: { minWidth: 280, maxHeight: 360 } } }}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: s.panel } }}
       >
+        <Box sx={s.header}>
+          {t('notifications.title')}
+          {count > 0 && (
+            <Typography variant="caption" color="text.secondary">
+              {t('notifications.unreadCount', { count })}
+            </Typography>
+          )}
+        </Box>
+
         {items.length === 0 ? (
-          <MenuItem disabled>
+          <Box sx={s.empty}>
+            <SleepyMoon />
             <Typography variant="body2" color="text.secondary">
               {t('notifications.empty')}
             </Typography>
-          </MenuItem>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, opacity: 0.8 }}>
+              {t('notifications.emptyHint')}
+            </Typography>
+          </Box>
         ) : (
-          items.map((n) => (
-            <MenuItem key={n.id} sx={{ whiteSpace: 'normal', py: 1 }}>
-              <Box>
-                <Typography variant="body2">
-                  {t(`notifications.${n.type}`, n.payload)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {new Date(n.createdAt).toLocaleString(
-                    i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB',
-                    { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
-                  )}
-                </Typography>
-              </Box>
-            </MenuItem>
-          ))
+          <Box sx={s.list}>
+            {items.map((n) => {
+              const clickable = targetFor(n) !== null;
+              return (
+                <ButtonBase
+                  key={n.id}
+                  component="div"
+                  disabled={!clickable}
+                  onClick={() => openItem(n)}
+                  sx={s.row(!n.read)}
+                >
+                  <Box sx={s.rowIcon} aria-hidden="true">{TYPE_ICONS[n.type] ?? '🔔'}</Box>
+                  <Typography sx={s.rowText}>
+                    {t(`notifications.${n.type}`, n.payload)}
+                  </Typography>
+                  <Typography sx={s.rowTime}>
+                    {formatRelativeDate(n.createdAt, i18n.language)}
+                  </Typography>
+                </ButtonBase>
+              );
+            })}
+          </Box>
         )}
-      </Menu>
+      </Popover>
     </>
   );
 }

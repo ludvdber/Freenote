@@ -11,7 +11,7 @@ import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { DISCORD_OAUTH_URL, DISCORD_INVITE_URL } from '@/lib/constants';
 import DevLoginButton from '@/components/common/DevLoginButton';
-import UserAvatar from '@/components/common/UserAvatar';
+import AvatarOrb from '@/components/common/AvatarOrb';
 import { useLogout } from '@/hooks/useLogout';
 import NotificationBell from './NotificationBell';
 import MobileMenu from './MobileMenu';
@@ -130,7 +130,8 @@ export default function Navbar() {
                   aria-expanded={Boolean(anchorEl)}
                   aria-haspopup="menu"
                 >
-                  <UserAvatar username={user?.username ?? '?'} url={user?.avatarUrl} size={40} />
+                  {/* Orbe de progression vers le prochain palier autour de l'avatar (tooltip = détail). */}
+                  <AvatarOrb username={user?.username ?? '?'} url={user?.avatarUrl} size={40} xp={user?.xp ?? 0} />
                 </IconButton>
                 <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
                   <MenuItem

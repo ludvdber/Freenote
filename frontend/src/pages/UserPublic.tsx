@@ -352,7 +352,7 @@ export default function UserPublic() {
       {otherDocs.length > 0 && (
         <>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            {t('profile.documents')}
+            {t('userPublic.documentsTitle')}
           </Typography>
           <Grid container spacing={2}>
             {otherDocs.map((doc) => (

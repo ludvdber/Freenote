@@ -14,7 +14,9 @@ import AdSlot from '@/components/ui/AdSlot';
 import FreenoteMark from '@/components/icons/FreenoteMark';
 import * as s from './News.styles';
 
-function Thumb({ item, markSize = 96 }: { item: NewsItem; markSize?: number }) {
+// Exporté : NewsDetail réutilise la même couverture en miniature (`compact`) dans « À lire
+// ensuite » (les cartes texte nues y détonnaient face aux couvertures de l'index).
+export function Thumb({ item, markSize = 96, compact = false }: { item: NewsItem; markSize?: number; compact?: boolean }) {
   const { t } = useTranslation();
   if (item.thumbnail) {
     return (
@@ -27,9 +29,9 @@ function Thumb({ item, markSize = 96 }: { item: NewsItem; markSize?: number }) {
   const seed = [...item.id].reduce((a, c) => a + c.charCodeAt(0), 0);
   const label = item.labels[0] ?? t('news.title');
   return (
-    <Box sx={s.placeholder(seed)} aria-hidden="true">
+    <Box sx={s.placeholder(seed, compact)} aria-hidden="true">
       <Box sx={s.placeholderMark}><FreenoteMark size={markSize} /></Box>
-      <Typography component="span" sx={s.placeholderLabel}>{label}</Typography>
+      <Typography component="span" sx={s.placeholderLabel(compact)}>{label}</Typography>
     </Box>
   );
 }

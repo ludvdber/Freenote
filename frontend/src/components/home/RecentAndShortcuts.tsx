@@ -78,15 +78,16 @@ export default function RecentAndShortcuts() {
                   const disabled = Boolean(sc.requireVerified && !user?.verified);
                   const inlineStyle = disabled ? { opacity: 0.5, pointerEvents: 'none' as const } : undefined;
                   const label = t(`home.shortcuts.items.${sc.key}`);
+                  const tileSx = s.shortcutTile(sc.variant);
                   const body = (
                     <>
-                      <Box sx={s.shortcutIcon} aria-hidden="true">{sc.icon}</Box>
-                      <Typography sx={s.shortcutLabel}>{label}</Typography>
+                      <Box sx={s.shortcutIcon(sc.variant)} aria-hidden="true">{sc.icon}</Box>
+                      <Typography sx={s.shortcutLabel(sc.variant)}>{label}</Typography>
                     </>
                   );
                   if (sc.to) {
                     return (
-                      <Box key={sc.key} component={Link} to={sc.to} sx={s.shortcutTile} style={inlineStyle} aria-disabled={disabled || undefined}>
+                      <Box key={sc.key} component={Link} to={sc.to} sx={tileSx} style={inlineStyle} aria-disabled={disabled || undefined}>
                         {body}
                       </Box>
                     );
@@ -99,7 +100,7 @@ export default function RecentAndShortcuts() {
                       key={sc.key}
                       component="a"
                       {...anchorProps}
-                      sx={s.shortcutTile}
+                      sx={tileSx}
                       style={inlineStyle}
                       aria-disabled={disabled || undefined}
                     >

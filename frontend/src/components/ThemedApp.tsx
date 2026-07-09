@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { buildTheme } from '@/theme/muiTheme';
 import { useAuthInit } from '@/hooks/useAuthInit';
 import { useNotificationsStream } from '@/hooks/useNotificationsStream';
+import { useLevelCelebration } from '@/hooks/useLevelCelebration';
 import { trackVisit } from '@/lib/track';
 import App from '@/App';
 
@@ -15,6 +16,7 @@ export default function ThemedApp() {
   const accentPalette = useAuthStore((s) => s.user?.accentPalette ?? null);
   useAuthInit();
   useNotificationsStream();
+  useLevelCelebration();
 
   // Statistique de visite anonyme (1 par session navigateur, classée par provenance) —
   // fire-and-forget, aucune donnée personnelle.

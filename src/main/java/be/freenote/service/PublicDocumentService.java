@@ -10,10 +10,17 @@ import org.springframework.data.domain.Pageable;
  */
 public interface PublicDocumentService {
 
-    PageResponse<PublicDocumentSummary> listExcerpts(Pageable pageable);
+    /** {@code courseId} optionnel (null = tout le catalogue public) — étendu au groupe d'équivalence V15. */
+    PageResponse<PublicDocumentSummary> listExcerpts(Pageable pageable, Long courseId);
 
     PublicDocumentSummary getExcerpt(Long id);
 
     /** « Existe mais réservé » (titre seul, docs vérifiés uniquement) ou inconnu — jamais de 404. */
     be.freenote.dto.response.PublicDocumentStatus getStatus(Long id);
+
+    /** Teaser public d'un cours (page /courses/{id} anonyme — SEO). */
+    be.freenote.dto.response.PublicCourseResponse getCourse(Long id);
+
+    /** Ids des cours ayant au moins un doc public — sitemap (jamais de page cours vide indexée). */
+    java.util.List<Long> publicCourseIds();
 }

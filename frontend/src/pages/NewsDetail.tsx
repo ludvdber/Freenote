@@ -10,6 +10,7 @@ import { SITE_URL, STALE_15M } from '@/lib/constants';
 import { readingMinutes, stripHtml } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
+import { Thumb } from './News';
 import * as s from './NewsDetail.styles';
 
 export default function NewsDetail() {
@@ -161,15 +162,21 @@ export default function NewsDetail() {
                         key={n.id}
                         component={RouterLink}
                         to={`/news/${n.id}`}
-                        sx={{ p: 2, textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', gap: 1 }}
+                        sx={{ p: 0, overflow: 'hidden', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column' }}
                       >
-                        <Typography sx={{ fontWeight: 700, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          {n.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
-                          {n.date && new Date(n.date).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          {minutes > 0 && ` · ${t('news.readTime', { count: minutes })}`}
-                        </Typography>
+                        {/* Même couverture que l'index, en miniature — les cartes texte nues détonnaient. */}
+                        <Box sx={{ height: 72, position: 'relative', overflow: 'hidden', flexShrink: 0 }} aria-hidden="true">
+                          <Thumb item={n} markSize={44} compact />
+                        </Box>
+                        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, flexGrow: 1 }}>
+                          <Typography sx={{ fontWeight: 700, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {n.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
+                            {n.date && new Date(n.date).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {minutes > 0 && ` · ${t('news.readTime', { count: minutes })}`}
+                          </Typography>
+                        </Box>
                       </GlassCard>
                     );
                   })}

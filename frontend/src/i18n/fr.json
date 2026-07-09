@@ -2,7 +2,7 @@
   "nav": {
     "home": "Accueil",
     "browse": "Explorer",
-    "upload": "Partager",
+    "upload": "Partager un doc",
     "leaderboard": "Classement",
     "news": "Actualités",
     "guides": "Guides",
@@ -107,6 +107,7 @@
     "practiceTitle": "Pratique avec l'outil",
     "practiceCta": "Ouvrir l'outil",
     "backToList": "Retour aux guides",
+    "backToTop": "Retour en haut",
     "notFound": "Guide introuvable.",
     "lockedTitle": "Guide réservé aux étudiants",
     "lockedBody": "Ce guide contient des éléments de cours réservés aux étudiants de l’ISFCE. Connecte-toi avec ton compte vérifié pour le lire.",
@@ -134,7 +135,8 @@
     "gatedTitle": "Contenu réservé aux étudiants vérifiés",
     "gatedBody": "Ceci n'est qu'un aperçu. Le document complet est réservé aux étudiants de l'ISFCE disposant d'une adresse @isfce.be vérifiée.",
     "gatedHint": "L'accès est gratuit : connecte-toi avec Discord puis vérifie ton adresse @isfce.be.",
-    "openDocument": "Voir le document"
+    "openDocument": "Voir le document",
+    "morePublic": "D'autres documents publics"
   },
   "community": {
     "title": "Communauté",
@@ -222,6 +224,7 @@
     "prevDoc": "Précédent",
     "nextDoc": "Suivant",
     "sameCourse": "Du même cours",
+    "viewCourseAll": "Tout le cours",
     "equivalentCourses": "Ce cours est lié à : {{courses}} — leurs documents sont affichés ensemble.",
     "searchInPdf": "Rechercher dans le PDF…",
     "searchHits_one": "{{count}} résultat",
@@ -535,6 +538,19 @@
   },
   "upload": {
     "title": "Partager un document",
+    "rewards": {
+      "title": "Ce que ça rapporte",
+      "verified": "+10 XP quand ton doc est vérifié",
+      "views": "+1 XP par vue (une par personne et par jour)",
+      "ratings": "+2 XP × la note pour chaque avis d'au moins 3★",
+      "hint": "L'XP fait monter ton palier et ta place au classement."
+    },
+    "tips": {
+      "title": "3 conseils pour un doc apprécié",
+      "readable": "Un PDF net : scanne ou exporte, évite les photos floues.",
+      "naming": "Un titre clair : matière + sujet, ex. « Synthèse Réseaux — TCP/IP ».",
+      "metadata": "La bonne catégorie et l'année : c'est ce qui rend la recherche utile."
+    },
     "dragDrop": "Glisse-dépose un PDF ou des photos ici, ou clique pour choisir",
     "dropHint": "PDF (7 Mo max) ou jusqu'à 8 photos JPG/PNG, assemblées en un seul PDF.",
     "invalidFileType": "Format non supporté : PDF, JPG ou PNG uniquement.",
@@ -729,7 +745,9 @@
     "pageSize": "Documents par page",
     "perPage": "{{n}} / page",
     "newSinceVisit_one": "{{count}} nouveau depuis ta dernière visite",
-    "newSinceVisit_other": "{{count}} nouveaux depuis ta dernière visite"
+    "newSinceVisit_other": "{{count}} nouveaux depuis ta dernière visite",
+    "resetFilters": "Réinitialiser les filtres",
+    "openCourse": "Ouvrir la page du cours"
   },
   "common": {
     "loading": "Chargement...",
@@ -754,6 +772,8 @@
     "subtitle": "Encore deux étapes pour finaliser ton compte et accéder aux documents.",
     "stepProfile": "Profil",
     "stepVerify": "Vérification",
+    "promiseProfile": "Deux minutes, et tu accèdes à tous les docs, quiz et synthèses de ta section.",
+    "promiseVerify": "Dernière étape : ton adresse @isfce.be confirme que tu es de l'ISFCE — et tout s'ouvre.",
     "usernameLabel": "Choisis ton pseudo",
     "usernameHelp": "3 à 20 caractères : lettres, chiffres, - ou _. Visible par les autres étudiants.",
     "sectionLabel": "Ta section (optionnel)",
@@ -816,6 +836,7 @@
       "quizB": "Bruxelles",
       "quizC": "Gand"
     },
+    "aboutAccordion": "À propos de l'outil",
     "aboutTitle": "À quoi ça sert",
     "examplesTitle": "Exemples",
     "faqTitle": "Questions fréquentes",
@@ -1501,8 +1522,10 @@
       "emptyHint": "Crée ton premier QCM pour t'entraîner et le partager à tes camarades.",
       "createQuiz": "Créer un quiz",
       "untitled": "Quiz sans titre",
-      "questionsCount": "{{count}} questions",
-      "attemptsCount": "{{count}} parties",
+      "questionsCount_one": "{{count}} question",
+      "questionsCount_other": "{{count}} questions",
+      "attemptsCount_one": "{{count}} partie",
+      "attemptsCount_other": "{{count}} parties",
       "sharedChip": "Publié",
       "sharedAtTooltip": "Une copie a été publiée le {{date}} dans la Bibliothèque. Re-publier créera une nouvelle copie.",
       "play": "Jouer",
@@ -1724,12 +1747,40 @@
   "notifications": {
     "title": "Notifications",
     "empty": "Aucune notification pour le moment.",
+    "emptyHint": "Les nouveautés sur tes docs et quiz arriveront ici.",
+    "unreadCount_one": "{{count}} non lue",
+    "unreadCount_other": "{{count}} non lues",
     "document": {
       "verified": "Ton document « {{title}} » a été vérifié !"
     },
     "quiz": {
       "questionReported": "{{by}} signale une possible erreur dans « {{title}} » (question {{question}})"
     }
+  },
+  "celebrations": {
+    "verifiedSubtitle": "Il est maintenant visible par toute la promo.",
+    "xpChip": "+{{xp}} XP",
+    "levelUpEyebrow": "Palier atteint",
+    "levelUpBody": "Tu passes le cap des {{xp}} XP.",
+    "continue": "Continuer"
+  },
+  "publicCourse": {
+    "sharedCount_one": "{{count}} document partagé par les étudiants de la section",
+    "sharedCount_other": "{{count}} documents partagés par les étudiants de la section",
+    "publicDocs_one": "{{count}} document consultable sans compte",
+    "publicDocs_other": "{{count}} documents consultables sans compte",
+    "reserved": "Les documents de ce cours sont réservés aux étudiants vérifiés de l'ISFCE.",
+    "notFound": "Cours introuvable.",
+    "loginCta": "Se connecter pour tout voir",
+    "metaDescription": "{{name}} ({{section}}) — {{count}} documents partagés par les étudiants de l'ISFCE : synthèses, notes, exercices. Freenote, le hub des documents de l'ISFCE."
+  },
+  "course": {
+    "topProfessor": "Prof. le plus fréquent : {{name}}",
+    "statDocs": "documents",
+    "statViews": "vues cumulées",
+    "statRating": "note moyenne",
+    "statLastUpload": "dernier ajout",
+    "shareCta": "Partager un doc de ce cours"
   },
   "userPublic": {
     "notFound": "Utilisateur introuvable.",
@@ -1743,6 +1794,7 @@
     "bestContribution": "Contribution la plus appréciée",
     "revisionsTitle": "Ses quiz et paquets",
     "guidesTitle": "Ses guides",
+    "documentsTitle": "Ses documents",
     "statProfileViews": "Vues du profil"
   },
   "notFound": {

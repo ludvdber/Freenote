@@ -19,13 +19,14 @@ import {
 import { CloudUpload, CheckCircle, HelpOutlined, PhotoLibrary, Close, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { uploadDocument, getSections, getCourses, getProfessors, getSuggestedProfessors, checkDocumentTitle } from '@/api/endpoints';
 import { CATEGORIES, MAX_FILE_SIZE, MAX_IMAGES, IMAGE_MAX_SIZE, MAX_TOTAL_UPLOAD, ACCEPTED_IMAGE_TYPES, STALE_15M } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
+import GlassCard from '@/components/ui/GlassCard';
 import * as s from './Upload.styles';
 
 const byName = (a: { name: string }, b: { name: string }) =>
@@ -36,9 +37,12 @@ export default function Upload() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  // Préremplissage depuis l'URL (« Partager un doc de ce cours » sur la page cours) —
+  // lu une seule fois au montage via l'initialisation des useState.
+  const [searchParams] = useSearchParams();
   const [title, setTitle] = useState('');
-  const [sectionId, setSectionId] = useState<number | ''>('');
-  const [courseId, setCourseId] = useState<number | ''>('');
+  const [sectionId, setSectionId] = useState<number | ''>(Number(searchParams.get('sectionId')) || '');
+  const [courseId, setCourseId] = useState<number | ''>(Number(searchParams.get('courseId')) || '');
   const [category, setCategory] = useState('');
   const [year, setYear] = useState('');
   const [professorId, setProfessorId] = useState<number | ''>('');
@@ -252,7 +256,7 @@ export default function Upload() {
   const canSubmit = title && courseId && category && hasFile && yearValid;
 
   return (
-    <PageWrapper maxWidth="sm">
+    <PageWrapper maxWidth="md">
       <Helmet><title>{t('upload.title')} · Freenote</title></Helmet>
       <Typography variant="h4" sx={s.title}>
         {t('upload.title')}
@@ -264,6 +268,7 @@ export default function Upload() {
         </Alert>
       )}
 
+      <Box sx={s.layout}>
       <Box sx={s.form}>
         <TextField
           label={t('document.title')}
@@ -498,6 +503,34 @@ export default function Upload() {
         >
           {mutation.isPending ? t('common.loading') : t('upload.submit')}
         </Button>
+      </Box>
+
+      {/* Rail « Ce que ça rapporte » : la récompense XP (la carotte du système) n'était annoncée
+          nulle part sur la page, et les attentes de qualité non plus. */}
+      <Box component="aside">
+        <GlassCard sx={s.asideCard}>
+          <Typography variant="subtitle1" sx={s.asideTitle}>
+            <span aria-hidden="true">⚡</span> {t('upload.rewards.title')}
+          </Typography>
+          <Box component="ul" sx={s.asideList}>
+            <li><span aria-hidden="true">✅</span>{t('upload.rewards.verified')}</li>
+            <li><span aria-hidden="true">👁️</span>{t('upload.rewards.views')}</li>
+            <li><span aria-hidden="true">⭐</span>{t('upload.rewards.ratings')}</li>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+            {t('upload.rewards.hint')}
+          </Typography>
+
+          <Typography variant="subtitle1" sx={{ ...(s.asideTitle as object), mt: 3 }}>
+            <span aria-hidden="true">💡</span> {t('upload.tips.title')}
+          </Typography>
+          <Box component="ul" sx={s.asideList}>
+            <li>{t('upload.tips.readable')}</li>
+            <li>{t('upload.tips.naming')}</li>
+            <li>{t('upload.tips.metadata')}</li>
+          </Box>
+        </GlassCard>
+      </Box>
       </Box>
     </PageWrapper>
   );

@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import AuthPromptSnackbar from '@/components/common/AuthPromptSnackbar';
+import CelebrationLayer from '@/components/common/CelebrationLayer';
 import KofiSupportDialog from '@/components/common/KofiSupportDialog';
 import CommandPalette from '@/components/common/CommandPalette';
 import ScrollToTop from '@/components/common/ScrollToTop';
@@ -27,6 +28,7 @@ const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
 const GuidesIndex = lazy(() => import('@/pages/GuidesIndex'));
 const GuideDetail = lazy(() => import('@/pages/GuideDetail'));
 const ResourceDetail = lazy(() => import('@/pages/ResourceDetail'));
+const PublicCourse = lazy(() => import('@/pages/PublicCourse'));
 const ToolsIndex = lazy(() => import('@/pages/tools/ToolsIndex'));
 const ToolPage = lazy(() => import('@/pages/tools/ToolPage'));
 const Admin = lazy(() => import('@/pages/Admin'));
@@ -71,6 +73,13 @@ function DocumentRoute() {
   return token ? <ProtectedRoute><DocumentView /></ProtectedRoute> : <ResourceDetail />;
 }
 
+/** /courses/:id bi-mode (même logique que DocumentRoute) : page complète pour un connecté,
+ *  teaser public (nom + compteurs + docs publics + CTA connexion) pour un anonyme — SEO. */
+function CourseRoute() {
+  const token = useAuthStore((st) => st.token);
+  return token ? <ProtectedRoute><CoursePage /></ProtectedRoute> : <PublicCourse />;
+}
+
 /** Redirection paramétrée des anciennes URLs /ressources/:id (liens partagés, index Google). */
 function LegacyResourceRedirect() {
   const { id } = useParams();
@@ -96,6 +105,8 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <AuthPromptSnackbar />
+      {/* Toast « doc vérifié » (+10 XP, via SSE) + modal de passage de palier (via useLevelCelebration). */}
+      <CelebrationLayer />
       {/* Dialog « Soutenir Freenote » global : tout bouton Ko-fi (footer, pubs, raccourcis,
           thermomètre, profil) montre le code « FN-… » d'un compte vérifié avant le départ. */}
       <KofiSupportDialog />
@@ -119,7 +130,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           {/* Public : Browse gère lui-même les deux modes (catalogue complet / vitrine anonyme). */}
           <Route path="/browse" element={<Browse />} />
-          <Route path="/courses/:courseId" element={<ProtectedRoute><CoursePage /></ProtectedRoute>} />
+          <Route path="/courses/:courseId" element={<CourseRoute />} />
           <Route path="/documents/:id" element={<DocumentRoute />} />
           <Route path="/upload" element={<ProtectedRoute requireVerified><Upload /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

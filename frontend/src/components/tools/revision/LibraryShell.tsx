@@ -135,7 +135,9 @@ export default function LibraryShell<T extends ShellItem>({
         ))
       )}
 
-      {showAd && scoped.length > 0 && <AdSlot width={728} height={90} sx={{ mt: 4 }} />}
+      {/* Policy AdSense « screens without publisher content » : pas de pub sur une bibliothèque
+          quasi vide — il faut un minimum de contenu réel autour de l'annonce. */}
+      {showAd && scoped.length >= 3 && <AdSlot width={728} height={90} sx={{ mt: 4 }} />}
     </Box>
   );
 }

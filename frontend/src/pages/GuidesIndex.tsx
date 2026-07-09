@@ -171,7 +171,9 @@ export default function GuidesIndex() {
           })}
         </Grid>
 
-        {showAd && guides.length > 0 && (
+        {/* Policy AdSense : pas de pub sous une grille d'un ou deux guides — il faut un vrai
+            volume de contenu autour de l'annonce. */}
+        {showAd && guides.length >= 3 && (
           <Box sx={s.adRow}>
             <AdSlot width={728} height={90} />
           </Box>

@@ -118,10 +118,13 @@ export default function KofiSupportDialog() {
           ) : (
             <Skeleton variant="text" width={160} sx={{ fontSize: '1.25rem' }} />
           )}
+          {/* span : un bouton disabled n'émet pas d'événements — sans wrapper, MUI Tooltip warn en console */}
           <Tooltip title={copied ? t('kofiDialog.copied') : t('kofiDialog.copy')}>
-            <IconButton size="small" onClick={copyCode} disabled={!kofiCode} aria-label={t('kofiDialog.copy')}>
-              {copied ? <Check fontSize="small" /> : <ContentCopy fontSize="small" />}
-            </IconButton>
+            <span>
+              <IconButton size="small" onClick={copyCode} disabled={!kofiCode} aria-label={t('kofiDialog.copy')}>
+                {copied ? <Check fontSize="small" /> : <ContentCopy fontSize="small" />}
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
 

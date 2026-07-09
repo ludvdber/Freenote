@@ -101,6 +101,16 @@ export interface Course {
   equivalenceGroup: number | null;
 }
 
+/** Stats agrégées du bandeau page cours (équivalences incluses, comme le listing). */
+export interface CourseStats {
+  documentCount: number;
+  totalViews: number;
+  /** null tant qu'aucun document du cours n'a de note. */
+  averageRating: number | null;
+  /** null quand le cours n'a aucun document. */
+  lastUploadAt: string | null;
+}
+
 export interface StatsResponse {
   totalDocs: number;
   totalDownloads: number;
@@ -594,6 +604,19 @@ export interface PublicDocumentSummary {
 export interface PublicDocumentStatus {
   exists: boolean;
   title: string | null;
+  /** true = le teaser complet /api/public/documents/{id} répondra (doc vérifié en catégorie publique). */
+  publiclyVisible: boolean;
+}
+
+/** Teaser public d'un cours (page /courses/:id anonyme — SEO). Compteurs agrégés seulement. */
+export interface PublicCourse {
+  id: number;
+  name: string;
+  sectionName: string;
+  /** Documents vérifiés du cours (toutes catégories) — l'argument du CTA de connexion. */
+  documentCount: number;
+  /** Dont consultables anonymement (catégories publiques). */
+  publicDocumentCount: number;
 }
 
 // --- Notifications (historique persisté serveur) ---

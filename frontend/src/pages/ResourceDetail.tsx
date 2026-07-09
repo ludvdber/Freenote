@@ -1,41 +1,81 @@
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { Box, Typography, Chip, Button, Divider } from '@mui/material';
+import { Box, Typography, Chip, Button, Divider, Stack } from '@mui/material';
 import { ArrowBack, Lock, Star, Login, Visibility } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { getPublicDocument, getPublicDocumentStatus } from '@/api/endpoints';
+import { getPublicDocument, getPublicDocumentStatus, listPublicDocuments } from '@/api/endpoints';
 import { STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
-import AdSlot from '@/components/ui/AdSlot';
+
+/** 3 autres documents du catalogue public — maillage interne (SEO) à la place de l'ancienne pub
+ *  300×250 : une annonce sur une page de métadonnées seules enfreignait la policy AdSense
+ *  « screens without publisher content ». Même queryKey que la vitrine /browse (cache partagé). */
+function PublicSuggestions({ excludeId }: { excludeId: number }) {
+  const { t } = useTranslation();
+  const { data } = useQuery({
+    queryKey: ['public-documents'],
+    queryFn: () => listPublicDocuments({ size: 36 }),
+    staleTime: STALE_15M,
+  });
+  const docs = (data?.content ?? []).filter((d) => d.id !== excludeId).slice(0, 3);
+  if (docs.length === 0) return null;
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+        {t('resources.morePublic')}
+      </Typography>
+      <Stack spacing={1.5}>
+        {docs.map((d) => (
+          <GlassCard
+            key={d.id}
+            component={RouterLink}
+            to={`/documents/${d.id}`}
+            sx={{ p: 2, display: 'block', textDecoration: 'none', color: 'inherit', '&:hover .doc-title': { color: 'primary.main' } }}
+          >
+            <Typography variant="body2" className="doc-title" sx={{ fontWeight: 700, mb: 0.5 }}>
+              {d.title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+              {[t(`categories.${d.category}`), d.courseName].filter(Boolean).join(' · ')}
+            </Typography>
+          </GlassCard>
+        ))}
+      </Stack>
+    </Box>
+  );
+}
 
 export default function ResourceDetail() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
-  const { token, user } = useAuthStore();
+  const { token } = useAuthStore();
 
-  const { data: doc, isLoading, isError } = useQuery({
-    queryKey: ['public-document', id],
-    queryFn: () => getPublicDocument(Number(id)),
+  // Statut léger EN PREMIER : il dit si le teaser complet existe (publiclyVisible). L'ancien ordre
+  // (teaser d'abord, statut sur échec) loguait un 404 console pour chaque doc réservé — le
+  // navigateur trace toute requête en échec, impossible à supprimer côté JS.
+  const { data: status, isLoading: statusLoading, isError: statusError } = useQuery({
+    queryKey: ['public-document-status', id],
+    queryFn: () => getPublicDocumentStatus(Number(id)),
     enabled: Boolean(id),
     staleTime: STALE_15M,
     retry: false,
   });
 
-  // Hors catégories publiques (Cours/Examen/Synthèse/TFE/Exercices), l'extrait 404 : le statut
-  // léger dit « existe mais réservé » (titre seul) — un lien partagé affiche alors un CTA de
-  // connexion au lieu d'un faux « introuvable » qui tuait la conversion.
-  const { data: status } = useQuery({
-    queryKey: ['public-document-status', id],
-    queryFn: () => getPublicDocumentStatus(Number(id)),
-    enabled: Boolean(id) && isError,
+  const { data: doc, isLoading: docLoading } = useQuery({
+    queryKey: ['public-document', id],
+    queryFn: () => getPublicDocument(Number(id)),
+    enabled: Boolean(id) && status?.publiclyVisible === true,
     staleTime: STALE_15M,
     retry: false,
   });
 
-  const showAd = !user?.supporter;
+  // Réservé = le doc existe hors catégories publiques, inconnu, ou statut en erreur : même écran
+  // verrou (un faux « introuvable » tuait la conversion des liens partagés).
+  const reserved = statusError || (status != null && !status.publiclyVisible);
+  const loading = statusLoading || (status?.publiclyVisible === true && (docLoading || !doc));
 
   const fullDate = doc?.createdAt
     ? new Date(doc.createdAt).toLocaleDateString(i18n.language.startsWith('fr') ? 'fr-BE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -88,32 +128,38 @@ export default function ResourceDetail() {
           {t('resources.backToList')}
         </Button>
 
-        {isError ? (
-          <GlassCard sx={{ p: 4, textAlign: 'center', border: '1px solid', borderColor: 'primary.main' }}>
-            <Lock sx={{ fontSize: 32, color: 'primary.main', mb: 1 }} aria-hidden="true" />
-            {status?.exists && status.title && (
-              <Typography variant="h2" sx={{ fontWeight: 800, fontSize: { xs: '1.3rem', md: '1.6rem' }, mb: 1 }}>
-                {status.title}
-              </Typography>
-            )}
-            <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{t('resources.reservedTitle')}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>{t('resources.reservedBody')}</Typography>
-            {token ? (
-              <Button variant="contained" startIcon={<Visibility />} component={RouterLink} to={`/documents/${id}`}>
-                {t('resources.openDocument')}
-              </Button>
-            ) : (
-              <Button variant="contained" startIcon={<Login />} component="a" href={DISCORD_OAUTH_URL}>
-                {t('resources.loginCta')}
-              </Button>
-            )}
-            <Divider sx={{ my: 2.5 }} />
-            <Typography variant="caption" color="text.secondary">{t('resources.gatedHint')}</Typography>
-          </GlassCard>
-        ) : isLoading || !doc ? (
+        {reserved ? (
+          <>
+            <GlassCard sx={{ p: 4, textAlign: 'center', border: '1px solid', borderColor: 'primary.main' }}>
+              <Lock sx={{ fontSize: 32, color: 'primary.main', mb: 1 }} aria-hidden="true" />
+              {status?.exists && status.title && (
+                <Typography variant="h2" sx={{ fontWeight: 800, fontSize: { xs: '1.3rem', md: '1.6rem' }, mb: 1 }}>
+                  {status.title}
+                </Typography>
+              )}
+              <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{t('resources.reservedTitle')}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>{t('resources.reservedBody')}</Typography>
+              {token ? (
+                <Button variant="contained" startIcon={<Visibility />} component={RouterLink} to={`/documents/${id}`}>
+                  {t('resources.openDocument')}
+                </Button>
+              ) : (
+                <Button variant="contained" startIcon={<Login />} component="a" href={DISCORD_OAUTH_URL}>
+                  {t('resources.loginCta')}
+                </Button>
+              )}
+              <Divider sx={{ my: 2.5 }} />
+              <Typography variant="caption" color="text.secondary">{t('resources.gatedHint')}</Typography>
+            </GlassCard>
+            {/* La page verrou était vide à 90 % : montrer ce qui EST consultable sans compte. */}
+            <Box sx={{ mt: 4, maxWidth: 560 }}>
+              <PublicSuggestions excludeId={Number(id)} />
+            </Box>
+          </>
+        ) : loading || !doc ? (
           <GlassCard sx={{ p: 4 }}><Typography color="text.secondary">{t('common.loading')}</Typography></GlassCard>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: showAd ? 'minmax(0,1fr) 300px' : '1fr' }, gap: { xs: 3, md: 4 }, alignItems: 'start' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0,1fr) 300px' }, gap: { xs: 3, md: 4 }, alignItems: 'start' }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
                 <Chip size="small" label={t(`categories.${doc.category}`)} variant="outlined" color="primary" />
@@ -157,11 +203,9 @@ export default function ResourceDetail() {
               </GlassCard>
             </Box>
 
-            {showAd && (
-              <Box component="aside" sx={{ position: { md: 'sticky' }, top: { md: 88 } }}>
-                <AdSlot width={300} height={250} />
-              </Box>
-            )}
+            <Box component="aside" sx={{ position: { md: 'sticky' }, top: { md: 88 } }}>
+              <PublicSuggestions excludeId={doc.id} />
+            </Box>
           </Box>
         )}
       </Box>

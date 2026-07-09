@@ -1,4 +1,6 @@
+import { alpha } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material';
+import { accentGradientAlpha } from '@/theme/accent';
 
 type Sx = SxProps<Theme>;
 
@@ -64,12 +66,8 @@ export const nudge: Sx = {
   py: 1.75,
   borderRadius: 3.5,
   mb: 2.5,
-  background: (t) =>
-    t.palette.mode === 'dark'
-      ? 'linear-gradient(135deg, rgba(0,210,255,0.10), rgba(123,47,247,0.10))'
-      : 'linear-gradient(135deg, rgba(0,150,199,0.08), rgba(123,47,247,0.08))',
-  border: (t) =>
-    `1px solid ${t.palette.mode === 'dark' ? 'rgba(0,210,255,0.3)' : 'rgba(0,150,199,0.35)'}`,
+  background: (t) => accentGradientAlpha(t, t.palette.mode === 'dark' ? 0.10 : 0.08),
+  border: (t) => `1px solid ${alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.3 : 0.35)}`,
 };
 
 export const nudgeText: Sx = { flex: 1, minWidth: 200 };
@@ -96,8 +94,8 @@ export const rateCard: Sx = {
   border: '1.5px solid transparent',
   background: (t) =>
     t.palette.mode === 'dark'
-      ? 'linear-gradient(#12122a, #12122a) padding-box, linear-gradient(135deg, rgba(0,210,255,0.5), rgba(123,47,247,0.5)) border-box'
-      : 'linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(135deg, rgba(0,150,199,0.45), rgba(123,47,247,0.45)) border-box',
+      ? `linear-gradient(#12122a, #12122a) padding-box, ${accentGradientAlpha(t, 0.5)} border-box`
+      : `linear-gradient(#ffffff, #ffffff) padding-box, ${accentGradientAlpha(t, 0.45)} border-box`,
 };
 
 export const rateTitle: Sx = { fontWeight: 800, mb: 0.5 };
@@ -117,8 +115,8 @@ export const xpChip: Sx = {
   fontWeight: 800,
   fontSize: '0.68rem',
   height: 22,
-  bgcolor: 'rgba(0,210,255,0.15)',
-  color: (t) => (t.palette.mode === 'dark' ? '#00d2ff' : '#006c96'),
+  bgcolor: (t) => alpha(t.palette.primary.main, 0.15),
+  color: 'primary.main',
   border: 'none',
 };
 

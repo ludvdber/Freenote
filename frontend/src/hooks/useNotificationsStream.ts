@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { getNotificationsUnreadCount } from '@/api/endpoints';
+import { useCelebrationStore } from '@/stores/useCelebrationStore';
+import { getNotificationsUnreadCount, getCurrentUser } from '@/api/endpoints';
+import type { NotificationItem } from '@/types';
 
 /**
  * Opens a Server-Sent Events connection to `/api/notifications/stream` while the user
@@ -30,9 +32,23 @@ export function useNotificationsStream() {
 
     const source = new EventSource('/api/notifications/stream', { withCredentials: true });
 
-    source.addEventListener('notification', () => {
+    source.addEventListener('notification', (event) => {
       // La notification est déjà persistée côté serveur — invalider suffit (badge + liste).
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      // Moment de lumière : un doc vérifié déclenche le toast céleste (+10 XP) et resynchronise
+      // l'XP du store — c'est aussi ce qui fait tirer la célébration de palier
+      // (useLevelCelebration observe user.xp).
+      try {
+        const dto = JSON.parse((event as MessageEvent).data) as NotificationItem;
+        if (dto.type === 'document.verified') {
+          useCelebrationStore.getState().showToast({ title: String(dto.payload?.title ?? ''), xp: 10 });
+          getCurrentUser()
+            .then((me) => useAuthStore.getState().setUser(me))
+            .catch(() => {});
+        }
+      } catch {
+        // Payload inattendu — la cloche (historique serveur) reste la source de vérité.
+      }
     });
 
     source.onerror = () => {

@@ -2,6 +2,7 @@ package be.freenote.controller;
 
 import be.freenote.entity.Guide;
 import be.freenote.repository.GuideRepository;
+import be.freenote.service.PublicDocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +38,7 @@ public class SeoController {
     private String baseUrl;
 
     private final GuideRepository guideRepository;
+    private final PublicDocumentService publicDocumentService;
 
     private static final ZoneId ZONE = ZoneId.of("Europe/Brussels");
     private static final int MAX_FEED_GUIDES = 200;
@@ -81,6 +83,12 @@ public class SeoController {
             xml.append("  <url><loc>").append(baseUrl).append("/guides/").append(escapeXml(g.getSlug()))
                .append("</loc><lastmod>").append(g.getUpdatedAt().toLocalDate())
                .append("</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>\n");
+        }
+        // Pages cours bi-modes (teaser public pour un anonyme) — uniquement les cours ayant au
+        // moins un doc en catégorie publique, pour ne jamais indexer une page vide.
+        for (Long courseId : publicDocumentService.publicCourseIds()) {
+            xml.append("  <url><loc>").append(baseUrl).append("/courses/").append(courseId)
+               .append("</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n");
         }
         xml.append("</urlset>\n");
         return ResponseEntity.ok()

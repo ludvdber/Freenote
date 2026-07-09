@@ -15,13 +15,20 @@ import * as s from './StatsSection.styles';
 
 function StatShimmer() {
   return (
-    <Grid container spacing={2}>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Grid key={i} size={{ xs: 6, md: 3 }}>
-          <Skeleton variant="rounded" height={130} sx={s.shimmerItem} />
-        </Grid>
-      ))}
-    </Grid>
+    <>
+      <Grid container spacing={2}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Grid key={i} size={{ xs: 6, md: 3 }}>
+            <Skeleton variant="rounded" height={130} sx={s.shimmerItem} />
+          </Grid>
+        ))}
+      </Grid>
+      {/* Réserve aussi la rangée du badge « +N docs cette semaine » — sans elle, le badge
+          poussait la section suivante à l'arrivée des stats (CLS). */}
+      <Box sx={s.weekBadgeWrapper}>
+        <Skeleton variant="rounded" width={280} height={36} />
+      </Box>
+    </>
   );
 }
 

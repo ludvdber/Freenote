@@ -1,6 +1,9 @@
 // Palettes d'accent — perk supporters Ko-fi (don < 5 € : 30 jours ; don ≥ 5 € : illimité).
-// Chaque palette remplace primary/secondary du thème MUI (boutons, liens, chips, focus) ; le fond
-// cosmique et les tokens de marque (gradients du hero, couleurs de catégories) ne bougent pas.
+// Chaque palette remplace primary/secondary du thème MUI (boutons, liens, chips, focus) ET, depuis
+// v1.18.0, toutes les surfaces branchées sur `theme/accent.ts` : nébuleuses du fond étoilé, hero
+// (titre, CTA, nébuleuses), avatars lettre, skeletons, orbe XP, carte de notation, célébrations,
+// thermomètre, 404. Restent de MARQUE (jamais accent) : logo, couleurs de catégories, paliers,
+// charts admin (CVD), couvertures guides/docs.
 // ⚠️ Les ids sont AUSSI whitelistés côté backend (UpdateProfileRequest @Pattern) — garder en phase.
 
 export interface AccentPalette {

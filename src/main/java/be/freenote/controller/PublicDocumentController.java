@@ -29,11 +29,12 @@ public class PublicDocumentController {
     @GetMapping
     public ResponseEntity<PageResponse<PublicDocumentSummary>> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "24") int size) {
+            @RequestParam(defaultValue = "24") int size,
+            @RequestParam(required = false) Long courseId) {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), MAX_PAGE_SIZE));
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
-                .body(service.listExcerpts(pageable));
+                .body(service.listExcerpts(pageable, courseId));
     }
 
     @GetMapping("/{id}")

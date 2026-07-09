@@ -1,5 +1,6 @@
 import { Avatar, Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
+import { accentGradient } from '@/theme/accent';
 
 interface Props {
   username: string;
@@ -9,7 +10,9 @@ interface Props {
   sx?: SxProps<Theme>;
 }
 
-const GRADIENT = 'linear-gradient(135deg, #00d2ff, #7b2ff7)';
+// Dégradé du thème actif : les cercles-lettres prennent la palette d'accent du SPECTATEUR
+// (perk supporter) — purement décoratif, l'initiale reste l'identité.
+const GRADIENT = (t: Theme) => accentGradient(t);
 
 /**
  * Single source of truth for user avatars.

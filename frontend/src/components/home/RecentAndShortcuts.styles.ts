@@ -4,6 +4,9 @@ type Sx = SxProps<Theme>;
 
 export const section: Sx = { py: { xs: 6, md: 9 } };
 
+// stretch : les deux cartes doivent finir à la même hauteur (bas alignés). Chacune absorbe le
+// surplus : la grille d'accès rapide espace ses rangées (alignContent), la liste Reprise centre
+// son état vide — pas de grand vide en bas de carte.
 export const row: Sx = {
   display: 'flex',
   gap: 3,
@@ -20,7 +23,7 @@ export const col: Sx = {
 
 export const colTitle: Sx = { fontWeight: 800, mb: 2 };
 
-export const card: Sx = { p: 2.5, flex: 1 };
+export const card: Sx = { p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' };
 
 export const recentList: Sx = {
   display: 'flex',
@@ -76,11 +79,8 @@ export const recentSubtitle: Sx = {
   whiteSpace: 'nowrap',
 };
 
-export const empty: Sx = { p: 3, textAlign: 'center' };
+export const empty: Sx = { p: 3, textAlign: 'center', my: 'auto' };
 
-/** La carte Accès rapide est une colonne flex : la grille absorbe TOUTE la hauteur de la carte,
- *  elle-même étirée à la hauteur de « Reprise de lecture » — plus de vide en bas quand la liste
- *  de lecture est longue (les tuiles grandissent avec `gridAutoRows: 1fr`). */
 export const shortcutsCard: Sx = {
   p: 2.5,
   flex: 1,
@@ -88,40 +88,52 @@ export const shortcutsCard: Sx = {
   flexDirection: 'column',
 };
 
+/** Grille 6 colonnes pour hiérarchiser sans rangée bancale : 2 primaires (span 3), 6 moyennes
+ *  (span 2 = 3 par rangée), « Signaler un bug » en rangée fine pleine largeur (span 6) — les
+ *  9 tuiles au même poids mettaient le bug report au niveau de « Partager un doc ».
+ *  flex: 1 + alignContent space-between : la carte étirée (bas aligné sur « Reprise de lecture »)
+ *  distribue le surplus ENTRE les rangées au lieu de le laisser en vide sous la dernière. */
 export const shortcutsGrid: Sx = {
   display: 'grid',
-  gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
-  gridAutoRows: '1fr',
-  flex: 1,
+  gridTemplateColumns: 'repeat(6, 1fr)',
   gap: 1.5,
+  flex: 1,
+  alignContent: 'space-between',
 };
 
-export const shortcutTile: Sx = {
+export const shortcutTile = (variant?: 'primary' | 'utility'): Sx => ({
+  gridColumn: variant === 'utility' ? 'span 6' : variant === 'primary' ? 'span 3' : { xs: 'span 3', sm: 'span 2' },
   display: 'flex',
-  flexDirection: 'column',
+  flexDirection: variant === 'utility' ? 'row' : 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 0.75,
-  p: 2,
+  gap: variant === 'utility' ? 1 : 0.75,
+  p: variant === 'primary' ? 2.5 : variant === 'utility' ? 1 : 2,
+  height: '100%',
   borderRadius: 2,
   textDecoration: 'none',
   color: 'text.primary',
-  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-  border: (t) => `1px solid ${t.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+  bgcolor: (t) => variant === 'primary'
+    ? (t.palette.mode === 'dark' ? 'rgba(0,212,255,0.06)' : 'rgba(0,145,179,0.06)')
+    : (t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+  border: (t) => `1px solid ${variant === 'primary'
+    ? (t.palette.mode === 'dark' ? 'rgba(0,212,255,0.35)' : 'rgba(0,145,179,0.35)')
+    : (t.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)')}`,
   transition: 'transform 0.15s, border-color 0.15s',
   '&:hover': {
     transform: 'translateY(-2px)',
     borderColor: 'primary.main',
   },
-};
+});
 
-export const shortcutIcon: Sx = {
+export const shortcutIcon = (variant?: 'primary' | 'utility'): Sx => ({
   color: 'primary.main',
-  fontSize: 28,
-};
+  fontSize: variant === 'primary' ? 34 : variant === 'utility' ? 18 : 28,
+  lineHeight: 0,
+});
 
-export const shortcutLabel: Sx = {
-  fontWeight: 600,
-  fontSize: 13,
+export const shortcutLabel = (variant?: 'primary' | 'utility'): Sx => ({
+  fontWeight: variant === 'primary' ? 700 : 600,
+  fontSize: variant === 'primary' ? 14.5 : 13,
   textAlign: 'center',
-};
+});

@@ -2,6 +2,7 @@ package be.freenote.service.impl;
 
 import be.freenote.dto.request.CreateCourseRequest;
 import be.freenote.dto.response.CourseResponse;
+import be.freenote.dto.response.CourseStatsResponse;
 import be.freenote.entity.Course;
 import be.freenote.entity.Document;
 import be.freenote.entity.Section;
@@ -14,6 +15,7 @@ import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
+import be.freenote.service.CourseEquivalenceService;
 import be.freenote.service.CourseService;
 import be.freenote.service.MeilisearchService;
 import be.freenote.service.MinioService;
@@ -36,6 +38,7 @@ public class CourseServiceImpl implements CourseService {
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
     private final CourseMapper courseMapper;
+    private final CourseEquivalenceService courseEquivalenceService;
     private final MinioService minioService;
     private final MeilisearchService meilisearchService;
     private final StatsService statsService;
@@ -54,6 +57,17 @@ public class CourseServiceImpl implements CourseService {
     public CourseResponse getById(Long id) {
         Course course = Repositories.findByIdOrThrow(courseRepository, id, "Course");
         return courseMapper.toResponse(course, documentRepository.countByCourseId(id));
+    }
+
+    @Override
+    public CourseStatsResponse getStats(Long courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new ResourceNotFoundException("Course", "id", courseId);
+        }
+        // Même périmètre que le listing de la page cours : le groupe d'équivalence entier (V15).
+        List<Long> courseIds = courseEquivalenceService.expand(courseId);
+        DocumentRepository.CourseStatsRow row = documentRepository.aggregateStatsByCourseIds(courseIds);
+        return new CourseStatsResponse(row.getDocCount(), row.getTotalViews(), row.getAvgRating(), row.getLastUpload());
     }
 
     @Override

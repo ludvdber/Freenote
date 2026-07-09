@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Typography, Box, Chip, Button, Grid } from '@mui/material';
-import { ArrowBack, ArrowForward } from '@mui/icons-material';
+import { Typography, Box, Chip, Button, Grid, Fab, Fade, useScrollTrigger } from '@mui/material';
+import { ArrowBack, ArrowForward, KeyboardArrowUp } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
@@ -76,6 +76,9 @@ export default function GuideDetail() {
     setPrevSlug(slug);
     setToc([]);
   }
+  // Bouton « retour en haut » visible après un vrai défilement (600 px ≈ sous le titre).
+  const backToTopVisible = useScrollTrigger({ disableHysteresis: true, threshold: 600 });
+
   const scrollToHeading = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -255,6 +258,19 @@ export default function GuideDetail() {
           </>
         )}
       </Box>
+
+      {/* Retour en haut — les guides dépassent facilement 20 000 px de haut. */}
+      <Fade in={backToTopVisible}>
+        <Fab
+          size="small"
+          color="primary"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label={t('guides.backToTop')}
+          sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: (th) => th.zIndex.fab }}
+        >
+          <KeyboardArrowUp />
+        </Fab>
+      </Fade>
     </PageWrapper>
   );
 }

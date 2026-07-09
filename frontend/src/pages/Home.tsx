@@ -111,8 +111,9 @@ export default function Home() {
           <FundingThermometer />
         </Suspense>
 
-        {/* Pub en bas de page (au-dessus du footer), jamais collée au hero sans contenu autour. */}
-        {!token && <AdSlot width={728} height={90} sx={{ mt: 6, mb: 4 }} />}
+        {/* Pub unique de la home, en bas de page (au-dessus du footer) pour tous — connectés
+            inclus. AdSlot rend null pour les supporters (sans-pub), la mise en page se referme. */}
+        <AdSlot width={728} height={90} sx={{ mt: 6, mb: 4 }} />
       </Container>
     </>
   );

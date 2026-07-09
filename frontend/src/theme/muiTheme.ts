@@ -1,7 +1,24 @@
-import { createTheme, type Theme, type ThemeOptions } from '@mui/material/styles';
+import { createTheme, alpha, type Theme, type ThemeOptions } from '@mui/material/styles';
 import { TOKENS } from './tokens';
 import { accentFor, DEFAULT_ACCENT } from '@/lib/palettes';
 import './palette.d';
+
+/**
+ * Skeleton « aurore » (maquette Poussière d'étoile, 2026-07-09) : le balayage `wave` prend la
+ * teinte de l'accent (cyan→violet par défaut, la palette du supporter sinon) au lieu du blanc MUI.
+ * Le kill-switch global prefers-reduced-motion de MuiCssBaseline neutralise l'animation.
+ */
+const skeletonOverrides = (mode: 'dark' | 'light', primary: string, secondary: string) => ({
+  defaultProps: { animation: 'wave' as const },
+  styleOverrides: {
+    root: {
+      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(10,14,26,0.06)',
+      '&::after': {
+        background: `linear-gradient(90deg, transparent, ${alpha(primary, mode === 'dark' ? 0.10 : 0.09)} 45%, ${alpha(secondary, mode === 'dark' ? 0.12 : 0.09)} 55%, transparent)`,
+      },
+    },
+  },
+});
 
 const commonOptions: ThemeOptions = {
   typography: {
@@ -58,6 +75,43 @@ const commonOptions: ThemeOptions = {
  * primary/secondary + la couleur de focus — le fond cosmique, les glass tokens et les couleurs de
  * marque (TOKENS) ne bougent pas. Sans palette (null/inconnu) : thème historique à l'identique.
  */
+/**
+ * Fond étoilé GLOBAL (validé sur maquette « Poussière d'étoile », 2026-07-09) : l'identité cosmique
+ * ne vivait que dans le hero — dès le premier scroll, fond uni. Étoiles statiques + 2 nébuleuses
+ * très diluées en CSS pur (zéro JS, zéro asset, rien n'est animé donc reduced-motion-safe).
+ * `fixed` : le ciel ne défile pas avec le contenu (iOS l'ignore et dégrade proprement).
+ * Les DEUX nébuleuses prennent la teinte de l'accent (palette supporter) — les étoiles restent
+ * neutres. Sans palette, mêmes valeurs qu'avant (primary/secondary = cyan/violet par défaut).
+ */
+const starfield = (mode: 'dark' | 'light', primary: string, secondary: string): string => (
+  mode === 'dark'
+    ? [
+      'radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,0.22) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 34% 62%, rgba(255,255,255,0.13) 45%, transparent 55%)',
+      'radial-gradient(1.5px 1.5px at 58% 9%, rgba(255,255,255,0.18) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 71% 41%, rgba(255,255,255,0.12) 45%, transparent 55%)',
+      'radial-gradient(2px 2px at 86% 74%, rgba(160,220,255,0.15) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 21% 87%, rgba(255,255,255,0.11) 45%, transparent 55%)',
+      'radial-gradient(1.5px 1.5px at 47% 33%, rgba(210,180,255,0.13) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 92% 15%, rgba(255,255,255,0.15) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 65% 88%, rgba(255,255,255,0.10) 45%, transparent 55%)',
+      `radial-gradient(900px 480px at 85% -10%, ${alpha(secondary, 0.07)}, transparent 60%)`,
+      `radial-gradient(700px 420px at -10% 55%, ${alpha(primary, 0.04)}, transparent 60%)`,
+    ].join(', ')
+    : [
+      'radial-gradient(1.5px 1.5px at 12% 18%, rgba(30,41,72,0.14) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 34% 62%, rgba(30,41,72,0.09) 45%, transparent 55%)',
+      'radial-gradient(1.5px 1.5px at 58% 9%, rgba(76,29,149,0.11) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 71% 41%, rgba(30,41,72,0.08) 45%, transparent 55%)',
+      'radial-gradient(2px 2px at 86% 74%, rgba(0,98,163,0.10) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 21% 87%, rgba(30,41,72,0.07) 45%, transparent 55%)',
+      'radial-gradient(1.5px 1.5px at 47% 33%, rgba(76,29,149,0.09) 45%, transparent 55%)',
+      'radial-gradient(1px 1px at 92% 15%, rgba(30,41,72,0.10) 45%, transparent 55%)',
+      `radial-gradient(900px 480px at 85% -10%, ${alpha(secondary, 0.05)}, transparent 60%)`,
+      `radial-gradient(700px 420px at -10% 55%, ${alpha(primary, 0.04)}, transparent 60%)`,
+    ].join(', ')
+);
+
 export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Theme {
   const accent = accentFor(accentId);
 
@@ -87,6 +141,10 @@ export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Th
               outline: `2px solid ${primary}`,
               outlineOffset: 2,
               borderRadius: 8,
+            },
+            body: {
+              backgroundImage: starfield('dark', primary, secondary),
+              backgroundAttachment: 'fixed',
             },
           },
         },
@@ -148,6 +206,7 @@ export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Th
             },
           },
         },
+        MuiSkeleton: skeletonOverrides('dark', primary, secondary),
       },
     });
   }
@@ -177,6 +236,10 @@ export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Th
             outline: `2px solid ${accent ? accent.light.primary : '#0062a3'}`,
             outlineOffset: 2,
             borderRadius: 8,
+          },
+          body: {
+            backgroundImage: starfield('light', primary, secondary),
+            backgroundAttachment: 'fixed',
           },
         },
       },
@@ -238,6 +301,7 @@ export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Th
           },
         },
       },
+      MuiSkeleton: skeletonOverrides('light', primary, secondary),
     },
   });
 }

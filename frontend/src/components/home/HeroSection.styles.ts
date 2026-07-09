@@ -1,4 +1,6 @@
+import { alpha } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material';
+import { accentGradient } from '@/theme/accent';
 
 type Sx = SxProps<Theme>;
 
@@ -41,8 +43,8 @@ export const nebulaA: Sx = {
   pointerEvents: 'none',
   zIndex: 0,
   background: (t) => t.palette.mode === 'dark'
-    ? 'radial-gradient(circle, rgba(123,47,247,0.16) 0%, transparent 65%)'
-    : 'radial-gradient(circle, rgba(123,47,247,0.10) 0%, transparent 65%)',
+    ? `radial-gradient(circle, ${alpha(t.palette.secondary.main, 0.16)} 0%, transparent 65%)`
+    : `radial-gradient(circle, ${alpha(t.palette.secondary.main, 0.10)} 0%, transparent 65%)`,
   filter: 'blur(12px)',
 };
 
@@ -56,8 +58,8 @@ export const nebulaB: Sx = {
   pointerEvents: 'none',
   zIndex: 0,
   background: (t) => t.palette.mode === 'dark'
-    ? 'radial-gradient(circle, rgba(0,210,255,0.12) 0%, transparent 65%)'
-    : 'radial-gradient(circle, rgba(0,210,255,0.09) 0%, transparent 65%)',
+    ? `radial-gradient(circle, ${alpha(t.palette.primary.main, 0.12)} 0%, transparent 65%)`
+    : `radial-gradient(circle, ${alpha(t.palette.primary.main, 0.09)} 0%, transparent 65%)`,
   filter: 'blur(12px)',
 };
 
@@ -104,7 +106,7 @@ export const title: Sx = {
 };
 
 export const titleGradient: Sx = {
-  background: 'linear-gradient(135deg, #00d2ff, #7b2ff7)',
+  background: (t) => accentGradient(t),
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -146,10 +148,11 @@ export const ctaPrimary: Sx = {
   px: 4,
   py: 1.5,
   fontSize: '1rem',
-  background: 'linear-gradient(135deg, #00d2ff, #7b2ff7)',
-  boxShadow: '0 4px 24px rgba(0,210,255,0.18)',
+  background: (t) => accentGradient(t),
+  boxShadow: (t) => `0 4px 24px ${alpha(t.palette.primary.main, 0.18)}`,
   '&:hover': {
-    background: 'linear-gradient(135deg, #00b8d9, #6a1be0)',
+    background: (t) => accentGradient(t),
+    filter: 'brightness(0.88)',
   },
 };
 

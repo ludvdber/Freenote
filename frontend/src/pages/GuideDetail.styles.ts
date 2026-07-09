@@ -123,8 +123,12 @@ export const prose: Sx = {
     color: 'text.secondary',
   },
   '& hr': { border: 'none', borderTop: (t) => `1px solid ${t.palette.divider}`, my: 4 },
-  '& table': { width: '100%', borderCollapse: 'collapse', my: 3, fontSize: '0.95em' },
+  // display block + overflow : une table Markdown large défile dans son conteneur au lieu de
+  // casser la colonne de lecture.
+  '& table': { display: 'block', width: '100%', overflowX: 'auto', borderCollapse: 'collapse', my: 3, fontSize: '0.95em' },
   '& td, & th': { border: (t) => `1px solid ${t.palette.divider}`, p: 1, textAlign: 'left' },
+  // Sans nowrap, un en-tête court dans une colonne étroite wrappe lettre à lettre (« Opérateu r »).
+  '& th': { whiteSpace: 'nowrap' },
 };
 
 export const sidebar: Sx = {
@@ -133,6 +137,11 @@ export const sidebar: Sx = {
   gap: 2,
   position: { md: 'sticky' },
   top: { md: 88 },
+  // Enfant de grid : sans alignSelf start, l'item est étiré sur toute la rangée et le sticky
+  // n'a aucun débattement — le sommaire ne suivait pas la lecture.
+  alignSelf: { md: 'start' },
+  maxHeight: { md: 'calc(100vh - 104px)' },
+  overflowY: { md: 'auto' },
 };
 
 // ——— Sommaire du guide (rail) — h2/h3 du Markdown, même grammaire que l'outline PDF. ———

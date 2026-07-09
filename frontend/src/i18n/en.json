@@ -2,7 +2,7 @@
   "nav": {
     "home": "Home",
     "browse": "Browse",
-    "upload": "Share",
+    "upload": "Share a doc",
     "leaderboard": "Leaderboard",
     "news": "News",
     "guides": "Guides",
@@ -107,6 +107,7 @@
     "practiceTitle": "Practice with the tool",
     "practiceCta": "Open the tool",
     "backToList": "Back to guides",
+    "backToTop": "Back to top",
     "notFound": "Guide not found.",
     "lockedTitle": "Guide reserved for students",
     "lockedBody": "This guide contains course material reserved for ISFCE students. Sign in with your verified account to read it.",
@@ -134,7 +135,8 @@
     "gatedTitle": "Reserved for verified students",
     "gatedBody": "This is only a preview. The full document is reserved for ISFCE students with a verified @isfce.be address.",
     "gatedHint": "Access is free: sign in with Discord then verify your @isfce.be address.",
-    "openDocument": "Open the document"
+    "openDocument": "Open the document",
+    "morePublic": "More public documents"
   },
   "community": {
     "title": "Community",
@@ -222,6 +224,7 @@
     "prevDoc": "Previous",
     "nextDoc": "Next",
     "sameCourse": "From the same course",
+    "viewCourseAll": "Full course",
     "equivalentCourses": "This course is linked with: {{courses}} — their documents are shown together.",
     "searchInPdf": "Search in the PDF…",
     "searchHits_one": "{{count}} match",
@@ -535,6 +538,19 @@
   },
   "upload": {
     "title": "Share a document",
+    "rewards": {
+      "title": "What you earn",
+      "verified": "+10 XP when your doc is verified",
+      "views": "+1 XP per view (one per person per day)",
+      "ratings": "+2 XP × the score for every rating of 3★ or more",
+      "hint": "XP raises your tier and your spot on the leaderboard."
+    },
+    "tips": {
+      "title": "3 tips for a well-rated doc",
+      "readable": "A crisp PDF: scan or export, avoid blurry photos.",
+      "naming": "A clear title: subject + topic, e.g. “Networks summary — TCP/IP”.",
+      "metadata": "The right category and year: that's what makes search useful."
+    },
     "dragDrop": "Drag & drop a PDF or photos here, or click to pick",
     "dropHint": "PDF (7 MB max) or up to 8 JPG/PNG photos, merged into a single PDF.",
     "invalidFileType": "Unsupported format: PDF, JPG or PNG only.",
@@ -729,7 +745,9 @@
     "pageSize": "Documents per page",
     "perPage": "{{n}} / page",
     "newSinceVisit_one": "{{count}} new since your last visit",
-    "newSinceVisit_other": "{{count}} new since your last visit"
+    "newSinceVisit_other": "{{count}} new since your last visit",
+    "resetFilters": "Reset filters",
+    "openCourse": "Open the course page"
   },
   "common": {
     "loading": "Loading...",
@@ -754,6 +772,8 @@
     "subtitle": "Two more steps to finish your account and access the documents.",
     "stepProfile": "Profile",
     "stepVerify": "Verification",
+    "promiseProfile": "Two minutes, and you get every doc, quiz and summary of your section.",
+    "promiseVerify": "Last step: your @isfce.be address confirms you're an ISFCE student — and everything opens up.",
     "usernameLabel": "Choose your username",
     "usernameHelp": "3 to 20 characters: letters, digits, - or _. Visible to other students.",
     "sectionLabel": "Your section (optional)",
@@ -816,6 +836,7 @@
       "quizB": "Brussels",
       "quizC": "Ghent"
     },
+    "aboutAccordion": "About this tool",
     "aboutTitle": "What it does",
     "examplesTitle": "Examples",
     "faqTitle": "Frequently asked questions",
@@ -1501,8 +1522,10 @@
       "emptyHint": "Create your first MCQ to practise and share it with your classmates.",
       "createQuiz": "Create a quiz",
       "untitled": "Untitled quiz",
-      "questionsCount": "{{count}} questions",
-      "attemptsCount": "{{count}} plays",
+      "questionsCount_one": "{{count}} question",
+      "questionsCount_other": "{{count}} questions",
+      "attemptsCount_one": "{{count}} play",
+      "attemptsCount_other": "{{count}} plays",
       "sharedChip": "Published",
       "sharedAtTooltip": "A copy was published on {{date}} to the Library. Re-publishing creates a new copy.",
       "play": "Play",
@@ -1724,12 +1747,40 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet.",
+    "emptyHint": "Updates about your docs and quizzes will land here.",
+    "unreadCount_one": "{{count}} unread",
+    "unreadCount_other": "{{count}} unread",
     "document": {
       "verified": "Your document \"{{title}}\" has been verified!"
     },
     "quiz": {
       "questionReported": "{{by}} reports a possible error in “{{title}}” (question {{question}})"
     }
+  },
+  "celebrations": {
+    "verifiedSubtitle": "It's now visible to your whole class.",
+    "xpChip": "+{{xp}} XP",
+    "levelUpEyebrow": "Level reached",
+    "levelUpBody": "You just passed the {{xp}} XP mark.",
+    "continue": "Continue"
+  },
+  "publicCourse": {
+    "sharedCount_one": "{{count}} document shared by the section's students",
+    "sharedCount_other": "{{count}} documents shared by the section's students",
+    "publicDocs_one": "{{count}} document available without an account",
+    "publicDocs_other": "{{count}} documents available without an account",
+    "reserved": "This course's documents are reserved for verified ISFCE students.",
+    "notFound": "Course not found.",
+    "loginCta": "Log in to see everything",
+    "metaDescription": "{{name}} ({{section}}) — {{count}} documents shared by ISFCE students: summaries, notes, exercises. Freenote, the ISFCE document hub."
+  },
+  "course": {
+    "topProfessor": "Most frequent professor: {{name}}",
+    "statDocs": "documents",
+    "statViews": "total views",
+    "statRating": "average rating",
+    "statLastUpload": "latest upload",
+    "shareCta": "Share a doc for this course"
   },
   "userPublic": {
     "notFound": "User not found.",
@@ -1743,6 +1794,7 @@
     "bestContribution": "Most appreciated contribution",
     "revisionsTitle": "Their quizzes & decks",
     "guidesTitle": "Their guides",
+    "documentsTitle": "Their documents",
     "statProfileViews": "Profile views"
   },
   "notFound": {

@@ -11,8 +11,9 @@ import { TOOLS, type ToolDef } from '@/pages/tools/toolsData';
 import GlassCard from '@/components/ui/GlassCard';
 import * as ps from './PopularDocs.styles';
 
-// Highest-pull tools — 8 to fill the column to roughly the height of the docs list + login CTA.
-const FEATURED = ['flashcards', 'quiz', 'calculateur-moyenne', 'calculateur-ip', 'diagramme-uml', 'gantt', 'table-de-verite', 'convertisseur-bases'];
+// 3 outils vedettes en tuiles riches (nom + accroche) : les 8 lignes uniformes d'avant ne
+// donnaient envie de rien — « tous les outils » reprend le reste.
+const FEATURED = ['flashcards', 'quiz', 'calculateur-moyenne'];
 
 /**
  * Anonymous "product proof": same two-column layout as the connected <PopularDocs>, but the docs are
@@ -101,26 +102,26 @@ export default function PublicDocsPreview() {
                 {t('home.tools.viewAll')} →
               </Box>
             </Box>
-            <GlassCard sx={ps.listCard}>
+            <GlassCard sx={ps.toolsCard}>
               {tools.map((tool) => (
-                <Box key={tool.slug} component={Link} to={`/outils/${tool.slug}`} sx={ps.docRow(false)}>
-                  <Box
-                    aria-hidden="true"
-                    sx={{
-                      width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'linear-gradient(135deg, rgba(0,210,255,0.18), rgba(123,47,247,0.18))',
-                      color: 'primary.main', '& svg': { fontSize: 18 },
-                    }}
-                  >
+                <Box key={tool.slug} component={Link} to={`/outils/${tool.slug}`} sx={ps.toolRow}>
+                  <Box aria-hidden="true" sx={ps.toolIcon}>
                     {tool.icon}
                   </Box>
                   <Box sx={ps.docInfo}>
-                    <Typography variant="body2" sx={ps.docTitle} noWrap>{t(`tools.${tool.key}.name`)}</Typography>
+                    <Typography variant="body2" sx={ps.docTitle}>{t(`tools.${tool.key}.name`)}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={ps.toolShort}>
+                      {t(`tools.${tool.key}.short`)}
+                    </Typography>
                   </Box>
                   <ArrowForward sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
                 </Box>
               ))}
+              <Box sx={ps.toolsCta}>
+                <Button component={Link} to="/outils" variant="outlined" size="small" fullWidth>
+                  {t('tools.allTools')}
+                </Button>
+              </Box>
             </GlassCard>
           </Box>
         </Box>

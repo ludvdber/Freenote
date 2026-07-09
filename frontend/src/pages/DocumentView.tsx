@@ -334,7 +334,13 @@ export default function DocumentView() {
           {doc.title}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={s.subtitle}>
-          {doc.courseName} · {doc.sectionName}
+          {/* Le nom du cours mène à sa page (accès direct au hub du cours, en plus du fil d'Ariane). */}
+          {doc.courseId ? (
+            <MuiLink component={RouterLink} to={`/courses/${doc.courseId}`} underline="hover" color="inherit" sx={{ fontWeight: 600 }}>
+              {doc.courseName}
+            </MuiLink>
+          ) : doc.courseName}
+          {' · '}{doc.sectionName}
           {!doc.authorId && ` · ${doc.authorName}`}
         </Typography>
         {/* Méta compacte (remplace l'ancienne carte 5 colonnes) : année · note · vues · date ·
@@ -631,9 +637,21 @@ export default function DocumentView() {
 
           {sameDocs.length > 0 && (
             <GlassCard sx={s.sideCard}>
-              <Typography variant="caption" sx={s.sideTitle}>
-                {t('document.sameCourse')} — {doc.courseName}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+                <Typography variant="caption" sx={s.sideTitle}>
+                  {t('document.sameCourse')} — {doc.courseName}
+                </Typography>
+                {doc.courseId && (
+                  <MuiLink
+                    component={RouterLink}
+                    to={`/courses/${doc.courseId}`}
+                    underline="hover"
+                    sx={{ fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    {t('document.viewCourseAll')} →
+                  </MuiLink>
+                )}
+              </Box>
               {sameDocs.map((d) => (
                 <Box key={d.id} component={RouterLink} to={`/documents/${d.id}`} sx={s.sameRow}>
                   <Typography component="span" className="same-title" sx={s.sameTitle}>{d.title}</Typography>

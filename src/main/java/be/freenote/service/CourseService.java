@@ -2,12 +2,16 @@ package be.freenote.service;
 
 import be.freenote.dto.request.CreateCourseRequest;
 import be.freenote.dto.response.CourseResponse;
+import be.freenote.dto.response.CourseStatsResponse;
 
 import java.util.List;
 
 public interface CourseService {
     List<CourseResponse> getBySectionId(Long sectionId);
     CourseResponse getById(Long id);
+
+    /** Stats agrégées du bandeau page cours (équivalences V15 incluses — cohérent avec le listing). */
+    CourseStatsResponse getStats(Long courseId);
     CourseResponse create(CreateCourseRequest request, Long userId);
     CourseResponse approve(Long id);
     List<CourseResponse> getPending();

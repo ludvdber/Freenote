@@ -148,12 +148,14 @@ const PLACEHOLDER_GRADIENTS = [
 
 // Gradient "cover" tile when a post has no image: brand mark watermark + the section label,
 // so an imageless card still reads as an intentional magazine cover. `seed` = deterministic variant.
-export const placeholder = (seed: number): Sx => ({
+// `compact` : variante miniature (« À lire ensuite » de NewsDetail) — sans le minHeight plein
+// format, qui décentrerait le libellé dans une bande basse, et avec un libellé réduit.
+export const placeholder = (seed: number, compact = false): Sx => ({
   position: 'relative',
   overflow: 'hidden',
   width: '100%',
   height: '100%',
-  minHeight: 160,
+  minHeight: compact ? 0 : 160,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -173,7 +175,7 @@ export const placeholderMark: Sx = {
 };
 
 // The section label as the cover's focal text (falls back to a wordmark when unlabelled).
-export const placeholderLabel: Sx = {
+export const placeholderLabel = (compact = false): Sx => ({
   position: 'relative',
   fontWeight: 800,
   textTransform: 'uppercase',
@@ -181,9 +183,9 @@ export const placeholderLabel: Sx = {
   textAlign: 'center',
   lineHeight: 1.15,
   color: 'rgba(255,255,255,0.82)',
-  fontSize: { xs: '1.1rem', md: '1.35rem' },
+  fontSize: compact ? '0.78rem' : { xs: '1.1rem', md: '1.35rem' },
   textShadow: '0 2px 12px rgba(0,0,0,0.25)',
-};
+});
 
 export const eyebrow: Sx = {
   display: 'flex',

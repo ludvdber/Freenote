@@ -4,14 +4,14 @@ import {
   Chip, CircularProgress, Button, Alert, ToggleButtonGroup, ToggleButton, Tooltip, useTheme,
 } from '@mui/material';
 import { ArrowForward, Lock, Star, ViewModule, ViewList } from '@mui/icons-material';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { searchDocuments, getSections, getCourses, getCategoryCounts, getNewDocsCount, listPublicDocuments } from '@/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CATEGORIES, STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
-import { categoryColor, categoryEmoji, formatRelativeDate } from '@/lib/utils';
+import { categoryColor, categoryEmoji, courseHueShift, formatRelativeDate } from '@/lib/utils';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import SearchBar from '@/components/ui/SearchBar';
@@ -20,6 +20,7 @@ import * as dc from '@/components/common/DocumentCard.styles';
 import GlassCard from '@/components/ui/GlassCard';
 import Shimmer from '@/components/ui/Shimmer';
 import AdSlot from '@/components/ui/AdSlot';
+import { TelescopeSky } from '@/components/ui/EmptySky';
 import * as s from './Browse.styles';
 
 /** Explorer : catalogue complet pour les connectés, vitrine publique (métadonnées des docs
@@ -35,6 +36,7 @@ const PAGE_SIZES = [12, 24, 48, 96];
 function FullBrowse() {
   const { t } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
 
   // Filters live in the URL so they survive a back-navigation from a document (React would otherwise
   // reset the useState on remount and drop every filter), and become shareable/bookmarkable.
@@ -247,7 +249,8 @@ function FullBrowse() {
         ))}
       </Box>
 
-      <AdSlot width={728} height={90} sx={{ mb: 3 }} />
+      {/* Pas de pub au-dessus d'un résultat vide (écran pauvre — policy AdSense). */}
+      {(isLoading || (data?.content.length ?? 0) > 0) && <AdSlot width={728} height={90} sx={{ mb: 3 }} />}
 
       {isLoading ? (
         <Shimmer count={6} />
@@ -268,11 +271,17 @@ function FullBrowse() {
               />
             )}
             {courseId !== '' && (
-              <Chip
-                size="small"
-                label={courses?.find((c) => c.id === courseId)?.name ?? t('document.course')}
-                onDelete={() => patchParams({ course: '', page: 0 })}
-              />
+              /* Chip cliquable → page du cours (accès facile au hub) ; la croix garde son rôle de
+                 retrait du filtre (MUI stoppe la propagation du delete, le clic ne navigue pas). */
+              <Tooltip title={t('search.openCourse')}>
+                <Chip
+                  size="small"
+                  clickable
+                  label={courses?.find((c) => c.id === courseId)?.name ?? t('document.course')}
+                  onClick={() => navigate(`/courses/${courseId}`)}
+                  onDelete={() => patchParams({ course: '', page: 0 })}
+                />
+              </Tooltip>
             )}
             {urlQuery && (
               <Chip
@@ -341,9 +350,24 @@ function FullBrowse() {
           )}
         </>
       ) : (
-        <Typography color="text.secondary" sx={s.emptyText}>
-          {t('document.noResults')}
-        </Typography>
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <TelescopeSky />
+          <Typography color="text.secondary" sx={s.emptyText}>
+            {t('document.noResults')}
+          </Typography>
+          {/* Sortie de secours : sans ce bouton, l'utilisateur devait vider champ et filtres un à un. */}
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ mt: 2 }}
+            onClick={() => {
+              setQuery('');
+              setSearchParams(new URLSearchParams(), { replace: true });
+            }}
+          >
+            {t('search.resetFilters')}
+          </Button>
+        </Box>
       )}
     </PageWrapper>
   );
@@ -414,6 +438,7 @@ function PublicBrowse() {
         )}
         {!isLoading && docs.length === 0 && (
           <GlassCard sx={{ p: 5, textAlign: 'center' }}>
+            <TelescopeSky />
             <Typography color="text.secondary">{t('resources.empty')}</Typography>
           </GlassCard>
         )}
@@ -425,7 +450,7 @@ function PublicBrowse() {
           {docs.map((d) => (
             <GlassCard key={d.id} component={RouterLink} to={`/documents/${d.id}`} sx={dc.card(0)}>
               <Box sx={dc.cover}>
-                <Box className="doc-cover-bg" sx={dc.coverBg(d.category)} />
+                <Box className="doc-cover-bg" sx={dc.coverBg(d.category, courseHueShift(d.courseName))} />
                 <Typography component="span" aria-hidden="true" sx={dc.coverEmoji}>
                   {categoryEmoji(d.category)}
                 </Typography>

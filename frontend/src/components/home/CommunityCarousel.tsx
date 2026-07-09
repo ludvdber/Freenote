@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Typography, IconButton, Button, useMediaQuery } from '@mui/material';
 import { GitHub, LinkedIn, Close, Pause, PlayArrow, ArrowForward } from '@mui/icons-material';
@@ -23,17 +23,34 @@ export default function CommunityCarousel() {
   const [paused, setPaused] = useState(reduceMotion);
 
   const hasProfiles = (profiles?.length ?? 0) > 0;
+
+  // Largeur réelle du viewport du carrousel : si UNE copie des profils y tient déjà, dupliquer
+  // pour le marquee afficherait les mêmes personnes côte à côte — on rend alors une rangée statique.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setViewportWidth(el.clientWidth));
+    ro.observe(el);
+    setViewportWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, [hasProfiles]);
+  const CARD_WIDTH = 216; // 200 minWidth + 16 gap
+  const fitsWithoutScroll = hasProfiles && viewportWidth > 0 && profiles!.length * CARD_WIDTH <= viewportWidth;
+
   // Repeat profiles enough times so the track is always >= 2x viewport width.
   // Each card is ~216px (200 minWidth + 16 gap). We need at least
   // ceil(viewport / totalWidth) * 2 copies. 10 copies is safe for 1920px+.
   const repeated = useMemo(() => {
     if (!hasProfiles) return [];
     const list = profiles!;
-    const minCards = Math.max(Math.ceil(2000 / (list.length * 216)), 2);
+    if (fitsWithoutScroll) return list;
+    const minCards = Math.max(Math.ceil(2000 / (list.length * CARD_WIDTH)), 2);
     const result: ProfileCardResponse[] = [];
     for (let i = 0; i < minCards; i++) result.push(...list);
     return result;
-  }, [profiles, hasProfiles]);
+  }, [profiles, hasProfiles, fitsWithoutScroll]);
 
   const handleSelect = (profile: ProfileCardResponse) => setSelected(profile);
 
@@ -69,18 +86,22 @@ export default function CommunityCarousel() {
         )}
 
         {hasProfiles && (
-          <Box sx={s.marqueeViewport}>
-            <Box sx={s.fadeEdgeLeft} />
-            <Box sx={s.fadeEdgeRight} />
-            <IconButton
-              size="small"
-              onClick={() => setPaused((p) => !p)}
-              aria-label={t(paused ? 'community.playCarousel' : 'community.pauseCarousel')}
-              sx={s.pauseButton}
-            >
-              {paused ? <PlayArrow fontSize="small" /> : <Pause fontSize="small" />}
-            </IconButton>
-            <Box sx={s.marqueeTrack(paused || reduceMotion)}>
+          <Box ref={viewportRef} sx={s.marqueeViewport}>
+            {!fitsWithoutScroll && (
+              <>
+                <Box sx={s.fadeEdgeLeft} />
+                <Box sx={s.fadeEdgeRight} />
+                <IconButton
+                  size="small"
+                  onClick={() => setPaused((p) => !p)}
+                  aria-label={t(paused ? 'community.playCarousel' : 'community.pauseCarousel')}
+                  sx={s.pauseButton}
+                >
+                  {paused ? <PlayArrow fontSize="small" /> : <Pause fontSize="small" />}
+                </IconButton>
+              </>
+            )}
+            <Box sx={fitsWithoutScroll ? s.staticTrack : s.marqueeTrack(paused || reduceMotion)}>
               {repeated.map((profile, i) => (
                 <Box
                   key={`${profile.username}-${i}`}

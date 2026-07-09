@@ -5,6 +5,7 @@ import type {
   PageResponse,
   Section,
   Course,
+  CourseStats,
   LeaderboardEntry,
   DelegateResponse,
   DelegateHistoryResponse,
@@ -40,6 +41,7 @@ import type {
   CreateGuideRequest,
   PublicDocumentSummary,
   PublicDocumentStatus,
+  PublicCourse,
   NotificationItem,
   GanttSummary,
   GanttResponse,
@@ -176,6 +178,14 @@ export const getCourses = (sectionId: number) =>
 
 export const createCourse = (data: CreateCourseRequest) =>
   api.post<Course>('/courses', data).then((r) => r.data);
+
+/** Fiche d'un cours — le bandeau de la page cours (nom réel + section, même sans document). */
+export const getCourse = (id: number) =>
+  api.get<Course>(`/courses/${id}`).then((r) => r.data);
+
+/** Stats agrégées du bandeau page cours (docs, vues, note moyenne, dernier ajout). */
+export const getCourseStats = (id: number) =>
+  api.get<CourseStats>(`/courses/${id}/stats`).then((r) => r.data);
 
 /** Cours équivalents (V15) — bandeau « Inclut aussi… » de la page cours. */
 export const getCourseEquivalents = (id: number) =>
@@ -508,8 +518,12 @@ export const adminDeleteGuide = (id: number) =>
   api.delete<void>(`/admin/guides/${id}`);
 
 // --- Public catalogue teaser (anonymous) ---
-export const listPublicDocuments = (params: { page?: number; size?: number } = {}) =>
+export const listPublicDocuments = (params: { page?: number; size?: number; courseId?: number } = {}) =>
   api.get<PageResponse<PublicDocumentSummary>>('/public/documents', { params }).then((r) => r.data);
+
+/** Teaser public d'un cours (page /courses/:id anonyme — SEO). */
+export const getPublicCourse = (id: number) =>
+  api.get<PublicCourse>(`/public/courses/${id}`).then((r) => r.data);
 
 export const getPublicDocument = (id: number) =>
   api.get<PublicDocumentSummary>(`/public/documents/${id}`).then((r) => r.data);

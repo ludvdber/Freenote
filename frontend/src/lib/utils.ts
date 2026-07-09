@@ -6,6 +6,15 @@ export function formatNumber(n: number): string {
   return n.toString();
 }
 
+/** Nuance de couverture par cours (djb2 → ±16°) : le catalogue public n'a que 2 catégories
+ *  (NOTES/DIVERS), sans variation la vitrine anonyme est une mer de couvertures identiques. */
+export function courseHueShift(courseName: string | null | undefined): number {
+  if (!courseName) return 0;
+  let h = 5381;
+  for (let i = 0; i < courseName.length; i++) h = ((h << 5) + h + courseName.charCodeAt(i)) >>> 0;
+  return (h % 33) - 16;
+}
+
 export function formatDate(dateStr: string, locale: string = 'fr'): string {
   return new Date(dateStr).toLocaleDateString(locale.startsWith('fr') ? 'fr-BE' : 'en-GB', {
     year: 'numeric',
