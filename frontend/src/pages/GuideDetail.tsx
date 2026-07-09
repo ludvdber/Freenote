@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Typography, Box, Chip, Button, Grid } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { getGuide, listGuides, listQuizzes } from '@/api/endpoints';
 import { STALE_15M, SITE_URL, DISCORD_OAUTH_URL } from '@/lib/constants';
+import { trackUse } from '@/lib/track';
 import { guideCover } from '@/lib/guideCover';
 import type { TocEntry } from '@/lib/toc';
 import { toolBySlug } from '@/pages/tools/toolsData';
@@ -33,6 +34,12 @@ export default function GuideDetail() {
     staleTime: STALE_15M,
     retry: false,
   });
+
+  // Statistique de lecture anonyme (analytics admin) — uniquement quand le guide existe
+  // (jamais sur un slug 404, qui polluerait les compteurs).
+  useEffect(() => {
+    if (guide?.slug) trackUse('guide', guide.slug);
+  }, [guide?.slug]);
 
   // « Continue avec… » : mêmes queryKeys que l'index /guides et le hub (cache partagé).
   const { data: allGuides } = useQuery({

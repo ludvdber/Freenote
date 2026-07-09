@@ -16,13 +16,15 @@ export interface Shortcut {
   to?: string;
   href?: string;
   requireVerified?: boolean;
+  /** Bouton Ko-fi : passe par le dialog global qui montre le code « FN-… » (compte vérifié). */
+  kofi?: boolean;
 }
 
 // Ordre par importance, avec deux ancres fixes : « Offrir un café » en PREMIER, « Signaler un bug »
 // en DERNIER (demande Ludovic). 9 tuiles = grille 3×3 pleine. « Mon profil » a cédé sa place à
 // « Réviser » (2026-07-08) — le profil reste à un clic via l'avatar de la navbar.
 export const SHORTCUTS: Shortcut[] = [
-  { key: 'kofi',        icon: <VolunteerActivismIcon />, href: KOFI_URL },
+  { key: 'kofi',        icon: <VolunteerActivismIcon />, href: KOFI_URL, kofi: true },
   { key: 'share',       icon: <CloudUploadIcon />,       to: '/upload',                requireVerified: true },
   { key: 'mySection',   icon: <SchoolIcon />,            to: '/browse' },
   { key: 'reviser',     icon: <MenuBookIcon />,          to: '/reviser' },

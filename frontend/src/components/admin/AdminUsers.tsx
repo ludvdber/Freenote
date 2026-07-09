@@ -13,7 +13,7 @@ import {
   MenuItem,
   Alert,
 } from '@mui/material';
-import { Verified, GppBad, Shield, DeleteForever, Block, Bolt } from '@mui/icons-material';
+import { Verified, GppBad, Shield, DeleteForever, Block, Bolt, Palette } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,6 +22,8 @@ import {
   adminUnverifyUser,
   adminTrustUser,
   adminUntrustUser,
+  adminGrantLifetimePalettes,
+  adminRevokeLifetimePalettes,
   adminUpdateUserRole,
   adminDeleteUser,
   adminBanUser,
@@ -77,6 +79,23 @@ export default function AdminUsers() {
   const untrustMut = useMutation({
     mutationFn: adminUntrustUser,
     onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+
+  // Palettes à vie : le flag lifetime_supporter (même avantage qu'un don ≥ 5 €). Si l'admin se
+  // l'accorde à lui-même, son propre profil doit se rafraîchir → invalider aussi ['me'].
+  const invalidateWithMe = () => {
+    invalidate();
+    qc.invalidateQueries({ queryKey: ['me'] });
+  };
+  const grantPalettesMut = useMutation({
+    mutationFn: adminGrantLifetimePalettes,
+    onSuccess: invalidateWithMe,
+    onError: (e) => setError(extractApiError(e)),
+  });
+  const revokePalettesMut = useMutation({
+    mutationFn: adminRevokeLifetimePalettes,
+    onSuccess: invalidateWithMe,
     onError: (e) => setError(extractApiError(e)),
   });
 
@@ -182,6 +201,12 @@ export default function AdminUsers() {
             </Tooltip>
           )}
 
+          {u.lifetimeSupporter && (
+            <Tooltip title={t('admin.users.palettesHint')}>
+              <Chip size="small" color="secondary" icon={<Palette />} label={t('admin.users.palettesChip')} sx={{ cursor: 'help' }} />
+            </Tooltip>
+          )}
+
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>{t('admin.users.role')}</InputLabel>
             <Select
@@ -223,6 +248,16 @@ export default function AdminUsers() {
               onClick={() => (u.trusted ? untrustMut : trustMut).mutate(u.id)}
             >
               <Bolt fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={u.lifetimeSupporter ? t('admin.users.revokePalettes') : t('admin.users.grantPalettes')}>
+            <IconButton
+              size="small"
+              color={u.lifetimeSupporter ? 'secondary' : 'default'}
+              onClick={() => (u.lifetimeSupporter ? revokePalettesMut : grantPalettesMut).mutate(u.id)}
+            >
+              <Palette fontSize="small" />
             </IconButton>
           </Tooltip>
 

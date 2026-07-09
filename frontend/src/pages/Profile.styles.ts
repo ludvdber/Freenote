@@ -164,6 +164,55 @@ export const avatarOptions: Sx = {
   gap: 1.5,
 };
 
+// --- Palettes d'accent (perk supporters) ---
+
+export const paletteRow: Sx = {
+  display: 'flex',
+  gap: 1.25,
+  flexWrap: 'wrap',
+};
+
+/** Pastille bicolore d'une palette (diagonale primary → secondary de la variante du mode). */
+export const paletteSwatch = (colors: [string, string], selected: boolean, disabled: boolean): Sx => ({
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`,
+  border: '3px solid',
+  borderColor: selected ? 'primary.main' : 'transparent',
+  outline: (t) => (t.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.15)'),
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.4 : 1,
+  p: 0,
+  transition: 'transform 0.15s, border-color 0.15s',
+  '&:hover': disabled ? {} : { transform: 'scale(1.1)' },
+});
+
+export const supportCode: Sx = {
+  px: 1,
+  py: 0.25,
+  borderRadius: 1.5,
+  border: (t) => `1px dashed ${t.palette.primary.main}`,
+  color: 'primary.main',
+  fontWeight: 700,
+};
+
+export const supportCodeRow: Sx = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 0.75,
+  flexWrap: 'wrap',
+  mb: 1.5,
+};
+
+export const supportPerks: Sx = {
+  m: 0,
+  pl: 2.5,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 0.5,
+};
+
 export const avatarOption = (selected: boolean, disabled: boolean): Sx => ({
   display: 'flex',
   flexDirection: 'column',

@@ -4,6 +4,7 @@ import be.freenote.dto.request.UpdateProfileRequest;
 import be.freenote.dto.response.LeaderboardEntry;
 import be.freenote.dto.response.UserResponse;
 import be.freenote.entity.User;
+import be.freenote.entity.UserOauthLink;
 import be.freenote.entity.UserProfile;
 import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.mapper.UserMapper;
@@ -34,6 +35,9 @@ class UserServiceImplTest {
     @Mock private ReportRepository reportRepository;
     @Mock private be.freenote.repository.DelegateHistoryRepository delegateHistoryRepository;
     @Mock private UserMapper userMapper;
+    @Mock private be.freenote.repository.DailyStatRepository dailyStatRepository;
+    @Mock private be.freenote.repository.UserOauthLinkRepository oauthLinkRepository;
+    @Mock private DiscordRoleService discordRoleService;
     @Mock private ActivityLogService activityLogService;
     @Mock private be.freenote.security.JwtRevocationService jwtRevocationService;
 
@@ -174,7 +178,7 @@ class UserServiceImplTest {
 
         when(documentRepository.countByUserId(1L)).thenReturn(0L);
         UserResponse resp = new UserResponse(1L, "test", "USER", false, false, 50, "new bio", null, null, null, null,
-                0L, true, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false);
+                0L, true, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false, null, false, false);
         when(userMapper.toResponse(user, 0L)).thenReturn(resp);
 
         UpdateProfileRequest req = new UpdateProfileRequest();
@@ -196,7 +200,7 @@ class UserServiceImplTest {
 
         when(documentRepository.countByUserId(1L)).thenReturn(0L);
         UserResponse resp = new UserResponse(1L, "test", "USER", false, false, 0, null, null, null, null, null,
-                0L, false, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false);
+                0L, false, false, false, false, null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false, null, false, false);
         when(userMapper.toResponse(user, 0L)).thenReturn(resp);
 
         UpdateProfileRequest req = new UpdateProfileRequest();
@@ -206,6 +210,40 @@ class UserServiceImplTest {
 
         assertThat(user.getProfile()).isNotNull();
         assertThat(user.getProfile().getBio()).isEqualTo("bio");
+    }
+
+    @Test
+    void updateProfileShouldRejectAccentPaletteWithoutEntitlement() {
+        User user = userWithProfile(); // ni lifetime_supporter ni palettes_until
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UpdateProfileRequest req = new UpdateProfileRequest();
+        req.setAccentPalette("aurora");
+
+        assertThatThrownBy(() -> userService.updateProfile(1L, req))
+                .isInstanceOf(be.freenote.exception.ForbiddenException.class);
+    }
+
+    @Test
+    void updateProfileShouldAcceptAccentPaletteForSupporters() {
+        User user = userWithProfile();
+        user.getProfile().setLifetimeSupporter(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(documentRepository.countByUserId(1L)).thenReturn(0L);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+
+        UpdateProfileRequest req = new UpdateProfileRequest();
+        req.setAccentPalette("aurora");
+        userService.updateProfile(1L, req);
+
+        assertThat(user.getProfile().getAccentPalette()).isEqualTo("aurora");
+
+        // Revenir au thème par défaut ("") est permis même sans entitlement.
+        user.getProfile().setLifetimeSupporter(false);
+        req.setAccentPalette("");
+        userService.updateProfile(1L, req);
+        assertThat(user.getProfile().getAccentPalette()).isNull();
     }
 
     // ---- admin user management ----
@@ -332,6 +370,51 @@ class UserServiceImplTest {
     private static UserResponse stubResponse() {
         return new UserResponse(1L, "test", "USER", false, false, 0,
                 null, null, null, null, null, 0L, false, false, false, false,
-                null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false);
+                null, "AUTO", "test", null, null, false, null, null, false, null, null, null, false, null, false, false);
+    }
+
+    // ---- palettes à vie (grant admin) & liaison sans-pub → palettes ----
+
+    @Test
+    void adminSetLifetimePalettesShouldSetTheFlagAndPushTheDiscordRole() {
+        User user = userWithProfile();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(documentRepository.countByUserId(1L)).thenReturn(0L);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+        when(oauthLinkRepository.findByUserId(1L)).thenReturn(List.of(
+                UserOauthLink.builder().provider("DISCORD").oauthId("snowflake-1").user(user).build()));
+
+        userService.adminSetLifetimePalettes(1L, true);
+
+        assertThat(user.getProfile().isLifetimeSupporter()).isTrue();
+        verify(discordRoleService).assignSupporterRole("snowflake-1");
+    }
+
+    @Test
+    void adminSetLifetimePalettesShouldRevokeWithoutTouchingDiscord() {
+        User user = userWithProfile();
+        user.getProfile().setLifetimeSupporter(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(documentRepository.countByUserId(1L)).thenReturn(0L);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+
+        userService.adminSetLifetimePalettes(1L, false);
+
+        assertThat(user.getProfile().isLifetimeSupporter()).isFalse();
+        verify(discordRoleService, never()).assignSupporterRole(anyString());
+    }
+
+    @Test
+    void activeAdFreeDaysAlsoEntitleThePalettes() {
+        // Liaison 2026-07-09 : des jours sans pub actifs (don OU grant manuel) = couleurs actives.
+        UserProfile p = UserProfile.builder()
+                .adFreeUntil(java.time.LocalDateTime.now().plusDays(3)).build();
+        assertThat(UserMapper.isPaletteEntitled(p)).isTrue();
+
+        UserProfile expired = UserProfile.builder()
+                .adFreeUntil(java.time.LocalDateTime.now().minusDays(1)).build();
+        assertThat(UserMapper.isPaletteEntitled(expired)).isFalse();
     }
 }

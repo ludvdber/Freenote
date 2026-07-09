@@ -53,7 +53,12 @@ public class SecurityConfig {
                 // échange d'un logout qui ne peut jamais échouer.
                 .ignoringRequestMatchers(
                     "/api/webhooks/**",
-                    "/api/auth/logout"
+                    "/api/auth/logout",
+                    // Collecteur d'usage anonyme : un anonyme frais n'a pas encore le cookie
+                    // XSRF-TOKEN (émission lazy) et son premier POST /track serait rejeté. Un POST
+                    // cross-site ne peut qu'incrémenter un compteur whitelisté — nuisance sans
+                    // gain, bornée par le rate-limit IP.
+                    "/api/public/track"
                 )
             )
             .cors(cors -> cors.configure(http))
@@ -136,6 +141,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/guides", "/api/guides/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+                // Collecteur d'usage anonyme (visites/outils/guides/profils) — POST explicite :
+                // la règle au-dessus ne couvre que les GET. Whitelist + rate-limit côté service.
+                .requestMatchers(HttpMethod.POST, "/api/public/track").permitAll()
                 // Révision publique (2026-07-08) : la bibliothèque des quiz/paquets PUBLIÉS se
                 // consulte et se joue sans compte — hors classement (un POST attempts anonyme est
                 // corrigé côté serveur mais rien n'est enregistré). ⚠️ « /mine » DOIT précéder les

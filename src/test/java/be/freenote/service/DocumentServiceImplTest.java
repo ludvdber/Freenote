@@ -48,6 +48,7 @@ class DocumentServiceImplTest {
     @Mock private StatsService statsService;
     @Mock private ActivityLogService activityLogService;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private be.freenote.service.TrackingService trackingService;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
 

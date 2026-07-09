@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import {
   Box,
   Typography,
@@ -14,14 +14,14 @@ import {
   Alert,
   Autocomplete,
   Pagination,
+  Collapse,
 } from '@mui/material';
-import { CheckCircle, Edit, Delete, Save, Close, Visibility } from '@mui/icons-material';
+import { CheckCircle, Edit, Delete, Save, Close, Visibility, PictureAsPdf } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   getPendingDocuments,
-  getDuplicateGroups,
   verifyDocument,
   adminUpdateDocument,
   adminDeleteDocument,
@@ -34,6 +34,9 @@ import { CATEGORIES, STALE_15M } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import GlassCard from '@/components/ui/GlassCard';
 import type { Course, DocumentResponse, UpdateDocumentRequest } from '@/types';
+
+// Aperçu inline pour la modération : même viewer que DocumentView (lazy — pdf.js est lourd).
+const PdfViewer = lazy(() => import('@/components/common/PdfViewer'));
 
 const PAGE_SIZE = 10;
 
@@ -57,15 +60,11 @@ export default function AdminDocuments() {
   }
 
   const [pendingPage, setPendingPage] = useState(0);
+  // Aperçu PDF inline (modération sans quitter la file) — un seul ouvert à la fois.
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
   const { data: pendingDocs } = useQuery({
     queryKey: ['admin-pending-docs', pendingPage],
     queryFn: () => getPendingDocuments(pendingPage, 20),
-  });
-
-  // Groupes de doublons exacts (même hash SHA-256) détectés par le backfill/l'upload.
-  const { data: duplicateGroups } = useQuery({
-    queryKey: ['admin-duplicates'],
-    queryFn: getDuplicateGroups,
   });
 
   const { data: courses } = useQuery({
@@ -83,6 +82,8 @@ export default function AdminDocuments() {
     queryClient.invalidateQueries({ queryKey: ['admin-pending-docs'] });
     queryClient.invalidateQueries({ queryKey: ['admin-all-docs'] });
     queryClient.invalidateQueries({ queryKey: ['admin-duplicates'] });
+    // Les badges de la sidebar (docs en attente) doivent suivre immédiatement.
+    queryClient.invalidateQueries({ queryKey: ['admin-overview'] });
   };
 
   const verifyMut = useMutation({ mutationFn: verifyDocument, onSuccess: invalidateAll });
@@ -125,31 +126,46 @@ export default function AdminDocuments() {
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {pendingDocs!.content.map((doc) => (
-              <Box
-                key={doc.id}
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.02)', flexWrap: 'wrap' }}
-              >
-                <Box sx={{ flex: 1, minWidth: 200 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{doc.title}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
-                  </Typography>
+              <Box key={doc.id} sx={{ borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.02)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{doc.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
+                    </Typography>
+                  </Box>
+                  {/* Aperçu PDF sur place — vérifier sans ouvrir 15 onglets. */}
+                  <Tooltip title={t('admin.docs.preview')}>
+                    <IconButton size="small"
+                      color={previewDoc?.id === doc.id ? 'primary' : 'default'}
+                      onClick={() => setPreviewDoc(previewDoc?.id === doc.id ? null : doc)}
+                    >
+                      <PictureAsPdf fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('admin.docs.view')}>
+                    <IconButton size="small" component={Link} to={`/documents/${doc.id}`} target="_blank">
+                      <Visibility fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Button size="small" variant="contained" color="success" startIcon={<CheckCircle />}
+                    onClick={() => verifyMut.mutate(doc.id)} disabled={verifyMut.isPending}
+                  >
+                    {t('admin.docs.verify')}
+                  </Button>
+                  <Tooltip title={t('document.delete')}>
+                    <IconButton size="small" color="error" onClick={() => setDeleteCandidate(doc.id)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-                <Tooltip title={t('admin.docs.view')}>
-                  <IconButton size="small" component={Link} to={`/documents/${doc.id}`} target="_blank">
-                    <Visibility fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Button size="small" variant="contained" color="success" startIcon={<CheckCircle />}
-                  onClick={() => verifyMut.mutate(doc.id)} disabled={verifyMut.isPending}
-                >
-                  {t('admin.docs.verify')}
-                </Button>
-                <Tooltip title={t('document.delete')}>
-                  <IconButton size="small" color="error" onClick={() => setDeleteCandidate(doc.id)}>
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Collapse in={previewDoc?.id === doc.id} unmountOnExit>
+                  <Box sx={{ px: 1.5, pb: 1.5 }}>
+                    <Suspense fallback={<Typography variant="caption" color="text.secondary">{t('common.loading')}</Typography>}>
+                      {previewDoc?.id === doc.id && <PdfViewer docId={doc.id} title={doc.title} />}
+                    </Suspense>
+                  </Box>
+                </Collapse>
               </Box>
             ))}
           </Box>
@@ -168,43 +184,7 @@ export default function AdminDocuments() {
         </GlassCard>
       )}
 
-      {/* Doublons exacts (même contenu PDF) — l'admin garde un exemplaire et supprime le reste */}
-      {duplicateGroups && duplicateGroups.length > 0 && (
-        <GlassCard sx={{ p: 2.5, borderColor: 'warning.main' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
-            {t('admin.docs.duplicates', { count: duplicateGroups.length })}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-            {t('admin.docs.duplicatesHint')}
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {duplicateGroups.map((group, gi) => (
-              <Box key={gi} sx={{ borderLeft: '3px solid', borderColor: 'warning.main', pl: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                {group.map((doc) => (
-                  <Box key={doc.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: 1, minWidth: 200 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{doc.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        #{doc.id} · {doc.courseName} · {doc.authorName} · {formatDate(doc.createdAt, i18n.language)}
-                      </Typography>
-                    </Box>
-                    <Tooltip title={t('admin.docs.view')}>
-                      <IconButton size="small" component={Link} to={`/documents/${doc.id}`} target="_blank">
-                        <Visibility fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={t('document.delete')}>
-                      <IconButton size="small" color="error" onClick={() => setDeleteCandidate(doc.id)}>
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        </GlassCard>
-      )}
+      {/* Les doublons exacts (même hash) vivent dans leur propre écran : sidebar → Doublons. */}
 
       {/* All documents search */}
       <Box>

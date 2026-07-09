@@ -264,10 +264,17 @@ export default function PdfViewer({ docId, title, onOutline, controllerRef }: Pd
 
   // Available width for fit-to-width — measured on a width:100% ruler so it stays the *visible* inner
   // width even when a zoomed page overflows and makes the scroll container wider than the viewport.
+  // Hystérèse 24 px : la hauteur du viewer dépend de cette largeur, donc un viewer monté dans une
+  // page à hauteur variable (aperçu admin en Collapse) peut faire apparaître/disparaître la barre de
+  // défilement verticale (~15-17 px) à chaque re-render → largeur qui oscille → « tremblement »
+  // infini gauche-droite. On ignore toute variation plus petite qu'une barre de défilement.
   useEffect(() => {
     const el = rulerRef.current;
     if (!el) return;
-    const update = () => setAvailWidth(el.clientWidth);
+    const update = () => {
+      const w = el.clientWidth;
+      setAvailWidth((prev) => (prev !== 0 && Math.abs(w - prev) < 24 ? prev : w));
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);

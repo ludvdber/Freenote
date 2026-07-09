@@ -4,6 +4,7 @@ import be.freenote.dto.response.UserResponse;
 import be.freenote.security.JwtAuthFilter;
 import be.freenote.security.JwtRevocationService;
 import be.freenote.security.JwtTokenProvider;
+import be.freenote.service.KofiService;
 import be.freenote.service.RecentDocsService;
 import be.freenote.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ class UserControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @MockitoBean private UserService userService;
+    @MockitoBean private KofiService kofiService;
     @MockitoBean private RecentDocsService recentDocsService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
     @MockitoBean private JwtTokenProvider jwtTokenProvider;
@@ -37,7 +39,8 @@ class UserControllerTest {
     @Test
     void getUserById_shouldReturnFilteredProfile() throws Exception {
         var response = new UserResponse(1L, "alice", null, false, false, 100, null, null, null, null, null,
-                5L, false, false, false, true, null, "AUTO", "alice", null, null, false, null, null, false, null, null, null, false);
+                5L, false, false, false, true, null, "AUTO", "alice", null, null, false, null, null, false, null, null, null, false,
+                null, false, false);
         when(userService.getPublicProfile(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/users/1"))

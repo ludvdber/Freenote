@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import AuthPromptSnackbar from '@/components/common/AuthPromptSnackbar';
+import KofiSupportDialog from '@/components/common/KofiSupportDialog';
 import CommandPalette from '@/components/common/CommandPalette';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import TermsGate from '@/components/common/TermsGate';
@@ -95,6 +96,9 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <AuthPromptSnackbar />
+      {/* Dialog « Soutenir Freenote » global : tout bouton Ko-fi (footer, pubs, raccourcis,
+          thermomètre, profil) montre le code « FN-… » d'un compte vérifié avant le départ. */}
+      <KofiSupportDialog />
       {/* Recherche globale ⌘K — montée UNE fois au niveau du Router (elle navigue), pour TOUS les
           layouts : quand elle vivait dans MainLayout, la loupe sur /outils (ToolsLayout) ouvrait le
           store sans qu'aucun dialog ne soit monté — la palette « apparaissait » en arrivant sur l'accueil. */}

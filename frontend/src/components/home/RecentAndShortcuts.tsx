@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { getRecentDocs } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useKofiLinkProps } from '@/stores/useKofiDialogStore';
 import GlassCard from '@/components/ui/GlassCard';
 import { SHORTCUTS } from './RecentAndShortcuts.data';
 import * as s from './RecentAndShortcuts.styles';
@@ -12,6 +13,8 @@ import * as s from './RecentAndShortcuts.styles';
 export default function RecentAndShortcuts() {
   const { t } = useTranslation();
   const { token, user } = useAuthStore();
+  // La tuile « Offrir un café » ouvre le dialog global (code « FN-… ») pour un compte vérifié.
+  const kofiProps = useKofiLinkProps();
 
   const { data: recent } = useQuery({
     queryKey: ['recent-docs'],
@@ -88,13 +91,14 @@ export default function RecentAndShortcuts() {
                       </Box>
                     );
                   }
+                  const anchorProps = sc.kofi
+                    ? kofiProps
+                    : { href: sc.href, target: '_blank' as const, rel: 'noopener noreferrer' };
                   return (
                     <Box
                       key={sc.key}
                       component="a"
-                      href={sc.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      {...anchorProps}
                       sx={s.shortcutTile}
                       style={inlineStyle}
                       aria-disabled={disabled || undefined}

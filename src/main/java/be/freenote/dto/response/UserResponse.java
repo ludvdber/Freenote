@@ -33,5 +33,13 @@ public record UserResponse(
         // Parcours à l'ISFCE (public si renseigné) : année d'arrivée, année de fin, diplômé.
         Integer studyStartYear,
         Integer studyEndYear,
-        boolean graduated
+        boolean graduated,
+        // Palette d'accent (perk supporters) — own-profile only : résolue null quand l'entitlement
+        // a expiré (le thème retombe sur le défaut sans effacer le choix en base).
+        String accentPalette,
+        boolean paletteEntitled,
+        // Flag BRUT « palettes à vie » (don ≥ 5 € ou grant admin) — l'admin en a besoin pour son
+        // toggle (paletteEntitled est dérivé, il peut venir d'un simple sans-pub actif). Scrubbed
+        // (false) sur les réponses publiques comme trusted.
+        boolean lifetimeSupporter
 ) {}

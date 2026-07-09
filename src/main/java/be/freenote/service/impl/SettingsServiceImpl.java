@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
@@ -18,6 +19,7 @@ public class SettingsServiceImpl implements SettingsService {
 
     private static final String COUNTDOWN_DATE = "countdown.date";
     private static final String COUNTDOWN_LABEL = "countdown.label";
+    private static final String FUNDING_MONTHLY_COST = "funding.monthly-cost";
 
     private final AppSettingRepository appSettingRepository;
 
@@ -54,6 +56,32 @@ public class SettingsServiceImpl implements SettingsService {
         }
         set(COUNTDOWN_DATE, date.toString());
         set(COUNTDOWN_LABEL, label == null ? null : label.trim());
+    }
+
+    @Override
+    public BigDecimal getFundingCost() {
+        return appSettingRepository.findById(FUNDING_MONTHLY_COST)
+                .map(AppSetting::getValue)
+                .map(v -> {
+                    // Même politique que le compte à rebours : une valeur corrompue désactive la
+                    // jauge au lieu de casser la home publique.
+                    try {
+                        return new BigDecimal(v);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void setFundingCost(BigDecimal cost) {
+        if (cost == null) {
+            appSettingRepository.deleteById(FUNDING_MONTHLY_COST);
+            return;
+        }
+        set(FUNDING_MONTHLY_COST, cost.toPlainString());
     }
 
     private void set(String key, String value) {

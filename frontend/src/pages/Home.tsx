@@ -18,6 +18,7 @@ const AUTH_ERROR_KEYS: Record<string, string> = {
 
 const StatsSection = lazy(() => import('@/components/home/StatsSection'));
 const NewsAndLinks = lazy(() => import('@/components/home/NewsAndLinks'));
+const FundingThermometer = lazy(() => import('@/components/home/FundingThermometer'));
 const PopularDocs = lazy(() => import('@/components/home/PopularDocs'));
 const PublicDocsPreview = lazy(() => import('@/components/home/PublicDocsPreview'));
 const HowItWorks = lazy(() => import('@/components/home/HowItWorks'));
@@ -102,6 +103,13 @@ export default function Home() {
             </Suspense>
           </>
         )}
+
+        {/* Thermomètre « serveur du mois » (dons Ko-fi) — EN BAS de la page (demande 2026-07-09,
+            « pas en plein milieu »), rend null si non configuré par l'admin. Il embarque son propre
+            Divider pour ne pas laisser un séparateur orphelin. */}
+        <Suspense fallback={null}>
+          <FundingThermometer />
+        </Suspense>
 
         {/* Pub en bas de page (au-dessus du footer), jamais collée au hero sans contenu autour. */}
         {!token && <AdSlot width={728} height={90} sx={{ mt: 6, mb: 4 }} />}

@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Box, Typography, Fade, Link as MuiLink } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { KOFI_URL, ADSENSE_CLIENT, ADSENSE_SLOT } from '@/lib/constants';
+import { useKofiLinkProps } from '@/stores/useKofiDialogStore';
+import { ADSENSE_CLIENT, ADSENSE_SLOT } from '@/lib/constants';
 
 declare global {
   interface Window {
@@ -24,6 +25,8 @@ interface AdBannerProps {
 export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  // Le lien Ko-fi du disclaimer passe par le dialog global (code « FN-… » pour un vérifié).
+  const kofiProps = useKofiLinkProps();
 
   if (user?.supporter) return null;
 
@@ -54,9 +57,7 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', opacity: 0.5, fontSize: 10 }}>
           {t('ad.disclaimer')}{' '}
           <MuiLink
-            href={KOFI_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...kofiProps}
             sx={{ fontSize: 'inherit', opacity: 1 }}
           >
             Ko-fi ☕

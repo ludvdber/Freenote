@@ -34,6 +34,12 @@ export interface User {
   studyStartYear: number | null;
   studyEndYear: number | null;
   graduated: boolean;
+  /** Palette d'accent (perk supporters) — null quand l'entitlement a expiré ou jamais choisi. */
+  accentPalette: string | null;
+  /** Peut choisir une palette : sans-pub actif (don OU grant admin) ou supporter à vie. */
+  paletteEntitled: boolean;
+  /** Flag brut « palettes à vie » (don ≥ 5 € ou grant admin) — pour le toggle admin. */
+  lifetimeSupporter: boolean;
 }
 
 export interface DocumentResponse {
@@ -114,6 +120,44 @@ export interface SectionStat {
 export interface UserStats {
   totalViews: number;
   avgRatingReceived: number | null;
+  /** Vues de la page profil (compteur anonyme, dédup 24 h par visiteur). */
+  profileViews: number;
+}
+
+// --- Panel admin : tableau de bord + analytics ---
+
+/** value = période courante, previous = période précédente (delta calculé côté client). */
+export interface KpiPair {
+  value: number;
+  previous: number;
+}
+
+export interface AdminOverviewResponse {
+  pendingDocs: number;
+  pendingReports: number;
+  duplicateGroups: number;
+  visits7d: KpiPair;
+  docViews7d: KpiPair;
+  quizPlays7d: KpiPair;
+  signups7d: KpiPair;
+  activity14d: { day: string; visits: number; docViews: number; quizPlays: number }[];
+}
+
+export interface AnalyticsResponse {
+  days: number;
+  visits: KpiPair;
+  docViews: KpiPair;
+  quizPlays: KpiPair;
+  guideReads: KpiPair;
+  toolUses: KpiPair;
+  signups: KpiPair;
+  visitsByDay: { day: string; count: number }[];
+  /* id : renseigné pour les tops quiz/docs (liens cliquables), null pour le tracking (slugs). */
+  sources: { label: string; count: number; id: number | null }[];
+  topTools: { label: string; count: number; id: number | null }[];
+  topGuides: { label: string; count: number; id: number | null }[];
+  topQuizzes: { label: string; count: number; id: number | null }[];
+  topDocs: { label: string; count: number; id: number | null }[];
 }
 
 export interface LeaderboardEntry {
@@ -254,6 +298,8 @@ export interface UpdateProfileRequest {
   studyStartYear?: number | null;
   studyEndYear?: number | null;
   graduated: boolean;
+  /** Palette d'accent — '' = thème par défaut, id = réservé aux supporters (403 sinon). */
+  accentPalette?: string;
 }
 
 export interface RateRequest {
@@ -291,6 +337,17 @@ export interface DonationResponse {
   amount: number;
   kofiTransactionId: string;
   adFreeUntil: string | null;
+  /** Message Ko-fi (peut contenir le code « FN-… ») — aide au rattachement manuel. */
+  message: string | null;
+  createdAt: string;
+}
+
+/** Thermomètre de financement — monthlyCost null = jauge désactivée. */
+export interface FundingResponse {
+  monthlyCost: number | null;
+  monthTotal: number | null;
+  /** Donateurs distincts du mois (dons rattachés, montant > 0). */
+  donorCount: number | null;
 }
 
 export type Category = 'SYNTHESE' | 'EXAMEN' | 'NOTES' | 'EXERCICES' | 'COURS' | 'TFE' | 'DIVERS';

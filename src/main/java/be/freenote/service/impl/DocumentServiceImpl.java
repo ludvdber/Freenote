@@ -22,6 +22,7 @@ import be.freenote.service.MeilisearchService;
 import be.freenote.service.MinioService;
 import be.freenote.service.PdfValidationService;
 import be.freenote.service.StatsService;
+import be.freenote.service.TrackingService;
 import be.freenote.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,6 +68,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final ApplicationEventPublisher eventPublisher;
     private final StringRedisTemplate redisTemplate;
     private final ActivityLogService activityLogService;
+    private final TrackingService trackingService;
 
     @Override
     @Transactional
@@ -467,6 +469,9 @@ public class DocumentServiceImpl implements DocumentService {
         if (Boolean.TRUE.equals(firstView)) {
             // Buffer in Redis — no DB write on each download
             redisTemplate.opsForValue().increment(DL_BUFFER_PREFIX + documentId);
+            // Série journalière « vues de docs » du panel admin (le downloadCount par doc est
+            // cumulatif — sans ceci, aucune évolution par jour n'est reconstituable).
+            trackingService.increment(TrackingService.METRIC_DOC_VIEW, "");
 
             // Award 1 XP to author — skip if downloader is the author (anti-farming)
             if (document.getUser() != null && !document.getUser().getId().equals(userId)) {

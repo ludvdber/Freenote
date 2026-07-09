@@ -90,4 +90,43 @@ class SettingsServiceImplTest {
         verify(appSettingRepository).deleteById("countdown.label");
         verify(appSettingRepository, never()).save(any());
     }
+
+    // ---- Coût mensuel (thermomètre) ----
+
+    @Test
+    void shouldReturnNullFundingCostWhenNotConfigured() {
+        when(appSettingRepository.findById("funding.monthly-cost")).thenReturn(Optional.empty());
+
+        assertThat(settingsService.getFundingCost()).isNull();
+    }
+
+    @Test
+    void shouldReturnConfiguredFundingCost() {
+        when(appSettingRepository.findById("funding.monthly-cost"))
+                .thenReturn(Optional.of(setting("funding.monthly-cost", "5.00")));
+
+        assertThat(settingsService.getFundingCost()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
+    void shouldDisableFundingWhenStoredCostIsCorrupt() {
+        when(appSettingRepository.findById("funding.monthly-cost"))
+                .thenReturn(Optional.of(setting("funding.monthly-cost", "abc")));
+
+        assertThat(settingsService.getFundingCost()).isNull();
+    }
+
+    @Test
+    void shouldUpsertAndClearFundingCost() {
+        when(appSettingRepository.findById("funding.monthly-cost")).thenReturn(Optional.empty());
+
+        settingsService.setFundingCost(new java.math.BigDecimal("4.50"));
+        var captor = org.mockito.ArgumentCaptor.forClass(AppSetting.class);
+        verify(appSettingRepository).save(captor.capture());
+        assertThat(captor.getValue().getKey()).isEqualTo("funding.monthly-cost");
+        assertThat(captor.getValue().getValue()).isEqualTo("4.50");
+
+        settingsService.setFundingCost(null);
+        verify(appSettingRepository).deleteById("funding.monthly-cost");
+    }
 }

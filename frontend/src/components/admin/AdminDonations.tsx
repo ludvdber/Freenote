@@ -9,18 +9,26 @@ import {
   Autocomplete,
   Collapse,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
-import { CardGiftcard, Verified, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { CardGiftcard, Verified, ExpandMore, ExpandLess, PersonAddAlt1, DeleteOutlined } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   getAdminDonations,
   adminGrantAdFree,
+  adminAttachDonation,
+  adminDeleteDonation,
   adminSearchUsers,
 } from '@/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatDate, extractApiError } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import type { User, DonationResponse } from '@/types';
 
 interface UserGroup {
@@ -79,7 +87,14 @@ export default function AdminDonations() {
   const [grantQuery, setGrantQuery] = useState('');
   const [grantDays, setGrantDays] = useState('30');
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  // Rattachement d'un don orphelin (donateur sans code « FN-… ») à un compte.
+  const [attachTarget, setAttachTarget] = useState<DonationResponse | null>(null);
+  const [attachUser, setAttachUser] = useState<User | null>(null);
+  const [attachQuery, setAttachQuery] = useState('');
+  // Suppression d'une ligne de don (purge des dons de test) — confirmée avant d'agir.
+  const [deleteTarget, setDeleteTarget] = useState<DonationResponse | null>(null);
   const debouncedGrantQuery = useDebounce(grantQuery, 300);
+  const debouncedAttachQuery = useDebounce(attachQuery, 300);
 
   const { data: page, isLoading } = useQuery({
     queryKey: ['admin-donations'],
@@ -89,6 +104,45 @@ export default function AdminDonations() {
   const { data: userOptions } = useQuery({
     queryKey: ['admin-users-search-grant', debouncedGrantQuery],
     queryFn: () => adminSearchUsers(debouncedGrantQuery, 20),
+  });
+
+  const { data: attachUserOptions } = useQuery({
+    queryKey: ['admin-users-search-attach', debouncedAttachQuery],
+    queryFn: () => adminSearchUsers(debouncedAttachQuery, 20),
+    enabled: attachTarget !== null,
+  });
+
+  const attachMut = useMutation({
+    mutationFn: () => {
+      if (!attachTarget || !attachUser) throw new Error('User required');
+      return adminAttachDonation(attachTarget.id, attachUser.id);
+    },
+    onSuccess: (d) => {
+      setGranted(t('admin.donations.attached', { username: d.username ?? '?' }));
+      setError('');
+      setAttachTarget(null);
+      setAttachUser(null);
+      setAttachQuery('');
+      qc.invalidateQueries({ queryKey: ['admin-donations'] });
+      // Le don rattaché compte maintenant dans la jauge, et si l'admin se l'est rattaché à
+      // LUI-MÊME, ses entitlements (palettes…) doivent se rafraîchir sans re-login.
+      qc.invalidateQueries({ queryKey: ['funding'] });
+      qc.invalidateQueries({ queryKey: ['me'] });
+    },
+    onError: (e) => setError(extractApiError(e)),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => adminDeleteDonation(id),
+    onSuccess: () => {
+      setGranted(t('admin.donations.deleted'));
+      setError('');
+      setDeleteTarget(null);
+      qc.invalidateQueries({ queryKey: ['admin-donations'] });
+      // La ligne comptait peut-être dans le thermomètre du mois — rafraîchir la jauge partout.
+      qc.invalidateQueries({ queryKey: ['funding'] });
+    },
+    onError: (e) => setError(extractApiError(e)),
   });
 
   const grantMut = useMutation({
@@ -239,6 +293,17 @@ export default function AdminDonations() {
                   label={t('admin.donations.active')}
                 />
               )}
+              {/* Un groupe non matché = exactement un don Ko-fi orphelin → rattachable. */}
+              {g.userId === null && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<PersonAddAlt1 />}
+                  onClick={() => { setAttachTarget(g.donations[0]); setAttachUser(null); setAttachQuery(''); }}
+                >
+                  {t('admin.donations.attach')}
+                </Button>
+              )}
               <Box sx={{ minWidth: 180, textAlign: 'right' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   {t('admin.donations.adFreeUntil')}
@@ -269,30 +334,48 @@ export default function AdminDonations() {
               >
                 {g.donations
                   .slice()
-                  .sort((a, b) => (a.adFreeUntil ?? '') < (b.adFreeUntil ?? '') ? 1 : -1)
+                  .sort((a, b) => (a.createdAt ?? '') < (b.createdAt ?? '') ? 1 : -1)
                   .map((d) => {
                     const isManual = d.kofiTransactionId.startsWith('MANUAL-');
                     return (
-                      <Box
-                        key={d.id}
-                        sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}
-                      >
-                        <Chip
-                          size="small"
-                          variant={isManual ? 'outlined' : 'filled'}
-                          color={isManual ? 'warning' : 'primary'}
-                          label={
-                            isManual
-                              ? t('admin.donations.manualGrant')
-                              : `${Number(d.amount).toFixed(2)} €`
-                          }
-                        />
-                        <Typography variant="caption" color="text.secondary" className="mono" sx={{ flex: 1 }}>
-                          #{d.kofiTransactionId}
-                        </Typography>
-                        <Typography variant="caption" className="mono">
-                          {d.adFreeUntil ? formatDate(d.adFreeUntil, i18n.language) : '—'}
-                        </Typography>
+                      <Box key={d.id} sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                          <Chip
+                            size="small"
+                            variant={isManual ? 'outlined' : 'filled'}
+                            color={isManual ? 'warning' : 'primary'}
+                            label={
+                              isManual
+                                ? t('admin.donations.manualGrant')
+                                : `${Number(d.amount).toFixed(2)} €`
+                            }
+                          />
+                          <Typography variant="caption" color="text.secondary" className="mono" sx={{ flex: 1 }}>
+                            #{d.kofiTransactionId}
+                          </Typography>
+                          {d.createdAt && (
+                            <Typography variant="caption" color="text.secondary" className="mono">
+                              {formatDate(d.createdAt, i18n.language)}
+                            </Typography>
+                          )}
+                          <Typography variant="caption" className="mono">
+                            {d.adFreeUntil ? formatDate(d.adFreeUntil, i18n.language) : '—'}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setDeleteTarget(d)}
+                            aria-label={t('admin.donations.delete')}
+                          >
+                            <DeleteOutlined fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        {/* Le message Ko-fi peut contenir le code « FN-… » — précieux pour rattacher. */}
+                        {d.message && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', pl: 0.5 }}>
+                            « {d.message} »
+                          </Typography>
+                        )}
                       </Box>
                     );
                   })}
@@ -301,6 +384,61 @@ export default function AdminDonations() {
           </GlassCard>
         );
       })}
+
+      {/* Dialog de rattachement : choisir le compte qui recevra les avantages du don orphelin. */}
+      <Dialog open={attachTarget !== null} onClose={() => setAttachTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle>{t('admin.donations.attachTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            {attachTarget && t('admin.donations.attachHelp', {
+              amount: Number(attachTarget.amount).toFixed(2),
+              message: attachTarget.message || '—',
+            })}
+          </DialogContentText>
+          <Autocomplete<User, false, false, false>
+            size="small"
+            options={attachUserOptions ?? []}
+            value={attachUser}
+            onChange={(_, v) => setAttachUser(v)}
+            onInputChange={(_, v) => setAttachQuery(v)}
+            getOptionLabel={(u) => u.displayName !== u.username ? `${u.displayName} (@${u.username})` : u.username}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            filterOptions={(opts) => opts}
+            noOptionsText={t('admin.delegates.userSearchEmpty')}
+            renderInput={(params) => (
+              <TextField {...params} label={t('admin.donations.user')} autoFocus />
+            )}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAttachTarget(null)}>{t('common.cancel')}</Button>
+          <Button
+            variant="contained"
+            disabled={!attachUser || attachMut.isPending}
+            onClick={() => attachMut.mutate()}
+          >
+            {attachMut.isPending ? t('common.loading') : t('admin.donations.attach')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Suppression d'une ligne (dons de test) — les avantages déjà appliqués ne sont PAS repris. */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t('admin.donations.deleteTitle')}
+        message={
+          deleteTarget
+            ? t('admin.donations.deleteConfirm', {
+                amount: Number(deleteTarget.amount).toFixed(2),
+                tx: deleteTarget.kofiTransactionId,
+              })
+            : ''
+        }
+        confirmLabel={t('admin.donations.delete')}
+        loading={deleteMut.isPending}
+        onConfirm={() => deleteTarget && deleteMut.mutate(deleteTarget.id)}
+        onClose={() => setDeleteTarget(null)}
+      />
     </Box>
   );
 }

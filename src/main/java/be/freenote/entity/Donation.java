@@ -31,4 +31,12 @@ public class Donation {
     private String kofiTransactionId;
 
     private LocalDateTime adFreeUntil;
+
+    /** Message laissé sur Ko-fi — porte le code personnel « FN-… » quand le donateur l'a collé. */
+    @Column(length = 500)
+    private String message;
+
+    @Column(name = "created_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -244,7 +244,11 @@
       "activity": "Logs",
       "guides": "Guides",
       "tools": "Tools",
-      "settings": "Settings"
+      "settings": "Settings",
+      "overview": "Overview",
+      "analytics": "Analytics",
+      "duplicates": "Duplicates",
+      "logs": "Logs"
     },
     "settings": {
       "countdownTitle": "Home page countdown",
@@ -256,7 +260,11 @@
       "previewPast": "This date has already passed — the banner will not show.",
       "disable": "Disable",
       "saved": "Countdown saved.",
-      "disabled": "Countdown disabled."
+      "disabled": "Countdown disabled.",
+      "fundingTitle": "Funding thermometer",
+      "fundingHint": "Monthly server cost, shown on the public homepage gauge. Ko-fi donations matched to an account fill the gauge; clear the cost to hide it.",
+      "fundingCostLabel": "Monthly cost (€)",
+      "fundingMonthTotal": "Matched donations this month: {{total}} €"
     },
     "guides": {
       "title": "Guides",
@@ -292,7 +300,8 @@
       "edit": "Edit",
       "deleteConfirm": "Permanently delete this document and its file? This cannot be undone.",
       "duplicates": "Duplicates detected ({{count}} groups)",
-      "duplicatesHint": "These documents have strictly identical PDF content (same SHA-256 fingerprint). Keep the best copy and delete the others."
+      "duplicatesHint": "These documents have strictly identical PDF content (same SHA-256 fingerprint). Keep the best copy and delete the others.",
+      "preview": "Inline PDF preview"
     },
     "sections": {
       "title": "Sections",
@@ -395,12 +404,16 @@
       "banReasonHint": "Kept in the ban registry, visible to admins only.",
       "roleTitle": "Change role",
       "roleConfirm": "Set \"{{username}}\" to the {{role}} role?",
-      "roleConfirmUnverify": "Warning: the USER role also removes email verification — the account loses document access until re-verified."
+      "roleConfirmUnverify": "Warning: the USER role also removes email verification — the account loses document access until re-verified.",
+      "palettesChip": "Lifetime palettes",
+      "palettesHint": "Accent palettes unlocked for life (donation ≥ €5 or admin grant).",
+      "grantPalettes": "Grant lifetime palettes",
+      "revokePalettes": "Revoke lifetime palettes"
     },
     "donations": {
       "title": "Donations & ad-free",
       "grantTitle": "Manually grant ad-free time",
-      "grantHelp": "Use this if a Ko-fi donation didn't match an account, or to gift an ad-free period. The duration is added on top of any existing active period.",
+      "grantHelp": "Use this if a Ko-fi donation didn’t match an account, or to gift an ad-free period. The duration is added on top of any existing active period. ⚠️ Ad-free ONLY: palettes and supporter status come from a real attached donation (“Attach” button or webhook).",
       "user": "User",
       "days": "Days",
       "grant": "Grant",
@@ -412,7 +425,15 @@
       "manualGrant": "Manual grant",
       "active": "Active",
       "adFreeUntil": "Ad-free until",
-      "userSummary": "{{kofi}} Ko-fi donation(s) · {{manual}} manual grant(s) · {{amount}} €"
+      "userSummary": "{{kofi}} Ko-fi donation(s) · {{manual}} manual grant(s) · {{amount}} €",
+      "attach": "Attach",
+      "attachTitle": "Attach this donation to an account",
+      "attachHelp": "Donation of {{amount}} € — message: {{message}}. The chosen account receives the perks for that amount (ad-free, palettes, Supporter role).",
+      "attached": "Donation attached to {{username}} ✓",
+      "delete": "Delete",
+      "deleteTitle": "Delete this donation?",
+      "deleteConfirm": "The €{{amount}} donation (#{{tx}}) will be removed from the audit trail and this month’s gauge. Perks already applied to the account are not revoked.",
+      "deleted": "Donation deleted."
     },
     "activity": {
       "title": "Activity log",
@@ -442,6 +463,74 @@
       "open": "Open the tool",
       "delete": "Delete",
       "deleteConfirm": "Delete “{{name}}” from the shared library?"
+    },
+    "nav": {
+      "moderation": "Moderation",
+      "content": "Content",
+      "catalogue": "Catalogue",
+      "community": "Community",
+      "system": "System"
+    },
+    "overview": {
+      "kpiVisits": "Visits 7 d",
+      "kpiDocViews": "Doc views 7 d",
+      "kpiQuizPlays": "Quiz plays 7 d",
+      "kpiSignups": "New accounts 7 d",
+      "vsPrev": "vs prev. 7 d",
+      "trackingEmpty": "Anonymous tracking ships with this version — visit, tool and guide counters start filling as soon as it is deployed.",
+      "activityTitle": "Activity — last 14 days",
+      "weekendLegend": "Purple bars = weekends (the site lives at the pace of classes).",
+      "seriesVisits": "Visits",
+      "seriesDocViews": "Document views",
+      "seriesQuizPlays": "Quiz plays",
+      "sevenDayTotal": "{{count}} over 7 d",
+      "recentTitle": "Recent activity",
+      "recentEmpty": "No activity recorded.",
+      "seeAll": "See all",
+      "queueTitle": "To review",
+      "queueCount_one": "{{count}} item",
+      "queueCount_other": "{{count}} items",
+      "queueEmpty": "Queue clear ✓",
+      "tagDoc": "DOC",
+      "tagReport": "REPORT",
+      "tagDuplicate": "DUPLICATE",
+      "duplicateLine_one": "{{count}} group of documents with identical content",
+      "duplicateLine_other": "{{count}} groups of documents with identical content",
+      "open": "Open",
+      "allPendingDocs": "All pending documents ({{count}})"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "days30": "30 days",
+      "days90": "90 days",
+      "vsPrev": "vs prev. {{days}} d",
+      "kpiVisits": "Visits",
+      "kpiDocViews": "Doc views",
+      "kpiQuizPlays": "Quiz plays",
+      "kpiGuideReads": "Guide reads",
+      "kpiToolUses": "Tool uses",
+      "kpiSignups": "New accounts",
+      "visitsTitle": "Visits per day — {{days}} days",
+      "visitsTooltip_one": "{{count}} visit",
+      "visitsTooltip_other": "{{count}} visits",
+      "sourcesTitle": "Visit sources",
+      "sourcesHint": "Organic = search engines · Campaign = ?src= links (QR, flyers, posts).",
+      "sources": {
+        "direct": "Direct",
+        "organic": "Organic (search)",
+        "social": "Social networks",
+        "referral": "Referring sites",
+        "campaign": "Campaigns (?src=)"
+      },
+      "toolsTitle": "Tool usage",
+      "topGuides": "Most-read guides",
+      "topQuizzes": "Most-played quizzes",
+      "topDocs": "Most-viewed docs",
+      "allTime": "All-time total",
+      "empty": "No data yet."
+    },
+    "duplicates": {
+      "empty": "No duplicates — the library is clean ✓"
     }
   },
   "upload": {
@@ -545,7 +634,30 @@
     "firstName": "First name",
     "lastName": "Last name",
     "displayRealName": "Display my real name",
-    "displayRealNameHelp": "When enabled, others see \"First Last\" instead of your username."
+    "displayRealNameHelp": "When enabled, others see \"First Last\" instead of your username.",
+    "palette": {
+      "title": "Accent palette",
+      "help": "Pick the tint of your buttons and links. Applied after saving.",
+      "locked": "Supporters only: any active ad-free period (even the smallest donation) unlocks the palettes, and a donation of €5 or more unlocks them for life.",
+      "default": "Cosmic (default)",
+      "names": {
+        "aurora": "Aurora",
+        "nebula": "Nebula",
+        "solar": "Solar",
+        "ocean": "Ocean",
+        "ruby": "Ruby"
+      }
+    },
+    "support": {
+      "title": "Support Freenote",
+      "help": "Freenote runs on donations. Paste your personal code in your Ko-fi donation message so the perks land on THIS account.",
+      "codeLabel": "Your code:",
+      "copy": "Copy the code",
+      "copied": "Copied!",
+      "perkSmall": "Donation under €5: 1 month ad-free + accent palettes for 1 month.",
+      "perkBig": "Donation of €5 or more: 1 ad-free month per euro (36 months max), lifetime palettes + the Supporter Discord role.",
+      "cta": "Donate on Ko-fi"
+    }
   },
   "auth": {
     "verificationRequired": "Verification required",
@@ -1630,7 +1742,8 @@
     "statDocsHint": "See their documents",
     "bestContribution": "Most appreciated contribution",
     "revisionsTitle": "Their quizzes & decks",
-    "guidesTitle": "Their guides"
+    "guidesTitle": "Their guides",
+    "statProfileViews": "Profile views"
   },
   "notFound": {
     "title": "Page not found",
@@ -1686,5 +1799,27 @@
       "tools": "Tools",
       "pages": "Pages"
     }
+  },
+  "funding": {
+    "title": "The {{month}} server",
+    "covered": "✅ This month's server is funded by the community 💜",
+    "missing": "Still {{amount}} € to cover the server this month.",
+    "outOfPocket": "The rest comes out of the maintainer’s pocket — every coffee genuinely helps.",
+    "cta": "Buy a coffee",
+    "supporters_one": "{{count}} student contributed this month",
+    "supporters_other": "{{count}} students contributed this month"
+  },
+  "kofiDialog": {
+    "title": "Support Freenote",
+    "lead": "Your donation goes through Ko-fi. Paste your personal code in the donation MESSAGE: it links the donation to your account and unlocks your perks automatically.",
+    "copy": "Copy the code",
+    "copied": "Copied!",
+    "hint": "Without this code the donation stays anonymous (an admin can attach it later, but there is no guarantee of finding you).",
+    "perks": "From €5: 1 ad-free month per euro, lifetime colour palettes and the Discord Supporter role. Below that: 1 ad-free month + palettes.",
+    "cta": "Copy and open Ko-fi",
+    "later": "Later",
+    "loginLead": "Donations go through Ko-fi, but your personal code is tied to your Freenote account: log in first (and verify your ISFCE email) to get it — without it, the donation won’t be linked to your account and your perks won’t activate.",
+    "login": "Log in",
+    "anyway": "Donate anyway"
   }
 }

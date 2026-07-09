@@ -9,5 +9,8 @@ public record DonationResponse(
         String username,
         BigDecimal amount,
         String kofiTransactionId,
-        LocalDateTime adFreeUntil
+        LocalDateTime adFreeUntil,
+        /* Message Ko-fi (peut contenir le code « FN-… ») — aide l'admin à rattacher un don orphelin. */
+        String message,
+        LocalDateTime createdAt
 ) {}

@@ -255,6 +255,17 @@ public class AdminController {
         return ResponseEntity.ok(userService.adminSetTrusted(id, false));
     }
 
+    /** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
+    @PutMapping("/users/{id}/lifetime-palettes")
+    public ResponseEntity<UserResponse> grantLifetimePalettes(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetLifetimePalettes(id, true));
+    }
+
+    @DeleteMapping("/users/{id}/lifetime-palettes")
+    public ResponseEntity<UserResponse> revokeLifetimePalettes(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetLifetimePalettes(id, false));
+    }
+
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @RequestParam String role,
                                                        Authentication authentication) {
@@ -302,5 +313,20 @@ public class AdminController {
                                                          Authentication authentication) {
         Long adminId = SecurityUtils.currentUserId(authentication);
         return ResponseEntity.ok(donationService.grantAdFree(id, days, adminId));
+    }
+
+    /** Rattache un don Ko-fi orphelin (donateur sans code « FN-… ») à un compte et lui applique
+     *  les avantages du montant. 400 si le don est déjà rattaché. */
+    @PutMapping("/donations/{id}/attach")
+    public ResponseEntity<DonationResponse> attachDonation(@PathVariable Long id,
+                                                           @RequestParam Long userId) {
+        return ResponseEntity.ok(donationService.attach(id, userId));
+    }
+
+    /** Supprime une ligne de don (purge des dons de test) — les avantages déjà appliqués restent. */
+    @DeleteMapping("/donations/{id}")
+    public ResponseEntity<Void> deleteDonation(@PathVariable Long id) {
+        donationService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

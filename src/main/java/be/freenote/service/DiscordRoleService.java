@@ -15,4 +15,10 @@ public interface DiscordRoleService {
      * @param discordUserId the Discord snowflake (the {@code oauth_id} of the user's DISCORD link)
      */
     void assignVerifiedRole(String discordUserId);
+
+    /**
+     * Même mécanique pour le rôle « Supporter » (don Ko-fi ≥ 5 €). No-op si
+     * {@code app.discord.supporter-role-id} est vide — le palier reste utilisable sans bot.
+     */
+    void assignSupporterRole(String discordUserId);
 }

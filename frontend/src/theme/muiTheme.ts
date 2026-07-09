@@ -1,5 +1,6 @@
-import { createTheme, type ThemeOptions } from '@mui/material/styles';
+import { createTheme, type Theme, type ThemeOptions } from '@mui/material/styles';
 import { TOKENS } from './tokens';
+import { accentFor, DEFAULT_ACCENT } from '@/lib/palettes';
 import './palette.d';
 
 const commonOptions: ThemeOptions = {
@@ -52,175 +53,191 @@ const commonOptions: ThemeOptions = {
   },
 };
 
-export const darkTheme = createTheme({
-  ...commonOptions,
-  palette: {
-    mode: 'dark',
-    primary: { main: '#00d2ff' },
-    secondary: { main: '#7b2ff7' },
-    background: {
-      default: '#0a0e1a',
-      // Keep paper transparent so the cosmic background shows through glass cards
-      paper: 'rgba(255, 255, 255, 0.04)',
-    },
-    tokens: TOKENS,
-  },
-  components: {
-    ...commonOptions.components,
-    MuiCssBaseline: {
-      ...commonOptions.components?.MuiCssBaseline,
-      styleOverrides: {
-        ...(commonOptions.components?.MuiCssBaseline as Record<string, unknown>)?.styleOverrides as Record<string, unknown>,
-        ':focus-visible': {
-          outline: '2px solid #00d2ff',
-          outlineOffset: 2,
-          borderRadius: 8,
-        },
-      },
-    },
-    MuiCard: {
-      defaultProps: {
-        elevation: 0,
-      },
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          backgroundColor: 'rgba(255, 255, 255, 0.04)',
-          backgroundImage: 'none',
-          border: '1px solid rgba(255, 255, 255, 0.07)',
-          boxShadow: 'none',
-        },
-      },
-    },
-    MuiPaper: {
-      defaultProps: {
-        elevation: 0,
-      },
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none !important',
-          boxShadow: 'none',
-        },
-      },
-    },
-    MuiMenu: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
-        },
-      },
-    },
-    MuiAutocomplete: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
-          backgroundImage: 'none !important',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
-        },
-      },
-    },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
-          backgroundImage: 'none !important',
-        },
-      },
-    },
-  },
-});
+/**
+ * Construit le thème MUI. `accentId` (palette d'accent, perk supporters) remplace uniquement
+ * primary/secondary + la couleur de focus — le fond cosmique, les glass tokens et les couleurs de
+ * marque (TOKENS) ne bougent pas. Sans palette (null/inconnu) : thème historique à l'identique.
+ */
+export function buildTheme(mode: 'dark' | 'light', accentId?: string | null): Theme {
+  const accent = accentFor(accentId);
 
-export const lightTheme = createTheme({
-  ...commonOptions,
-  palette: {
-    mode: 'light',
-    primary: { main: '#0091b3' },
-    secondary: { main: '#6a1be0' },
-    background: {
-      default: '#f0f4f8',
-      paper: 'rgba(255, 255, 255, 0.7)',
+  if (mode === 'dark') {
+    const primary = accent ? accent.dark.primary : DEFAULT_ACCENT.dark.primary;
+    const secondary = accent ? accent.dark.secondary : DEFAULT_ACCENT.dark.secondary;
+    return createTheme({
+      ...commonOptions,
+      palette: {
+        mode: 'dark',
+        primary: { main: primary },
+        secondary: { main: secondary },
+        background: {
+          default: '#0a0e1a',
+          // Keep paper transparent so the cosmic background shows through glass cards
+          paper: 'rgba(255, 255, 255, 0.04)',
+        },
+        tokens: TOKENS,
+      },
+      components: {
+        ...commonOptions.components,
+        MuiCssBaseline: {
+          ...commonOptions.components?.MuiCssBaseline,
+          styleOverrides: {
+            ...(commonOptions.components?.MuiCssBaseline as Record<string, unknown>)?.styleOverrides as Record<string, unknown>,
+            ':focus-visible': {
+              outline: `2px solid ${primary}`,
+              outlineOffset: 2,
+              borderRadius: 8,
+            },
+          },
+        },
+        MuiCard: {
+          defaultProps: {
+            elevation: 0,
+          },
+          styleOverrides: {
+            root: {
+              borderRadius: 16,
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+              backgroundImage: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.07)',
+              boxShadow: 'none',
+            },
+          },
+        },
+        MuiPaper: {
+          defaultProps: {
+            elevation: 0,
+          },
+          styleOverrides: {
+            root: {
+              backgroundImage: 'none !important',
+              boxShadow: 'none',
+            },
+          },
+        },
+        MuiMenu: {
+          styleOverrides: {
+            paper: {
+              backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
+            },
+          },
+        },
+        MuiAutocomplete: {
+          styleOverrides: {
+            paper: {
+              backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
+              backgroundImage: 'none !important',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
+            },
+          },
+        },
+        MuiDialog: {
+          styleOverrides: {
+            paper: {
+              backgroundColor: 'rgba(18, 22, 36, 0.98) !important',
+              backgroundImage: 'none !important',
+            },
+          },
+        },
+      },
+    });
+  }
+
+  const primary = accent ? accent.light.primary : DEFAULT_ACCENT.light.primary;
+  const secondary = accent ? accent.light.secondary : DEFAULT_ACCENT.light.secondary;
+  return createTheme({
+    ...commonOptions,
+    palette: {
+      mode: 'light',
+      primary: { main: primary },
+      secondary: { main: secondary },
+      background: {
+        default: '#f0f4f8',
+        paper: 'rgba(255, 255, 255, 0.7)',
+      },
+      tokens: TOKENS,
     },
-    tokens: TOKENS,
-  },
-  components: {
-    ...commonOptions.components,
-    MuiCssBaseline: {
-      ...commonOptions.components?.MuiCssBaseline,
-      styleOverrides: {
-        ...(commonOptions.components?.MuiCssBaseline as Record<string, unknown>)?.styleOverrides as Record<string, unknown>,
-        ':focus-visible': {
-          outline: '2px solid #0062a3',
-          outlineOffset: 2,
-          borderRadius: 8,
+    components: {
+      ...commonOptions.components,
+      MuiCssBaseline: {
+        ...commonOptions.components?.MuiCssBaseline,
+        styleOverrides: {
+          ...(commonOptions.components?.MuiCssBaseline as Record<string, unknown>)?.styleOverrides as Record<string, unknown>,
+          ':focus-visible': {
+            // Le focus par défaut clair reste #0062a3 (plus sombre que primary pour le contraste).
+            outline: `2px solid ${accent ? accent.light.primary : '#0062a3'}`,
+            outlineOffset: 2,
+            borderRadius: 8,
+          },
+        },
+      },
+      MuiCard: {
+        defaultProps: {
+          elevation: 0,
+        },
+        styleOverrides: {
+          root: {
+            borderRadius: 16,
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backgroundImage: 'none',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: 'none',
+          },
+        },
+      },
+      MuiPaper: {
+        defaultProps: {
+          elevation: 0,
+        },
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none !important',
+            boxShadow: 'none',
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
+          },
+        },
+      },
+      MuiAutocomplete: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
+            backgroundImage: 'none !important',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
+            backgroundImage: 'none !important',
+          },
         },
       },
     },
-    MuiCard: {
-      defaultProps: {
-        elevation: 0,
-      },
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          backgroundColor: 'rgba(255, 255, 255, 0.7)',
-          backgroundImage: 'none',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow: 'none',
-        },
-      },
-    },
-    MuiPaper: {
-      defaultProps: {
-        elevation: 0,
-      },
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none !important',
-          boxShadow: 'none',
-        },
-      },
-    },
-    MuiMenu: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
-        },
-      },
-    },
-    MuiAutocomplete: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
-          backgroundImage: 'none !important',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
-        },
-      },
-    },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: 'rgba(255, 255, 255, 0.98) !important',
-          backgroundImage: 'none !important',
-        },
-      },
-    },
-  },
-});
+  });
+}

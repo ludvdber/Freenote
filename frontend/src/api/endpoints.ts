@@ -47,6 +47,9 @@ import type {
   UserStats,
   AdjacentDocumentsResponse,
   CountdownResponse,
+  FundingResponse,
+  AdminOverviewResponse,
+  AnalyticsResponse,
 } from '@/types';
 
 // --- Stats ---
@@ -62,6 +65,33 @@ export const adminGetCountdown = () =>
 
 export const adminSetCountdown = (body: { date: string | null; label: string | null }) =>
   api.put<CountdownResponse>('/admin/settings/countdown', body).then((r) => r.data);
+
+// --- Financement (thermomètre des dons) ---
+export const getFunding = () =>
+  api.get<FundingResponse>('/public/funding').then((r) => r.data);
+
+export const adminGetFunding = () =>
+  api.get<FundingResponse>('/admin/settings/funding').then((r) => r.data);
+
+export const adminSetFunding = (monthlyCost: number | null) =>
+  api.put<FundingResponse>('/admin/settings/funding', { monthlyCost }).then((r) => r.data);
+
+/** Code personnel « FN-… » à coller dans le message d'un don Ko-fi. */
+export const getMyKofiCode = () =>
+  api.get<{ code: string }>('/users/me/kofi-code').then((r) => r.data);
+
+// --- Tracking anonyme (analytics admin) ---
+/** Fire-and-forget : un échec (offline, rate-limit) est avalé — jamais d'erreur visible. */
+export const trackEvent = (metric: string, target: string) => {
+  api.post('/public/track', { metric, target }).catch(() => {});
+};
+
+// --- Admin: tableau de bord ---
+export const getAdminOverview = () =>
+  api.get<AdminOverviewResponse>('/admin/overview').then((r) => r.data);
+
+export const getAdminAnalytics = (days: number) =>
+  api.get<AnalyticsResponse>('/admin/analytics', { params: { days } }).then((r) => r.data);
 
 // --- Documents ---
 export const getDocumentById = (id: number) =>
@@ -314,6 +344,13 @@ export const adminTrustUser = (id: number) =>
 export const adminUntrustUser = (id: number) =>
   api.put<User>(`/admin/users/${id}/untrust`).then((r) => r.data);
 
+/** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
+export const adminGrantLifetimePalettes = (id: number) =>
+  api.put<User>(`/admin/users/${id}/lifetime-palettes`).then((r) => r.data);
+
+export const adminRevokeLifetimePalettes = (id: number) =>
+  api.delete<User>(`/admin/users/${id}/lifetime-palettes`).then((r) => r.data);
+
 export const adminUpdateUserRole = (id: number, role: 'USER' | 'VERIFIED' | 'ADMIN') =>
   api.patch<User>(`/admin/users/${id}/role`, null, { params: { role } }).then((r) => r.data);
 
@@ -352,6 +389,14 @@ export const getAdminDonations = (page = 0, size = 30) =>
 
 export const adminGrantAdFree = (userId: number, days: number) =>
   api.post<DonationResponse>(`/admin/users/${userId}/grant-ad-free`, null, { params: { days } }).then((r) => r.data);
+
+/** Rattache un don Ko-fi orphelin à un compte (applique aussi les avantages du montant). */
+export const adminAttachDonation = (donationId: number, userId: number) =>
+  api.put<DonationResponse>(`/admin/donations/${donationId}/attach`, null, { params: { userId } }).then((r) => r.data);
+
+/** Supprime une ligne de don (purge des dons de test) — les avantages déjà appliqués restent. */
+export const adminDeleteDonation = (donationId: number) =>
+  api.delete(`/admin/donations/${donationId}`);
 
 // --- Admin: Activity logs ---
 export const getActivityLogs = (page = 0, size = 50, type?: string) =>

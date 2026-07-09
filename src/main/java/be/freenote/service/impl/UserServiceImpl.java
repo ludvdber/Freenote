@@ -13,6 +13,7 @@ import be.freenote.entity.UserProfile;
 import be.freenote.enums.ActivityType;
 import be.freenote.enums.AvatarSource;
 import be.freenote.exception.DuplicateResourceException;
+import be.freenote.exception.ForbiddenException;
 import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.mapper.UserMapper;
 import be.freenote.repository.BanRepository;
@@ -22,10 +23,12 @@ import be.freenote.repository.RatingRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.ReportRepository;
 import be.freenote.repository.SectionRepository;
+import be.freenote.repository.DailyStatRepository;
 import be.freenote.repository.UserOauthLinkRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.ActivityLogService;
 import be.freenote.service.DiscordRoleService;
+import be.freenote.service.TrackingService;
 import be.freenote.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,7 @@ public class UserServiceImpl implements UserService {
     private final UserOauthLinkRepository oauthLinkRepository;
     private final BanRepository banRepository;
     private final DelegateHistoryRepository delegateHistoryRepository;
+    private final DailyStatRepository dailyStatRepository;
     private final UserMapper userMapper;
     private final ActivityLogService activityLogService;
     private final DiscordRoleService discordRoleService;
@@ -109,6 +113,17 @@ public class UserServiceImpl implements UserService {
         profile.setStudyStartYear(request.getStudyStartYear());
         profile.setStudyEndYear(request.getStudyEndYear());
         profile.setGraduated(request.isGraduated());
+
+        // Palette d'accent : perk supporters. null = champ non envoyé (inchangé), "" = retour au
+        // thème par défaut (toujours permis), un id = réservé aux comptes avec l'entitlement actif.
+        String palette = request.getAccentPalette();
+        if (palette != null) {
+            String normalized = palette.isBlank() ? null : palette;
+            if (normalized != null && !UserMapper.isPaletteEntitled(profile)) {
+                throw new ForbiddenException("Les palettes d'accent sont réservées aux supporters Ko-fi");
+            }
+            profile.setAccentPalette(normalized);
+        }
 
         User saved = userRepository.save(user);
         long docCount = documentRepository.countByUserId(userId);
@@ -189,7 +204,9 @@ public class UserServiceImpl implements UserService {
         Repositories.findByIdOrThrow(userRepository, userId, "User");
         long totalViews = documentRepository.sumDownloadCountByUserId(userId);
         Double avgRating = ratingRepository.avgScoreReceivedByUserId(userId);
-        return new UserStatsResponse(totalViews, avgRating);
+        // Vues du profil : agrégat anonyme daily_stats (dédup 24 h par viewer côté tracking).
+        long profileViews = dailyStatRepository.sumByTarget(TrackingService.METRIC_PROFILE, String.valueOf(userId));
+        return new UserStatsResponse(totalViews, avgRating, profileViews);
     }
 
     @Override
@@ -279,10 +296,18 @@ public class UserServiceImpl implements UserService {
         if (!user.isVerified()) {
             return;
         }
+        boolean supporter = user.getProfile() != null && user.getProfile().isLifetimeSupporter();
         oauthLinkRepository.findByUserId(userId).stream()
                 .filter(link -> "DISCORD".equals(link.getProvider()))
                 .findFirst()
-                .ifPresent(link -> discordRoleService.assignVerifiedRole(link.getOauthId()));
+                .ifPresent(link -> {
+                    discordRoleService.assignVerifiedRole(link.getOauthId());
+                    // Le rôle Supporter (don ≥ 5 €) est resynchronisé par le même bouton — utile
+                    // quand le don est arrivé avant que l'utilisateur rejoigne le serveur (404).
+                    if (supporter) {
+                        discordRoleService.assignSupporterRole(link.getOauthId());
+                    }
+                });
     }
 
     @Override
@@ -348,6 +373,30 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(user);
         long docCount = documentRepository.countByUserId(userId);
         log.info("Admin set trusted={} for user: id={}, username={}", trusted, userId, user.getUsername());
+        return userMapper.toResponse(saved, docCount);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse adminSetLifetimePalettes(Long userId, boolean enabled) {
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        UserProfile profile = user.getProfile();
+        if (profile == null) {
+            profile = UserProfile.builder().user(user).build();
+            user.setProfile(profile);
+        }
+        profile.setLifetimeSupporter(enabled);
+        User saved = userRepository.save(user);
+        if (enabled) {
+            // Même flag qu'un don ≥ 5 € : le rôle Discord Supporter suit l'octroi (fire-and-forget,
+            // pattern SupporterPerksServiceImpl.pushSupporterRole — jamais bloquant).
+            oauthLinkRepository.findByUserId(userId).stream()
+                    .filter(link -> "DISCORD".equals(link.getProvider()))
+                    .findFirst()
+                    .ifPresent(link -> discordRoleService.assignSupporterRole(link.getOauthId()));
+        }
+        long docCount = documentRepository.countByUserId(userId);
+        log.info("Admin set lifetimePalettes={} for user: id={}, username={}", enabled, userId, user.getUsername());
         return userMapper.toResponse(saved, docCount);
     }
 

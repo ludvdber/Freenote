@@ -55,4 +55,9 @@ public class UpdateProfileRequest {
     private Integer studyEndYear;
 
     private boolean graduated;
+
+    // Palette d'accent (perk supporters). Ids synchronisés avec frontend/src/lib/palettes.ts —
+    // vide = thème par défaut, null = champ absent (inchangé).
+    @Pattern(regexp = "^$|^(aurora|nebula|solar|ocean|ruby)$", message = "Palette inconnue")
+    private String accentPalette;
 }

@@ -20,6 +20,19 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     @Query("UPDATE Quiz q SET q.attemptCount = q.attemptCount + 1 WHERE q.id = :id")
     void incrementAttemptCount(@Param("id") Long id);
 
+    /** Top quiz du panel Analytics — cumul all-time (attemptCount dénormalisé). PROJECTION
+     *  id/title/attemptCount uniquement : jamais charger la colonne JSONB des questions pour un top.
+     *  L'id permet au client de lier vers /outils/quiz#play={id}. */
+    @Query("SELECT q.id AS id, q.title AS title, q.attemptCount AS attemptCount FROM Quiz q " +
+           "WHERE q.published = true ORDER BY q.attemptCount DESC")
+    java.util.List<QuizTopRow> findTopByAttempts(Pageable pageable);
+
+    interface QuizTopRow {
+        Long getId();
+        String getTitle();
+        int getAttemptCount();
+    }
+
     /**
      * Bibliothèque : quiz PUBLIÉS, plus récents d'abord, en PROJECTION (sans la colonne JSONB
      * {@code questions} — un quiz peut peser plusieurs Mo d'images base64, charger l'entité entière

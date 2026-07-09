@@ -62,6 +62,7 @@ public class QuizServiceImpl implements QuizService {
     private final SectionRepository sectionRepository;
     private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
     private final be.freenote.service.NotificationService notificationService;
+    private final be.freenote.service.TrackingService trackingService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @Override
@@ -196,6 +197,8 @@ public class QuizServiceImpl implements QuizService {
                     .quiz(quiz).user(user).score(score).total(total).durationMs(duration).build());
         }
         quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
+        // Série journalière « parties de quiz » (panel admin) — l'attemptCount par quiz est cumulatif.
+        trackingService.increment(be.freenote.service.TrackingService.METRIC_QUIZ_PLAY, "");
 
         int rank = user == null ? 0 : rankOf(quizId, userId);
         return new AttemptResultResponse(score, total, duration, correct, correctAnswers, explanations, rank);

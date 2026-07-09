@@ -304,8 +304,9 @@ test.describe('API Health', () => {
 
   test('endpoints publics : news, guides, catalogue teaser, révision, SEO', async ({ request }) => {
     // /api/quizzes et /api/flashcard-decks sont PUBLICS depuis la révision publique (2026-07-08) ;
-    // /sitemap.xml et /rss.xml sont servis dynamiquement par le backend (SeoController).
-    for (const ep of ['/api/news', '/api/guides', '/api/public/documents', '/api/quizzes', '/api/flashcard-decks', '/sitemap.xml', '/rss.xml']) {
+    // /sitemap.xml et /rss.xml sont servis dynamiquement par le backend (SeoController) ;
+    // /api/public/funding = thermomètre des dons (200 même non configuré, monthlyCost null).
+    for (const ep of ['/api/news', '/api/guides', '/api/public/documents', '/api/quizzes', '/api/flashcard-decks', '/api/public/funding', '/sitemap.xml', '/rss.xml']) {
       const res = await request.get(`http://localhost:8080${ep}`);
       expect(res.status(), ep).toBe(200);
     }

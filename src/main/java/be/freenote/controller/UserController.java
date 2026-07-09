@@ -5,6 +5,7 @@ import be.freenote.dto.request.UpdateProfileRequest;
 import be.freenote.dto.request.UpdateSectionRequest;
 import be.freenote.dto.request.UpdateUsernameRequest;
 import be.freenote.dto.response.DocumentResponse;
+import be.freenote.dto.response.KofiCodeResponse;
 import be.freenote.dto.response.ProfileCardResponse;
 import be.freenote.dto.response.UserResponse;
 import be.freenote.dto.response.UserStatsResponse;
@@ -12,6 +13,7 @@ import be.freenote.security.JwtRevocationService;
 import be.freenote.security.JwtTokenProvider;
 import be.freenote.security.OAuth2LoginSuccessHandler;
 import be.freenote.security.ratelimit.RateLimit;
+import be.freenote.service.KofiService;
 import be.freenote.service.RecentDocsService;
 import be.freenote.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +33,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final KofiService kofiService;
     private final RecentDocsService recentDocsService;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtRevocationService jwtRevocationService;
@@ -108,6 +111,14 @@ public class UserController {
         Long userId = SecurityUtils.currentUserId(authentication);
         userService.acceptTerms(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Code personnel « FN-… » à coller dans le message d'un don Ko-fi — seul matching fiable
+     *  (les étudiants ne donnent ni avec leur email d'école ni avec leur pseudo exact). */
+    @GetMapping("/me/kofi-code")
+    public ResponseEntity<KofiCodeResponse> getKofiCode(Authentication authentication) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(new KofiCodeResponse(kofiService.personalCode(userId)));
     }
 
     /** Chaque appel peut déclencher un push vers l'API Discord — limité pour qu'un compte vérifié

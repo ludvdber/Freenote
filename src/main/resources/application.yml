@@ -112,6 +112,8 @@ app:
     bot-token: ${DISCORD_BOT_TOKEN:}
     guild-id: ${DISCORD_GUILD_ID:}
     verified-role-id: ${DISCORD_VERIFIED_ROLE_ID:}
+    # Rôle « Supporter » offert par un don Ko-fi ≥ 5 €. Vide = pas d'attribution Discord.
+    supporter-role-id: ${DISCORD_SUPPORTER_ROLE_ID:}
     # Channel where the hourly "new verified documents" digest is posted. Blank = no announcements.
     announce-channel-id: ${DISCORD_ANNOUNCE_CHANNEL_ID:}
   frontend:

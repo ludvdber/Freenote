@@ -46,6 +46,7 @@ class QuizServiceImplTest {
     @Mock private CourseEquivalenceService courseEquivalenceService;
     @Mock private NotificationService notificationService;
     @Mock private SectionRepository sectionRepository;
+    @Mock private be.freenote.service.TrackingService trackingService;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
 

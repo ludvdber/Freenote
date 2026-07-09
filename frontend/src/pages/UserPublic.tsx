@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Typography, Box, Chip, Grid, Button, Pagination, useTheme } from '@mui/material';
 import { GitHub, LinkedIn, Language, Edit, School, EmojiEvents, Bolt, Description, Visibility, Star } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
 } from '@/api/endpoints';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { STALE_15M } from '@/lib/constants';
+import { trackUse } from '@/lib/track';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import DocumentCard from '@/components/common/DocumentCard';
@@ -72,6 +73,12 @@ export default function UserPublic() {
     queryFn: () => getUserById(userId),
     enabled: !Number.isNaN(userId),
   });
+
+  // Vue de profil anonyme (dédup 24 h côté serveur) — jamais sur son propre profil, et
+  // seulement quand le compte existe (pas de comptage des 404).
+  useEffect(() => {
+    if (user && !isOwnProfile) trackUse('profile', String(userId));
+  }, [user, isOwnProfile, userId]);
 
   const { data: delegateHistory } = useQuery({
     queryKey: ['delegate-history', userId],
@@ -295,7 +302,7 @@ export default function UserPublic() {
       </GlassCard>
 
       {/* Rangée de stat-tiles : le corps du profil n'était que « XP · N docs » en petit. */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5, 1fr)' }, gap: 2, mb: 3 }}>
         <StatTile
           icon={<Bolt />}
           label={t('userPublic.statXp')}
@@ -318,6 +325,13 @@ export default function UserPublic() {
           icon={<Star />}
           label={t('userPublic.statAvgRating')}
           value={stats?.avgRatingReceived != null ? stats.avgRatingReceived.toFixed(1) : '—'}
+        />
+        {/* Vues de la page profil (compteur anonyme, dédup 24 h) — la demande « compteur de
+            vues par profil » du panel admin, exposée à tout le monde. */}
+        <StatTile
+          icon={<Visibility />}
+          label={t('userPublic.statProfileViews')}
+          value={stats ? String(stats.profileViews) : '—'}
         />
       </Box>
 

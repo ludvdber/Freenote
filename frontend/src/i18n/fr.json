@@ -244,7 +244,11 @@
       "activity": "Logs",
       "guides": "Guides",
       "tools": "Outils",
-      "settings": "Réglages"
+      "settings": "Réglages",
+      "overview": "Vue d'ensemble",
+      "analytics": "Analytics",
+      "duplicates": "Doublons",
+      "logs": "Logs"
     },
     "settings": {
       "countdownTitle": "Compte à rebours de l'accueil",
@@ -256,7 +260,11 @@
       "previewPast": "Cette date est déjà passée — la bannière ne s'affichera pas.",
       "disable": "Désactiver",
       "saved": "Compte à rebours enregistré.",
-      "disabled": "Compte à rebours désactivé."
+      "disabled": "Compte à rebours désactivé.",
+      "fundingTitle": "Thermomètre de financement",
+      "fundingHint": "Coût mensuel du serveur, affiché sur la jauge publique de l’accueil. Les dons Ko-fi rattachés à un compte remplissent la jauge ; efface le coût pour la masquer.",
+      "fundingCostLabel": "Coût mensuel (€)",
+      "fundingMonthTotal": "Dons rattachés ce mois-ci : {{total}} €"
     },
     "guides": {
       "title": "Guides",
@@ -292,7 +300,8 @@
       "edit": "Modifier",
       "deleteConfirm": "Supprimer définitivement ce document et son fichier ? Cette action est irréversible.",
       "duplicates": "Doublons détectés ({{count}} groupes)",
-      "duplicatesHint": "Ces documents ont un contenu PDF strictement identique (même empreinte SHA-256). Garde le meilleur exemplaire et supprime les autres."
+      "duplicatesHint": "Ces documents ont un contenu PDF strictement identique (même empreinte SHA-256). Garde le meilleur exemplaire et supprime les autres.",
+      "preview": "Aperçu PDF sur place"
     },
     "sections": {
       "title": "Sections",
@@ -395,12 +404,16 @@
       "banReasonHint": "Conservée dans le registre des bannissements, visible des admins uniquement.",
       "roleTitle": "Changer le rôle",
       "roleConfirm": "Passer « {{username}} » au rôle {{role}} ?",
-      "roleConfirmUnverify": "Attention : le rôle USER retire aussi la vérification de l'email — le compte perd l'accès aux documents jusqu'à re-vérification."
+      "roleConfirmUnverify": "Attention : le rôle USER retire aussi la vérification de l'email — le compte perd l'accès aux documents jusqu'à re-vérification.",
+      "palettesChip": "Palettes à vie",
+      "palettesHint": "Palettes d’accent débloquées à vie (don ≥ 5 € ou octroi admin).",
+      "grantPalettes": "Donner les palettes à vie",
+      "revokePalettes": "Retirer les palettes à vie"
     },
     "donations": {
       "title": "Dons & sans-pub",
       "grantTitle": "Accorder du sans-pub manuellement",
-      "grantHelp": "À utiliser si un don Ko-fi n'a pas matché un compte, ou pour offrir une période sans pub. La durée s'ajoute à toute période active existante.",
+      "grantHelp": "À utiliser si un don Ko-fi n’a pas matché un compte, ou pour offrir une période sans pub. La durée s’ajoute à toute période active existante. ⚠️ Sans-pub UNIQUEMENT : les palettes et le statut supporter viennent d’un vrai don rattaché (bouton « Rattacher » ou webhook).",
       "user": "Utilisateur",
       "days": "Jours",
       "grant": "Accorder",
@@ -412,7 +425,15 @@
       "manualGrant": "Don manuel",
       "active": "Actif",
       "adFreeUntil": "Sans-pub jusqu'au",
-      "userSummary": "{{kofi}} don(s) Ko-fi · {{manual}} grant(s) manuel(s) · {{amount}} €"
+      "userSummary": "{{kofi}} don(s) Ko-fi · {{manual}} grant(s) manuel(s) · {{amount}} €",
+      "attach": "Rattacher",
+      "attachTitle": "Rattacher ce don à un compte",
+      "attachHelp": "Don de {{amount}} € — message : {{message}}. Le compte choisi recevra les avantages du montant (sans pub, palettes, rôle Supporter).",
+      "attached": "Don rattaché à {{username}} ✓",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer ce don ?",
+      "deleteConfirm": "Le don de {{amount}} € (#{{tx}}) sera retiré de l’audit et du thermomètre du mois. Les avantages déjà appliqués au compte ne sont pas repris.",
+      "deleted": "Don supprimé."
     },
     "activity": {
       "title": "Journal d'activité",
@@ -442,6 +463,74 @@
       "open": "Ouvrir l'outil",
       "delete": "Supprimer",
       "deleteConfirm": "Supprimer « {{name}} » de la bibliothèque partagée ?"
+    },
+    "nav": {
+      "moderation": "Modération",
+      "content": "Contenu",
+      "catalogue": "Catalogue",
+      "community": "Communauté",
+      "system": "Système"
+    },
+    "overview": {
+      "kpiVisits": "Visites 7 j",
+      "kpiDocViews": "Vues de docs 7 j",
+      "kpiQuizPlays": "Parties de quiz 7 j",
+      "kpiSignups": "Nouveaux comptes 7 j",
+      "vsPrev": "vs 7 j préc.",
+      "trackingEmpty": "Le tracking anonyme démarre avec cette version — les compteurs de visites, d’outils et de guides se remplissent dès le déploiement.",
+      "activityTitle": "Activité des 14 derniers jours",
+      "weekendLegend": "Barres violettes = week-ends (le site vit au rythme des cours).",
+      "seriesVisits": "Visites",
+      "seriesDocViews": "Vues de documents",
+      "seriesQuizPlays": "Parties de quiz",
+      "sevenDayTotal": "{{count}} sur 7 j",
+      "recentTitle": "Dernière activité",
+      "recentEmpty": "Aucune activité enregistrée.",
+      "seeAll": "Tout voir",
+      "queueTitle": "À traiter",
+      "queueCount_one": "{{count}} élément",
+      "queueCount_other": "{{count}} éléments",
+      "queueEmpty": "File vide ✓",
+      "tagDoc": "DOC",
+      "tagReport": "SIGNALEMENT",
+      "tagDuplicate": "DOUBLON",
+      "duplicateLine_one": "{{count}} groupe de documents au même contenu exact",
+      "duplicateLine_other": "{{count}} groupes de documents au même contenu exact",
+      "open": "Ouvrir",
+      "allPendingDocs": "Tous les documents en attente ({{count}})"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "days30": "30 jours",
+      "days90": "90 jours",
+      "vsPrev": "vs {{days}} j préc.",
+      "kpiVisits": "Visites",
+      "kpiDocViews": "Vues de docs",
+      "kpiQuizPlays": "Parties de quiz",
+      "kpiGuideReads": "Lectures de guides",
+      "kpiToolUses": "Usages d’outils",
+      "kpiSignups": "Nouveaux comptes",
+      "visitsTitle": "Visites par jour — {{days}} jours",
+      "visitsTooltip_one": "{{count}} visite",
+      "visitsTooltip_other": "{{count}} visites",
+      "sourcesTitle": "Provenance des visites",
+      "sourcesHint": "Organique = moteurs de recherche · Campagne = liens ?src= (QR, flyers, posts).",
+      "sources": {
+        "direct": "Direct",
+        "organic": "Organique (recherche)",
+        "social": "Réseaux sociaux",
+        "referral": "Sites référents",
+        "campaign": "Campagnes (?src=)"
+      },
+      "toolsTitle": "Utilisation des outils",
+      "topGuides": "Guides les plus lus",
+      "topQuizzes": "Quiz les plus joués",
+      "topDocs": "Docs les plus vus",
+      "allTime": "Cumul depuis le lancement",
+      "empty": "Pas encore de données."
+    },
+    "duplicates": {
+      "empty": "Aucun doublon — la bibliothèque est propre ✓"
     }
   },
   "upload": {
@@ -545,7 +634,30 @@
     "firstName": "Prénom",
     "lastName": "Nom",
     "displayRealName": "Afficher mon vrai nom",
-    "displayRealNameHelp": "Quand activé, les autres voient « Prénom Nom » au lieu de ton pseudo."
+    "displayRealNameHelp": "Quand activé, les autres voient « Prénom Nom » au lieu de ton pseudo.",
+    "palette": {
+      "title": "Palette d'accent",
+      "help": "Choisis la teinte des boutons et liens de ton interface. Appliquée après enregistrement.",
+      "locked": "Réservée aux supporters : toute période sans pub active (le moindre don) débloque les palettes, et un don de 5 € ou plus les débloque à vie.",
+      "default": "Cosmique (par défaut)",
+      "names": {
+        "aurora": "Aurore",
+        "nebula": "Nébuleuse",
+        "solar": "Solaire",
+        "ocean": "Océan",
+        "ruby": "Rubis"
+      }
+    },
+    "support": {
+      "title": "Soutenir Freenote",
+      "help": "Freenote tourne grâce aux dons. Colle ton code personnel dans le message de ton don Ko-fi pour que les avantages arrivent sur CE compte.",
+      "codeLabel": "Ton code :",
+      "copy": "Copier le code",
+      "copied": "Copié !",
+      "perkSmall": "Don de moins de 5 € : 1 mois sans pub + palettes d’accent pendant 1 mois.",
+      "perkBig": "Don de 5 € ou plus : 1 mois sans pub par euro (max 36 mois), palettes illimitées à vie + rôle Discord Supporter.",
+      "cta": "Faire un don sur Ko-fi"
+    }
   },
   "auth": {
     "verificationRequired": "Vérification requise",
@@ -1630,7 +1742,8 @@
     "statDocsHint": "Voir ses documents",
     "bestContribution": "Contribution la plus appréciée",
     "revisionsTitle": "Ses quiz et paquets",
-    "guidesTitle": "Ses guides"
+    "guidesTitle": "Ses guides",
+    "statProfileViews": "Vues du profil"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -1686,5 +1799,27 @@
       "tools": "Outils",
       "pages": "Pages"
     }
+  },
+  "funding": {
+    "title": "Le serveur de {{month}}",
+    "covered": "✅ Serveur du mois financé par la communauté 💜",
+    "missing": "Encore {{amount}} € pour couvrir le serveur ce mois-ci.",
+    "outOfPocket": "Le reste sort de la poche du mainteneur — chaque café aide vraiment.",
+    "cta": "Offrir un café",
+    "supporters_one": "{{count}} étudiant a participé ce mois-ci",
+    "supporters_other": "{{count}} étudiants ont participé ce mois-ci"
+  },
+  "kofiDialog": {
+    "title": "Soutenir Freenote",
+    "lead": "Ton don passe par Ko-fi. Colle ton code personnel dans le MESSAGE du don : c’est lui qui rattache le don à ton compte et active tes avantages automatiquement.",
+    "copy": "Copier le code",
+    "copied": "Copié !",
+    "hint": "Sans ce code, le don reste anonyme (un admin peut le rattacher plus tard, mais rien ne garantit de te retrouver).",
+    "perks": "Dès 5 € : 1 mois sans pub par euro, palettes de couleurs à vie et rôle Discord Supporter. En dessous : 1 mois sans pub + palettes.",
+    "cta": "Copier et ouvrir Ko-fi",
+    "later": "Plus tard",
+    "loginLead": "Les dons passent par Ko-fi, mais ton code personnel est lié à ton compte Freenote : connecte-toi d’abord (et vérifie ton email ISFCE) pour l’obtenir — sans lui, le don ne sera pas rattaché à ton compte et tes avantages ne s’activeront pas.",
+    "login": "Se connecter",
+    "anyway": "Faire un don quand même"
   }
 }

@@ -15,6 +15,8 @@ import {
   Grid,
   MenuItem,
   Collapse,
+  IconButton,
+  useTheme,
 } from '@mui/material';
 import {
   Person,
@@ -32,6 +34,10 @@ import {
   ExpandMore,
   ExpandLess,
   Description,
+  Palette as PaletteIcon,
+  Coffee,
+  ContentCopy,
+  Check,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -48,8 +54,11 @@ import {
   getDocumentsByUser,
   syncDiscordRole,
   getUserStats,
+  getMyKofiCode,
 } from '@/api/endpoints';
 import { extractApiError } from '@/lib/utils';
+import { ACCENT_PALETTES, DEFAULT_ACCENT } from '@/lib/palettes';
+import { KOFI_URL } from '@/lib/constants';
 import GlassCard from '@/components/ui/GlassCard';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -69,10 +78,18 @@ const FAV_PREVIEW_COUNT = 8;
 
 export default function Profile() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { setUser } = useAuthStore();
   const logout = useLogout();
   const queryClient = useQueryClient();
-  const { data: user } = useQuery({ queryKey: ['me'], queryFn: getCurrentUser });
+  // refetchOnMount 'always' : les entitlements (palettes, supporter) changent CÔTÉ SERVEUR
+  // (don rattaché par un admin, webhook Ko-fi…) — sans ça, le picker resterait verrouillé
+  // jusqu'à l'expiration du staleTime alors que le don vient d'être rattaché.
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: getCurrentUser,
+    refetchOnMount: 'always',
+  });
   const { data: delegateHistory } = useQuery({
     queryKey: ['delegate-history', user?.id],
     queryFn: () => getDelegateHistory(user!.id),
@@ -95,6 +112,13 @@ export default function Profile() {
     enabled: !!user?.id,
   });
   const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: getSections });
+  // Code personnel de don Ko-fi — l'endpoint est sous hasRole(VERIFIED), ne pas l'appeler avant.
+  const { data: kofiCode } = useQuery({
+    queryKey: ['kofi-code'],
+    queryFn: getMyKofiCode,
+    staleTime: Infinity,
+    enabled: !!user?.verified,
+  });
 
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
@@ -111,10 +135,12 @@ export default function Profile() {
   const [studyStartYear, setStudyStartYear] = useState('');
   const [studyEndYear, setStudyEndYear] = useState('');
   const [graduated, setGraduated] = useState(false);
+  const [accentPalette, setAccentPalette] = useState('');
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Initialise the editable form from the loaded user. Adjusting state during render
   // (keyed on user.id) instead of an effect is React's recommended pattern and avoids a
@@ -137,6 +163,7 @@ export default function Profile() {
     setStudyStartYear(user.studyStartYear?.toString() ?? '');
     setStudyEndYear(user.studyEndYear?.toString() ?? '');
     setGraduated(user.graduated);
+    setAccentPalette(user.accentPalette ?? '');
   }
 
   const isDirty = !!user && (
@@ -154,7 +181,8 @@ export default function Profile() {
     (sectionId === '' ? null : sectionId) !== (user.sectionId ?? null) ||
     studyStartYear !== (user.studyStartYear?.toString() ?? '') ||
     studyEndYear !== (user.studyEndYear?.toString() ?? '') ||
-    graduated !== user.graduated
+    graduated !== user.graduated ||
+    accentPalette !== (user.accentPalette ?? '')
   );
 
   const syncDiscordMutation = useMutation({ mutationFn: syncDiscordRole });
@@ -176,6 +204,7 @@ export default function Profile() {
         studyStartYear: studyStartYear === '' ? null : Number(studyStartYear),
         studyEndYear: studyEndYear === '' ? null : Number(studyEndYear),
         graduated,
+        accentPalette,
       });
       const norm = sectionId === '' ? null : sectionId;
       // Section lives behind a dedicated endpoint; only call it when it actually changed.
@@ -206,6 +235,17 @@ export default function Profile() {
 
   const isDelegate = delegateHistory?.some((d) => d.active) ?? false;
 
+  const copyKofiCode = async () => {
+    if (!kofiCode) return;
+    try {
+      await navigator.clipboard.writeText(kofiCode.code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      // Presse-papiers indisponible — le code reste sélectionnable à la main.
+    }
+  };
+
   // Revert every editable field back to the loaded account (the sticky bar's "cancel").
   const resetForm = () => {
     setBio(user.bio ?? '');
@@ -223,6 +263,7 @@ export default function Profile() {
     setStudyStartYear(user.studyStartYear?.toString() ?? '');
     setStudyEndYear(user.studyEndYear?.toString() ?? '');
     setGraduated(user.graduated);
+    setAccentPalette(user.accentPalette ?? '');
     setSaveError('');
   };
 
@@ -539,6 +580,14 @@ export default function Profile() {
                   {myStats ? myStats.totalViews : '—'}
                 </Typography>
               </Box>
+              <Box sx={s.statRow}>
+                <Typography variant="body2" sx={s.statLabel}>
+                  {t('userPublic.statProfileViews')}
+                </Typography>
+                <Typography sx={s.statValue} className="mono">
+                  {myStats ? myStats.profileViews : '—'}
+                </Typography>
+              </Box>
               {/* Palier céleste + progression vers le suivant. */}
               <Box sx={{ mt: 2 }}>
                 <LevelProgress xp={user.xp} />
@@ -645,6 +694,96 @@ export default function Profile() {
                 <Alert severity="error">{t('profile.syncDiscordRoleError')}</Alert>
               )}
             </Box>
+          </GlassCard>
+
+          {/* Palette d'accent — perk supporters. Le choix part avec « Enregistrer » comme le reste
+              du formulaire ; le thème global se met à jour au retour du save (setUser). */}
+          <GlassCard sx={s.sectionCard}>
+            <Typography variant="subtitle1" sx={s.sectionTitle}>
+              <PaletteIcon fontSize="small" /> {t('profile.palette.title')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {user.paletteEntitled ? t('profile.palette.help') : t('profile.palette.locked')}
+            </Typography>
+            <Box sx={s.paletteRow}>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setAccentPalette('')}
+                sx={s.paletteSwatch(
+                  [DEFAULT_ACCENT[theme.palette.mode].primary, DEFAULT_ACCENT[theme.palette.mode].secondary],
+                  accentPalette === '',
+                  false,
+                )}
+                aria-pressed={accentPalette === ''}
+                title={t('profile.palette.default')}
+              />
+              {ACCENT_PALETTES.map((p) => (
+                <Box
+                  key={p.id}
+                  component="button"
+                  type="button"
+                  disabled={!user.paletteEntitled}
+                  onClick={() => user.paletteEntitled && setAccentPalette(p.id)}
+                  sx={s.paletteSwatch(
+                    [p[theme.palette.mode].primary, p[theme.palette.mode].secondary],
+                    accentPalette === p.id,
+                    !user.paletteEntitled,
+                  )}
+                  aria-pressed={accentPalette === p.id}
+                  title={t(`profile.palette.names.${p.id}`)}
+                  aria-label={t(`profile.palette.names.${p.id}`)}
+                />
+              ))}
+            </Box>
+          </GlassCard>
+
+          {/* Soutenir Freenote : code personnel à coller dans le message Ko-fi (seul matching
+              fiable — personne ne donne avec son email d'école) + rappel des avantages. */}
+          <GlassCard sx={s.sectionCard}>
+            <Typography variant="subtitle1" sx={s.sectionTitle}>
+              <Coffee fontSize="small" /> {t('profile.support.title')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              {t('profile.support.help')}
+            </Typography>
+            {kofiCode && (
+              <Box sx={s.supportCodeRow}>
+                <Typography variant="body2" color="text.secondary">
+                  {t('profile.support.codeLabel')}
+                </Typography>
+                <Typography variant="body2" className="mono" sx={s.supportCode}>
+                  {kofiCode.code}
+                </Typography>
+                <IconButton size="small" onClick={copyKofiCode} aria-label={t('profile.support.copy')}>
+                  {codeCopied ? <Check fontSize="inherit" /> : <ContentCopy fontSize="inherit" />}
+                </IconButton>
+                {codeCopied && (
+                  <Typography variant="caption" color="success.main">
+                    {t('profile.support.copied')}
+                  </Typography>
+                )}
+              </Box>
+            )}
+            <Box component="ul" sx={s.supportPerks}>
+              <Typography component="li" variant="caption" color="text.secondary">
+                {t('profile.support.perkSmall')}
+              </Typography>
+              <Typography component="li" variant="caption" color="text.secondary">
+                {t('profile.support.perkBig')}
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Coffee />}
+              href={KOFI_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ mt: 1.5 }}
+            >
+              {t('profile.support.cta')}
+            </Button>
           </GlassCard>
 
           <GlassCard sx={s.sectionCard}>

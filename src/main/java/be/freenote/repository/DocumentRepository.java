@@ -128,6 +128,22 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     long countByUserId(Long userId);
     long countByCourseId(Long courseId);
 
+    /** Badge « Documents » de la sidebar admin (file de vérification). */
+    long countByVerifiedFalse();
+
+    /** Badge « Doublons » : nombre de groupes de docs partageant le même hash SHA-256. */
+    @Query(value = """
+        SELECT COUNT(*) FROM (
+            SELECT file_hash FROM documents
+            WHERE file_hash IS NOT NULL
+            GROUP BY file_hash HAVING COUNT(*) > 1
+        ) g
+        """, nativeQuery = true)
+    long countDuplicateGroups();
+
+    /** Top contenus (panel Analytics) — cumul all-time, downloadCount étant dénormalisé. */
+    List<Document> findTop8ByVerifiedTrueOrderByDownloadCountDesc();
+
     /** Professor IDs used on documents of a given course, most-used first — drives the
      *  data-driven "suggested professor" auto-fill on the upload form. */
     @Query("""

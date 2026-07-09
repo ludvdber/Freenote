@@ -3,11 +3,14 @@ import { GitHub } from '@mui/icons-material';
 import { Coffee } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { KOFI_URL, GITHUB_URL } from '@/lib/constants';
+import { GITHUB_URL } from '@/lib/constants';
+import { useKofiLinkProps } from '@/stores/useKofiDialogStore';
 import * as s from './Footer.styles';
 
 export default function Footer() {
   const { t } = useTranslation();
+  // Un compte vérifié voit d'abord son code « FN-… » (dialog global) au lieu d'un départ sec.
+  const kofiProps = useKofiLinkProps();
 
   return (
     <Box component="footer" role="contentinfo" sx={s.footer}>
@@ -88,9 +91,7 @@ export default function Footer() {
                 {t('footer.github')}
               </MuiLink>
               <MuiLink
-                href={KOFI_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...kofiProps}
                 color="text.secondary"
                 underline="hover"
                 variant="body2"

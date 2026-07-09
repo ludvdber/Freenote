@@ -3,11 +3,12 @@ package be.freenote.service.impl;
 import be.freenote.dto.request.KofiWebhookPayload;
 import be.freenote.entity.Donation;
 import be.freenote.entity.User;
-import be.freenote.entity.UserProfile;
 import be.freenote.repository.DonationRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.KofiService;
+import be.freenote.service.SupporterPerksService;
 import be.freenote.util.HashUtil;
+import be.freenote.util.KofiCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,14 +26,13 @@ public class KofiServiceImpl implements KofiService {
 
     private final UserRepository userRepository;
     private final DonationRepository donationRepository;
+    private final SupporterPerksService supporterPerksService;
 
     @Value("${app.kofi.verification-token:}")
     private String expectedToken;
 
     @Value("${app.email.hash-salt}")
     private String emailHashSalt;
-
-    private static final int AD_FREE_DAYS_PER_DONATION = 30;
 
     @Override
     @Transactional
@@ -73,45 +73,49 @@ public class KofiServiceImpl implements KofiService {
             return;
         }
 
-        // Try to match user by email hash
-        Optional<User> userOpt = Optional.empty();
-        if (payload.getEmail() != null && !payload.getEmail().isBlank()) {
+        // Matching, du plus fiable au moins fiable :
+        // 1. le code personnel « FN-… » collé dans le message (seul canal garanti — personne ne met
+        //    son email d'école sur Ko-fi) ; 2. l'email du don == email vérifié du compte ;
+        // 3. le nom Ko-fi == pseudo Freenote.
+        Optional<User> userOpt = KofiCode.findUserId(payload.getMessage(), emailHashSalt)
+                .flatMap(userRepository::findById);
+
+        if (userOpt.isEmpty() && payload.getEmail() != null && !payload.getEmail().isBlank()) {
             String hash = HashUtil.hashEmail(payload.getEmail(), emailHashSalt);
             userOpt = userRepository.findByEmailHash(hash);
         }
 
-        // If no match by email, try by Ko-fi display name == username
         if (userOpt.isEmpty() && payload.getFromName() != null) {
             userOpt = userRepository.findByUsername(payload.getFromName());
         }
 
         User user = userOpt.orElse(null);
-        LocalDateTime now = LocalDateTime.now();
 
-        // Compute the (cumulative) ad-free expiry first so the donation audit row records the real
-        // expiry the donor ends up with, not a flat now+30 that understates cumulative gifts.
-        LocalDateTime adFreeUntil;
-        if (user != null && user.getProfile() != null) {
-            UserProfile profile = user.getProfile();
-            LocalDateTime base = profile.getAdFreeUntil() != null && profile.getAdFreeUntil().isAfter(now)
-                    ? profile.getAdFreeUntil()
-                    : now;
-            adFreeUntil = base.plusDays(AD_FREE_DAYS_PER_DONATION);
-            profile.setAdFreeUntil(adFreeUntil);
+        // Avantages (règles centralisées dans SupporterPerksService). Un don non rattaché ne crédite
+        // personne — la ligne reste en attente, l'admin peut la rattacher a posteriori.
+        LocalDateTime adFreeUntil = null;
+        if (user != null) {
+            adFreeUntil = supporterPerksService.applyPerks(user, amount);
             log.info("Ko-fi donation processed: user={}, amount={}, ad-free until {}",
                     user.getUsername(), amount, adFreeUntil);
         } else {
-            adFreeUntil = now.plusDays(AD_FREE_DAYS_PER_DONATION);
             log.info("Ko-fi donation processed: unmatched donor '{}', amount={}, transaction={}",
                     payload.getFromName(), amount, payload.getKofiTransactionId());
         }
 
+        String message = payload.getMessage();
         donationRepository.save(Donation.builder()
                 .user(user)
                 .amount(amount)
                 .kofiTransactionId(payload.getKofiTransactionId())
                 .adFreeUntil(adFreeUntil)
+                .message(message != null && message.length() > 500 ? message.substring(0, 500) : message)
                 .build());
+    }
+
+    @Override
+    public String personalCode(Long userId) {
+        return KofiCode.codeFor(userId, emailHashSalt);
     }
 
     /** Constant-time comparison so a forged-webhook attacker can't recover the token byte-by-byte

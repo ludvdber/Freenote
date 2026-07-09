@@ -19,4 +19,7 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     @Modifying
     @Query("DELETE FROM ActivityLog a WHERE a.createdAt < :before")
     int deleteByCreatedAtBefore(@Param("before") LocalDateTime before);
+
+    /** KPI « nouveaux comptes » du panel admin (les SIGNUP sont journalisés ici). */
+    long countByTypeAndCreatedAtGreaterThanEqual(String type, LocalDateTime after);
 }

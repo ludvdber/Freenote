@@ -3,10 +3,10 @@ package be.freenote.service;
 import be.freenote.dto.request.KofiWebhookPayload;
 import be.freenote.entity.Donation;
 import be.freenote.entity.User;
-import be.freenote.entity.UserProfile;
 import be.freenote.repository.DonationRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.impl.KofiServiceImpl;
+import be.freenote.util.KofiCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -28,6 +29,7 @@ class KofiServiceImplTest {
 
     @Mock private UserRepository userRepository;
     @Mock private DonationRepository donationRepository;
+    @Mock private SupporterPerksService supporterPerksService;
 
     @InjectMocks private KofiServiceImpl kofiService;
 
@@ -103,20 +105,39 @@ class KofiServiceImplTest {
     // ---- User matching ----
 
     @Test
+    void shouldMatchUserByPersonalCodeInMessage() {
+        KofiWebhookPayload p = payload("Tip", "valid-token");
+        p.setEmail("perso@gmail.com"); // email perso ≠ email vérifié : seul le code matche
+        p.setFromName("Pseudo Ko-fi quelconque");
+        p.setMessage("Merci pour le site ! " + KofiCode.codeFor(42L, "salt"));
+
+        User user = User.builder().id(42L).username("etudiant").build();
+        when(userRepository.findById(42L)).thenReturn(Optional.of(user));
+        when(supporterPerksService.applyPerks(eq(user), any())).thenReturn(LocalDateTime.now().plusDays(150));
+
+        kofiService.processWebhook(p);
+
+        // Le code court-circuite les autres matchings : ni email ni username interrogés.
+        verify(userRepository, never()).findByEmailHash(anyString());
+        verify(userRepository, never()).findByUsername(anyString());
+        verify(supporterPerksService).applyPerks(eq(user), eq(new BigDecimal("5.00")));
+    }
+
+    @Test
     void shouldMatchUserByEmailHash() {
         KofiWebhookPayload p = payload("Donation", "valid-token");
         p.setEmail("test@example.com");
 
         User user = User.builder().id(1L).username("test").build();
-        UserProfile profile = UserProfile.builder().user(user).build();
-        user.setProfile(profile);
-
         when(userRepository.findByEmailHash(anyString())).thenReturn(Optional.of(user));
+        when(supporterPerksService.applyPerks(eq(user), any())).thenReturn(LocalDateTime.now().plusDays(150));
 
         kofiService.processWebhook(p);
 
-        assertThat(profile.getAdFreeUntil()).isAfter(LocalDateTime.now().plusDays(29));
-        verify(donationRepository).save(any(Donation.class));
+        verify(supporterPerksService).applyPerks(eq(user), eq(new BigDecimal("5.00")));
+        ArgumentCaptor<Donation> captor = ArgumentCaptor.forClass(Donation.class);
+        verify(donationRepository).save(captor.capture());
+        assertThat(captor.getValue().getAdFreeUntil()).isAfter(LocalDateTime.now().plusDays(149));
     }
 
     @Test
@@ -126,15 +147,13 @@ class KofiServiceImplTest {
         p.setFromName("JohnDoe");
 
         User user = User.builder().id(2L).username("JohnDoe").build();
-        UserProfile profile = UserProfile.builder().user(user).build();
-        user.setProfile(profile);
-
         when(userRepository.findByEmailHash(anyString())).thenReturn(Optional.empty());
         when(userRepository.findByUsername("JohnDoe")).thenReturn(Optional.of(user));
+        when(supporterPerksService.applyPerks(eq(user), any())).thenReturn(LocalDateTime.now().plusDays(150));
 
         kofiService.processWebhook(p);
 
-        assertThat(profile.getAdFreeUntil()).isAfter(LocalDateTime.now().plusDays(29));
+        verify(supporterPerksService).applyPerks(eq(user), eq(new BigDecimal("5.00")));
     }
 
     @Test
@@ -142,6 +161,7 @@ class KofiServiceImplTest {
         KofiWebhookPayload p = payload("Donation", "valid-token");
         p.setEmail(null);
         p.setFromName("Anonymous");
+        p.setMessage("super site");
 
         when(userRepository.findByUsername("Anonymous")).thenReturn(Optional.empty());
 
@@ -151,49 +171,23 @@ class KofiServiceImplTest {
         verify(donationRepository).save(captor.capture());
         assertThat(captor.getValue().getUser()).isNull();
         assertThat(captor.getValue().getKofiTransactionId()).isEqualTo("tx-123");
+        // Un don orphelin ne crédite personne — et garde le message pour le rattachement admin.
+        assertThat(captor.getValue().getAdFreeUntil()).isNull();
+        assertThat(captor.getValue().getMessage()).isEqualTo("super site");
+        verify(supporterPerksService, never()).applyPerks(any(), any());
     }
 
-    // ---- Ad-free cumulation ----
+    // ---- Idempotency & garde-fous ----
 
     @Test
-    void shouldExtendAdFreeWhenAlreadyActive() {
-        KofiWebhookPayload p = payload("Donation", "valid-token");
-        p.setEmail("test@example.com");
-
-        LocalDateTime existingExpiry = LocalDateTime.now().plusDays(10);
-
-        User user = User.builder().id(1L).username("test").build();
-        UserProfile profile = UserProfile.builder().user(user)
-                .adFreeUntil(existingExpiry).build();
-        user.setProfile(profile);
-
-        when(userRepository.findByEmailHash(anyString())).thenReturn(Optional.of(user));
+    void shouldIgnoreAlreadyProcessedTransaction() {
+        KofiWebhookPayload p = payload("Tip", "valid-token");
+        when(donationRepository.existsByKofiTransactionId("tx-123")).thenReturn(true);
 
         kofiService.processWebhook(p);
 
-        // Should extend from existing expiry + 30 days (not from now)
-        assertThat(profile.getAdFreeUntil()).isAfter(existingExpiry.plusDays(29));
-    }
-
-    @Test
-    void shouldResetAdFreeFromNowWhenExpired() {
-        KofiWebhookPayload p = payload("Donation", "valid-token");
-        p.setEmail("test@example.com");
-
-        LocalDateTime pastExpiry = LocalDateTime.now().minusDays(5);
-
-        User user = User.builder().id(1L).username("test").build();
-        UserProfile profile = UserProfile.builder().user(user)
-                .adFreeUntil(pastExpiry).build();
-        user.setProfile(profile);
-
-        when(userRepository.findByEmailHash(anyString())).thenReturn(Optional.of(user));
-
-        kofiService.processWebhook(p);
-
-        // Should start from now + 30 days since existing is expired
-        assertThat(profile.getAdFreeUntil()).isAfter(LocalDateTime.now().plusDays(29));
-        assertThat(profile.getAdFreeUntil()).isBefore(LocalDateTime.now().plusDays(31));
+        verify(donationRepository, never()).save(any());
+        verify(supporterPerksService, never()).applyPerks(any(), any());
     }
 
     @Test
@@ -204,5 +198,15 @@ class KofiServiceImplTest {
         kofiService.processWebhook(p);
 
         verify(donationRepository, never()).save(any());
+    }
+
+    // ---- Code personnel ----
+
+    @Test
+    void personalCodeRoundTripsThroughTheParser() {
+        String code = kofiService.personalCode(7L);
+
+        assertThat(code).startsWith("FN-");
+        assertThat(KofiCode.findUserId("don pour freenote " + code, "salt")).contains(7L);
     }
 }

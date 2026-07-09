@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import {
   Container, Typography, Box, Breadcrumbs, Link as MuiLink,
   Accordion, AccordionSummary, AccordionDetails,
@@ -10,6 +10,7 @@ import { Helmet } from 'react-helmet-async';
 import OrbitalLoader from '@/components/ui/OrbitalLoader';
 import AdSlot from '@/components/ui/AdSlot';
 import { SITE_URL } from '@/lib/constants';
+import { trackUse } from '@/lib/track';
 import type { ToolDef } from './toolsData';
 import * as s from './ToolPage.styles';
 
@@ -22,6 +23,11 @@ export default function ToolPage({ tool }: { tool: ToolDef }) {
   const { t, i18n } = useTranslation();
   const base = `tools.${tool.key}`;
   const Component = tool.Component;
+
+  // Statistique d'usage anonyme par outil (analytics admin) — une ouverture = un événement.
+  useEffect(() => {
+    trackUse('tool', tool.slug);
+  }, [tool.slug]);
 
   const getArray = <T,>(key: string): T[] => {
     const value = t(key, { returnObjects: true });

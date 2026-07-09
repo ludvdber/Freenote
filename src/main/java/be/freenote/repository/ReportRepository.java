@@ -13,4 +13,7 @@ import java.util.List;
 public interface ReportRepository extends JpaRepository<Report, Long> {
     Page<Report> findByStatus(ReportStatus status, Pageable pageable);
     List<Report> findByUserId(Long userId);
+
+    /** Badge « Signalements » de la sidebar admin. */
+    long countByStatus(ReportStatus status);
 }

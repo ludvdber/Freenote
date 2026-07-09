@@ -49,7 +49,10 @@ public abstract class UserMapper {
                 p != null ? p.getDiscordAvatarUrl() : null,
                 p != null ? p.getStudyStartYear() : null,
                 p != null ? p.getStudyEndYear() : null,
-                p != null && p.isGraduated()
+                p != null && p.isGraduated(),
+                p != null && isPaletteEntitled(p) ? p.getAccentPalette() : null,
+                isPaletteEntitled(p),
+                p != null && p.isLifetimeSupporter()
         );
     }
 
@@ -84,6 +87,9 @@ public abstract class UserMapper {
                 null,
                 null,
                 null,
+                false,
+                null,
+                false,
                 false
         );
     }
@@ -101,7 +107,9 @@ public abstract class UserMapper {
                 r.firstName(), r.lastName(), r.displayRealName(),
                 r.sectionId(), r.sectionName(), r.usernameChosen(),
                 null,
-                r.studyStartYear(), r.studyEndYear(), r.graduated()
+                r.studyStartYear(), r.studyEndYear(), r.graduated(),
+                // La palette ne teinte que l'UI de son propriétaire — rien à exposer aux autres.
+                null, false, false
         );
     }
 
@@ -143,6 +151,18 @@ public abstract class UserMapper {
      *  stored boolean (which would never flip back off once a donation set it). */
     private static boolean isSupporter(UserProfile p) {
         return p != null && p.getAdFreeUntil() != null && p.getAdFreeUntil().isAfter(LocalDateTime.now());
+    }
+
+    /** Palettes d'accent : à vie ({@code lifetime_supporter} — don ≥ 5 € ou grant admin), sinon
+     *  dérivé de {@code palettes_until} (don &lt; 5 €), sinon **liées au sans-pub actif**
+     *  (2026-07-09, demande produit : des jours sans pub — don OU grant manuel admin — donnent
+     *  aussi les couleurs, un seul « statut supporter actif » cohérent). Public : aussi utilisé
+     *  par UserServiceImpl pour refuser un choix de palette sans entitlement. */
+    public static boolean isPaletteEntitled(UserProfile p) {
+        if (p == null) return false;
+        if (p.isLifetimeSupporter()) return true;
+        if (p.getPalettesUntil() != null && p.getPalettesUntil().isAfter(LocalDateTime.now())) return true;
+        return p.getAdFreeUntil() != null && p.getAdFreeUntil().isAfter(LocalDateTime.now());
     }
 
     public static String resolveDisplayName(UserProfile p, String username) {

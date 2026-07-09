@@ -1,6 +1,8 @@
 package be.freenote.controller;
 
 import be.freenote.dto.response.CountdownResponse;
+import be.freenote.dto.response.FundingResponse;
+import be.freenote.service.DonationService;
 import be.freenote.service.SettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -21,6 +23,7 @@ import java.time.Duration;
 public class PublicSettingsController {
 
     private final SettingsService settingsService;
+    private final DonationService donationService;
 
     /** Compte à rebours (rentrée…) — date/label null = pas de bannière. */
     @GetMapping("/countdown")
@@ -28,5 +31,14 @@ public class PublicSettingsController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)))
                 .body(settingsService.getCountdown());
+    }
+
+    /** Thermomètre de financement du mois — {@code monthlyCost} null = jauge désactivée.
+     *  Aucune donnée personnelle : un coût configuré par l'admin + une somme agrégée. */
+    @GetMapping("/funding")
+    public ResponseEntity<FundingResponse> getFunding() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)))
+                .body(donationService.getFunding());
     }
 }

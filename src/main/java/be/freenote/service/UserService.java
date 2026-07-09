@@ -36,6 +36,9 @@ public interface UserService {
     UserResponse adminUnverifyUser(Long userId);
     /** Admin: mark a user as a trusted uploader (bypasses upload rate limits), or revoke it. */
     UserResponse adminSetTrusted(Long userId, boolean trusted);
+    /** Admin : accorde/retire les palettes d'accent À VIE ({@code lifetime_supporter} — même flag
+     *  qu'un don ≥ 5 €). L'octroi pousse aussi le rôle Discord Supporter (fire-and-forget). */
+    UserResponse adminSetLifetimePalettes(Long userId, boolean enabled);
     /** Admin: update the role of a user (USER, VERIFIED, ADMIN). */
     UserResponse adminUpdateRole(Long userId, String role);
     /** Admin: delete a user account. Documents are anonymized (kept) — same semantics as self-deletion. */

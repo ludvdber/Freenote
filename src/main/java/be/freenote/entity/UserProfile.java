@@ -81,4 +81,17 @@ public class UserProfile {
     @Column(nullable = false)
     @Builder.Default
     private boolean graduated = false;
+
+    /** Don unique ≥ 5 € : palettes d'accent illimitées + rôle Discord « Supporter ». Permanent. */
+    @Column(name = "lifetime_supporter", nullable = false)
+    @Builder.Default
+    private boolean lifetimeSupporter = false;
+
+    /** Don < 5 € : palettes d'accent 30 jours (cumulatif) — même mécanique que {@link #adFreeUntil}. */
+    @Column(name = "palettes_until")
+    private LocalDateTime palettesUntil;
+
+    /** Palette d'accent choisie (null = thème cosmique par défaut). Ids validés dans UpdateProfileRequest. */
+    @Column(name = "accent_palette", length = 20)
+    private String accentPalette;
 }
