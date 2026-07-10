@@ -54,21 +54,26 @@ public class GuideServiceImpl implements GuideService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<GuideSummary> listAll(Pageable pageable) {
-        Page<Guide> page = guideRepository.findAllByOrderByUpdatedAtDesc(pageable);
+    public PageResponse<GuideSummary> listAll(Long callerId, boolean isAdmin, Pageable pageable) {
+        // Rédacteur (V18) : son espace de travail = SES guides uniquement (brouillons inclus).
+        Page<Guide> page = isAdmin
+                ? guideRepository.findAllByOrderByUpdatedAtDesc(pageable)
+                : guideRepository.findByAuthor_IdOrderByUpdatedAtDesc(callerId, pageable);
         return PageResponse.from(page, page.getContent().stream().map(GuideMapper::toSummary).toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public GuideResponse getById(Long id) {
-        return GuideMapper.toResponse(Repositories.findByIdOrThrow(guideRepository, id, "Guide"));
+    public GuideResponse getById(Long id, Long callerId, boolean isAdmin) {
+        Guide guide = Repositories.findByIdOrThrow(guideRepository, id, "Guide");
+        requireOwnershipOrAdmin(guide, callerId, isAdmin);
+        return GuideMapper.toResponse(guide);
     }
 
     @Override
     @Transactional
-    public GuideResponse create(Long adminId, CreateGuideRequest request) {
-        User admin = Repositories.findByIdOrThrow(userRepository, adminId, "User");
+    public GuideResponse create(Long authorId, CreateGuideRequest request) {
+        User author = Repositories.findByIdOrThrow(userRepository, authorId, "User");
         Guide guide = Guide.builder()
                 .slug(uniqueSlug(slugify(request.title())))
                 .title(request.title().trim())
@@ -78,16 +83,17 @@ public class GuideServiceImpl implements GuideService {
                 .relatedTool(blankToNull(request.relatedTool()))
                 .published(request.published())
                 .membersOnly(request.membersOnly())
-                .author(admin)
-                .authorName(UserMapper.resolveDisplayName(admin.getProfile(), admin.getUsername()))
+                .author(author)
+                .authorName(UserMapper.resolveDisplayName(author.getProfile(), author.getUsername()))
                 .build();
         return GuideMapper.toResponse(guideRepository.save(guide));
     }
 
     @Override
     @Transactional
-    public GuideResponse update(Long id, CreateGuideRequest request) {
+    public GuideResponse update(Long id, Long callerId, boolean isAdmin, CreateGuideRequest request) {
         Guide guide = Repositories.findByIdOrThrow(guideRepository, id, "Guide");
+        requireOwnershipOrAdmin(guide, callerId, isAdmin);
         // Slug is intentionally NOT regenerated — the public URL stays stable across edits.
         guide.setTitle(request.title().trim());
         guide.setSummary(blankToNull(request.summary()));
@@ -101,8 +107,20 @@ public class GuideServiceImpl implements GuideService {
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        guideRepository.delete(Repositories.findByIdOrThrow(guideRepository, id, "Guide"));
+    public void delete(Long id, Long callerId, boolean isAdmin) {
+        Guide guide = Repositories.findByIdOrThrow(guideRepository, id, "Guide");
+        requireOwnershipOrAdmin(guide, callerId, isAdmin);
+        guideRepository.delete(guide);
+    }
+
+    /** Un rédacteur ne touche que SES guides ; un guide orphelin (auteur supprimé) est admin-only. */
+    private static void requireOwnershipOrAdmin(Guide guide, Long callerId, boolean isAdmin) {
+        if (isAdmin) {
+            return;
+        }
+        if (guide.getAuthor() == null || !guide.getAuthor().getId().equals(callerId)) {
+            throw new be.freenote.exception.ForbiddenException("Tu ne peux modifier que tes propres guides.");
+        }
     }
 
     // ── helpers ───────────────────────────────────────────────────

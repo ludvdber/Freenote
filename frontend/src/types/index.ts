@@ -40,6 +40,10 @@ export interface User {
   paletteEntitled: boolean;
   /** Flag brut « palettes à vie » (don ≥ 5 € ou grant admin) — pour le toggle admin. */
   lifetimeSupporter: boolean;
+  /** Rôles staff V18 — publics (chips de reconnaissance sur le profil). Optionnels : un store
+   *  persisté d'une version antérieure peut ne pas les porter (falsy = pas de rôle). */
+  moderator?: boolean;
+  editor?: boolean;
 }
 
 export interface DocumentResponse {
@@ -142,10 +146,15 @@ export interface KpiPair {
   previous: number;
 }
 
-export interface AdminOverviewResponse {
+/** Compteurs des files de modération — sous-ensemble « badges » de la vue d'ensemble, seul
+ *  aggrégat accessible à un MODÉRATEUR (V18) pour la sidebar du panel. */
+export interface ModerationQueue {
   pendingDocs: number;
   pendingReports: number;
   duplicateGroups: number;
+}
+
+export interface AdminOverviewResponse extends ModerationQueue {
   visits7d: KpiPair;
   docViews7d: KpiPair;
   quizPlays7d: KpiPair;

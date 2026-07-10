@@ -67,6 +67,15 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
+    public be.freenote.dto.response.ModerationQueueResponse getModerationQueue() {
+        // Mêmes sources que les trois premiers champs de getOverview() — garder les deux synchronisés.
+        return new be.freenote.dto.response.ModerationQueueResponse(
+                documentRepository.countByVerifiedFalse(),
+                reportRepository.countByStatus(ReportStatus.PENDING),
+                documentRepository.countDuplicateGroups());
+    }
+
+    @Override
     public AnalyticsResponse getAnalytics(int days) {
         int clamped = Math.min(Math.max(days, 7), 365);
         LocalDate tomorrow = LocalDate.now().plusDays(1);

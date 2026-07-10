@@ -21,4 +21,7 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
 
     /** Admin listing: everything (drafts included), most-recently edited first. */
     Page<Guide> findAllByOrderByUpdatedAtDesc(Pageable pageable);
+
+    /** Rédacteur (V18) : SES guides seulement (brouillons inclus), dernier édité d'abord. */
+    Page<Guide> findByAuthor_IdOrderByUpdatedAtDesc(Long authorId, Pageable pageable);
 }

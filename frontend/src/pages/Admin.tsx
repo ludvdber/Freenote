@@ -6,6 +6,7 @@ import {
   Description,
   Flag,
   DifferenceOutlined,
+  Quiz as QuizIcon,
   MenuBook,
   Construction,
   AccountTree,
@@ -21,8 +22,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { getAdminOverview } from '@/api/endpoints';
-import type { AdminOverviewResponse } from '@/types';
+import { getAdminOverview, getModerationQueue } from '@/api/endpoints';
+import type { ModerationQueue } from '@/types';
+import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import OrbitalLoader from '@/components/ui/OrbitalLoader';
@@ -41,12 +43,13 @@ const AdminUsers = lazy(() => import('@/components/admin/AdminUsers'));
 const AdminDonations = lazy(() => import('@/components/admin/AdminDonations'));
 const AdminActivityLogs = lazy(() => import('@/components/admin/AdminActivityLogs'));
 const AdminGuides = lazy(() => import('@/components/admin/AdminGuides'));
+const AdminRevision = lazy(() => import('@/components/admin/AdminRevision'));
 const AdminTools = lazy(() => import('@/components/admin/AdminTools'));
 const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
 
 export type AdminPane =
   | 'overview' | 'analytics'
-  | 'documents' | 'reports' | 'duplicates'
+  | 'documents' | 'reports' | 'duplicates' | 'revision'
   | 'guides' | 'tools'
   | 'sections' | 'courses' | 'professors' | 'delegates'
   | 'users' | 'donations'
@@ -59,6 +62,7 @@ const PANES: Record<AdminPane, ComponentType<any>> = {
   documents: AdminDocuments,
   reports: AdminReports,
   duplicates: AdminDuplicates,
+  revision: AdminRevision,
   guides: AdminGuides,
   tools: AdminTools,
   sections: AdminSections,
@@ -71,16 +75,22 @@ const PANES: Record<AdminPane, ComponentType<any>> = {
   settings: AdminSettings,
 };
 
+/** Qui voit quoi (V18) : 'admin' = admin seul ; 'moderator' / 'editor' = admin OU ce rôle. */
+type PaneAccess = 'admin' | 'moderator' | 'editor';
+
 interface NavItem {
   id: AdminPane;
   icon: ReactNode;
-  badge?: (o: AdminOverviewResponse) => number;
+  access?: PaneAccess; // défaut : celui du groupe
+  badge?: (o: ModerationQueue) => number;
 }
 
-/** Groupes = futurs périmètres de rôles (Modérateur ne verra que « Modération », etc.). */
-const GROUPS: { labelKey: string | null; items: NavItem[] }[] = [
+/** Groupes = périmètres de rôles : un Modérateur ne voit que « Modération », un Rédacteur que
+ *  « Contenu → Guides » — l'accès réel est re-vérifié serveur (matchers + filtre live en DB). */
+const GROUPS: { labelKey: string | null; access: PaneAccess; items: NavItem[] }[] = [
   {
     labelKey: null,
+    access: 'admin',
     items: [
       { id: 'overview', icon: <SpaceDashboard /> },
       { id: 'analytics', icon: <Insights /> },
@@ -88,21 +98,25 @@ const GROUPS: { labelKey: string | null; items: NavItem[] }[] = [
   },
   {
     labelKey: 'admin.nav.moderation',
+    access: 'moderator',
     items: [
       { id: 'documents', icon: <Description />, badge: (o) => o.pendingDocs },
       { id: 'reports', icon: <Flag />, badge: (o) => o.pendingReports },
       { id: 'duplicates', icon: <DifferenceOutlined />, badge: (o) => o.duplicateGroups },
+      { id: 'revision', icon: <QuizIcon /> },
     ],
   },
   {
     labelKey: 'admin.nav.content',
+    access: 'admin',
     items: [
-      { id: 'guides', icon: <MenuBook /> },
+      { id: 'guides', icon: <MenuBook />, access: 'editor' },
       { id: 'tools', icon: <Construction /> },
     ],
   },
   {
     labelKey: 'admin.nav.catalogue',
+    access: 'admin',
     items: [
       { id: 'sections', icon: <AccountTree /> },
       { id: 'courses', icon: <ClassIcon /> },
@@ -112,6 +126,7 @@ const GROUPS: { labelKey: string | null; items: NavItem[] }[] = [
   },
   {
     labelKey: 'admin.nav.community',
+    access: 'admin',
     items: [
       { id: 'users', icon: <Group /> },
       { id: 'donations', icon: <Favorite /> },
@@ -119,6 +134,7 @@ const GROUPS: { labelKey: string | null; items: NavItem[] }[] = [
   },
   {
     labelKey: 'admin.nav.system',
+    access: 'admin',
     items: [
       { id: 'logs', icon: <ReceiptLong /> },
       { id: 'settings', icon: <Settings /> },
@@ -137,22 +153,38 @@ function PaneFallback() {
 export default function Admin() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user, isAdmin } = useAuthStore();
+  const canModerate = isAdmin || !!user?.moderator;
+  const canEdit = isAdmin || !!user?.editor;
+
+  const allowed = (access: PaneAccess) =>
+    access === 'admin' ? isAdmin : access === 'moderator' ? canModerate : canEdit;
+  const groups = GROUPS
+    .map((g) => ({ ...g, items: g.items.filter((it) => allowed(it.access ?? g.access)) }))
+    .filter((g) => g.items.length > 0);
 
   // Le pane vit dans l'URL (?pane=…) : deep-links, back/forward et F5 conservent l'écran ouvert.
-  const raw = searchParams.get('pane') ?? 'overview';
-  const pane: AdminPane = raw in PANES ? (raw as AdminPane) : 'overview';
+  // L'atterrissage suit le rôle : admin → vue d'ensemble, modérateur → documents, rédacteur → guides.
+  const home: AdminPane = isAdmin ? 'overview' : canModerate ? 'documents' : 'guides';
+  const allowedPanes = new Set(groups.flatMap((g) => g.items.map((it) => it.id)));
+  const raw = searchParams.get('pane') ?? home;
+  const pane: AdminPane = allowedPanes.has(raw as AdminPane) ? (raw as AdminPane) : home;
   const setPane = (next: AdminPane) => {
     const params = new URLSearchParams(searchParams);
-    if (next === 'overview') params.delete('pane');
+    if (next === home) params.delete('pane');
     else params.set('pane', next);
     setSearchParams(params, { replace: false });
   };
 
   // Badges de file d'attente — rafraîchis en continu pour que la sidebar dise toujours vrai.
-  const { data: overview } = useQuery({
+  // Même queryKey pour les deux rôles (les mutations modération l'invalident) ; un modérateur
+  // n'a pas accès à la vue d'ensemble complète → endpoint réduit /moderation/queue. Un rédacteur
+  // seul n'a pas de badges du tout (enabled).
+  const { data: overview } = useQuery<ModerationQueue>({
     queryKey: ['admin-overview'],
-    queryFn: getAdminOverview,
+    queryFn: isAdmin ? getAdminOverview : getModerationQueue,
     refetchInterval: 60_000,
+    enabled: canModerate,
   });
 
   const Panel = PANES[pane];
@@ -165,7 +197,7 @@ export default function Admin() {
       {/* Mobile : la sidebar devient un Select groupé (avec les compteurs dans les libellés). */}
       <Box sx={s.mobileNav}>
         <Select fullWidth size="small" value={pane} onChange={(e) => setPane(e.target.value as AdminPane)}>
-          {GROUPS.flatMap((group) => [
+          {groups.flatMap((group) => [
             ...(group.labelKey ? [<ListSubheader key={group.labelKey}>{t(group.labelKey)}</ListSubheader>] : []),
             ...group.items.map((item) => {
               const count = overview && item.badge ? item.badge(overview) : 0;
@@ -181,7 +213,7 @@ export default function Admin() {
 
       <Box sx={s.layout}>
         <GlassCard sx={s.side} component="nav" aria-label={t('nav.admin')}>
-          {GROUPS.map((group, gi) => (
+          {groups.map((group, gi) => (
             <Box key={group.labelKey ?? gi}>
               {group.labelKey && (
                 <Typography sx={s.groupTitle}>{t(group.labelKey)}</Typography>

@@ -148,7 +148,8 @@ export default function App() {
           <Route path="/ressources/:id" element={<LegacyResourceRedirect />} />
           <Route path="/a-propos" element={<About />} />
           <Route path="/about" element={<Navigate to="/a-propos" replace />} />
-          <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+          {/* Staff (V18) : admin, modérateur ou rédacteur — la page filtre ses panes par rôle. */}
+          <Route path="/admin" element={<ProtectedRoute requireStaff><Admin /></ProtectedRoute>} />
           <Route path="/legal" element={<Legal />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

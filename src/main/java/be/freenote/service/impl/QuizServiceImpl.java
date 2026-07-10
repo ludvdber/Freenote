@@ -235,6 +235,25 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
+    public void unpublish(Long id) {
+        Quiz quiz = Repositories.findByIdOrThrow(quizRepository, id, "Quiz");
+        if (!quiz.isPublished()) {
+            return; // déjà privé : re-cliquer ne doit ni échouer ni re-notifier
+        }
+        quiz.setPublished(false);
+        quizRepository.save(quiz);
+        // Le quiz ne disparaît pas : il redevient un enregistrement privé — prévenir l'auteur pour
+        // qu'il ne croie pas à une perte de données (clé i18n notifications.revision.unpublished).
+        User owner = quiz.getOwner();
+        if (owner != null) {
+            notificationService.push(owner.getId(), "revision.unpublished", java.util.Map.of(
+                    "kind", "quiz",
+                    "title", quiz.getTitle()));
+        }
+    }
+
+    @Override
+    @Transactional
     public void reportQuestion(Long reporterId, Long quizId, be.freenote.dto.request.ReportQuizQuestionRequest request) {
         Quiz quiz = Repositories.findByIdOrThrow(quizRepository, quizId, "Quiz");
         if (!quiz.isPublished()) {

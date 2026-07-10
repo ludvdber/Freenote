@@ -436,4 +436,37 @@ class QuizServiceImplTest {
                 new be.freenote.dto.request.ReportQuizQuestionRequest(5, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    // ---- dépublication (modération V18) ----
+
+    @Test
+    void unpublish_flips_the_flag_and_notifies_the_owner() {
+        Quiz quiz = Quiz.builder().id(7L).title("Réseaux").owner(testUser(2L)).published(true).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.unpublish(7L);
+
+        assertThat(quiz.isPublished()).isFalse();
+        verify(notificationService).push(eq(2L), eq("revision.unpublished"), argThat(payload ->
+                payload.get("kind").equals("quiz") && payload.get("title").equals("Réseaux")));
+    }
+
+    @Test
+    void unpublish_is_idempotent_and_silent_on_an_already_private_or_orphan_quiz() {
+        // Déjà privé : re-cliquer ne re-notifie pas
+        Quiz privateQuiz = Quiz.builder().id(7L).title("T").owner(testUser(2L)).published(false).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(privateQuiz));
+        service.unpublish(7L);
+        verify(notificationService, never()).push(any(), any(), any());
+        verify(quizRepository, never()).save(any());
+
+        // Orphelin (auteur supprimé) : dépublié sans notification, sans NPE
+        Quiz orphan = Quiz.builder().id(8L).title("T").owner(null).published(true).build();
+        when(quizRepository.findById(8L)).thenReturn(Optional.of(orphan));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(i -> i.getArgument(0));
+        service.unpublish(8L);
+        assertThat(orphan.isPublished()).isFalse();
+        verify(notificationService, never()).push(any(), any(), any());
+    }
 }

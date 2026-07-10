@@ -36,6 +36,11 @@ public interface UserService {
     UserResponse adminUnverifyUser(Long userId);
     /** Admin: mark a user as a trusted uploader (bypasses upload rate limits), or revoke it. */
     UserResponse adminSetTrusted(Long userId, boolean trusted);
+    /** Admin (V18) : accorde/retire le rôle Modérateur (périmètre Modération du panel).
+     *  Relu live en DB par AdminRoleVerificationFilter — effet immédiat, sans re-login. */
+    UserResponse adminSetModerator(Long userId, boolean moderator);
+    /** Admin (V18) : accorde/retire le rôle Rédacteur (rédaction de guides — ses propres guides). */
+    UserResponse adminSetEditor(Long userId, boolean editor);
     /** Admin : accorde/retire les palettes d'accent À VIE ({@code lifetime_supporter} — même flag
      *  qu'un don ≥ 5 €). L'octroi pousse aussi le rôle Discord Supporter (fire-and-forget). */
     UserResponse adminSetLifetimePalettes(Long userId, boolean enabled);

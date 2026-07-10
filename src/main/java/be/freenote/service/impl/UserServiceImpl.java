@@ -378,6 +378,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserResponse adminSetModerator(Long userId, boolean moderator) {
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        user.setModerator(moderator);
+        User saved = userRepository.save(user);
+        long docCount = documentRepository.countByUserId(userId);
+        log.info("Admin set moderator={} for user: id={}, username={}", moderator, userId, user.getUsername());
+        return userMapper.toResponse(saved, docCount);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse adminSetEditor(Long userId, boolean editor) {
+        User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        user.setEditor(editor);
+        User saved = userRepository.save(user);
+        long docCount = documentRepository.countByUserId(userId);
+        log.info("Admin set editor={} for user: id={}, username={}", editor, userId, user.getUsername());
+        return userMapper.toResponse(saved, docCount);
+    }
+
+    @Override
+    @Transactional
     public UserResponse adminSetLifetimePalettes(Long userId, boolean enabled) {
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
         UserProfile profile = user.getProfile();

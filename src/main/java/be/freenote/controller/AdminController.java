@@ -255,6 +255,28 @@ public class AdminController {
         return ResponseEntity.ok(userService.adminSetTrusted(id, false));
     }
 
+    /** Rôles staff V18 (Modérateur / Rédacteur) — PUT accorde, DELETE retire (pattern lifetime-palettes).
+     *  Sous /api/admin/users/** : réservé ADMIN (un modérateur ne distribue pas les rôles). */
+    @PutMapping("/users/{id}/moderator")
+    public ResponseEntity<UserResponse> grantModerator(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetModerator(id, true));
+    }
+
+    @DeleteMapping("/users/{id}/moderator")
+    public ResponseEntity<UserResponse> revokeModerator(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetModerator(id, false));
+    }
+
+    @PutMapping("/users/{id}/editor")
+    public ResponseEntity<UserResponse> grantEditor(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetEditor(id, true));
+    }
+
+    @DeleteMapping("/users/{id}/editor")
+    public ResponseEntity<UserResponse> revokeEditor(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.adminSetEditor(id, false));
+    }
+
     /** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
     @PutMapping("/users/{id}/lifetime-palettes")
     public ResponseEntity<UserResponse> grantLifetimePalettes(@PathVariable Long id) {

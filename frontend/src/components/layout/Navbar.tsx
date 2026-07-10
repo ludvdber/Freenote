@@ -150,7 +150,7 @@ export default function Navbar() {
                   >
                     {t('nav.upload')}
                   </MenuItem>
-                  {isAdmin && (
+                  {(isAdmin || user?.moderator || user?.editor) && (
                     <MenuItem
                       onClick={() => {
                         setAnchorEl(null);

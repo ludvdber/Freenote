@@ -45,6 +45,10 @@ public interface QuizService {
     /** Delete a quiz — allowed for its owner or an admin (moderation). */
     void delete(Long userId, boolean isAdmin, Long id);
 
+    /** Modération (admin/modérateur) : retire un quiz de la bibliothèque publique SANS le détruire —
+     *  il redevient un enregistrement privé de son auteur, qui est notifié. Idempotent. */
+    void unpublish(Long id);
+
     /** Signale une erreur possible dans une question d'un quiz publié → notification à l'auteur.
      *  Silencieux si le quiz est orphelin ou si le signaleur est l'auteur lui-même. */
     void reportQuestion(Long reporterId, Long quizId, be.freenote.dto.request.ReportQuizQuestionRequest request);

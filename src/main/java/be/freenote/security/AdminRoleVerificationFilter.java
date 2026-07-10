@@ -1,5 +1,6 @@
 package be.freenote.security;
 
+import be.freenote.entity.User;
 import be.freenote.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,12 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Re-checks the admin role against the database for every /api/admin/** request, so the DB is the
- * single source of truth for admin access — not the (up to 24h stale) JWT claim:
- *  - a DEMOTED admin loses access immediately (403), not when the token expires;
- *  - a freshly PROMOTED user gains access immediately — this filter grants ROLE_ADMIN from the DB
- *    even if their JWT was issued before the promotion, so no re-login is required (same live-from-DB
+ * Re-checks the STAFF status (admin role + moderator/editor flags, V18) against the database for
+ * every /api/admin/** request, so the DB is the single source of truth — not the (up to 24h stale)
+ * JWT claim:
+ *  - a DEMOTED admin/moderator/editor loses access immediately (403), not when the token expires;
+ *  - a freshly PROMOTED user gains access immediately — the filter grants the authorities from the
+ *    DB even if their JWT predates the promotion, so no re-login is required (same live-from-DB
  *    philosophy as the {@code trusted} flag).
+ *
+ * <p>The filter only decides "is this person staff at all?" — WHICH /api/admin/** paths a
+ * moderator or editor may reach is enforced by the SecurityConfig matchers (moderation subset for
+ * ROLE_MODERATOR, guides for ROLE_EDITOR, everything else stays ROLE_ADMIN).
  */
 @Component
 @RequiredArgsConstructor
@@ -51,11 +57,12 @@ public class AdminRoleVerificationFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean stillAdmin = userRepository.findById(userId)
-                .map(u -> "ADMIN".equals(u.getRole()))
-                .orElse(false);
+        User user = userRepository.findById(userId).orElse(null);
+        boolean admin = user != null && "ADMIN".equals(user.getRole());
+        boolean moderator = user != null && user.isModerator();
+        boolean editor = user != null && user.isEditor();
 
-        if (!stillAdmin) {
+        if (!admin && !moderator && !editor) {
             SecurityContextHolder.clearContext();
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -63,14 +70,15 @@ public class AdminRoleVerificationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // DB confirms ADMIN. If the JWT was issued before the promotion it lacks ROLE_ADMIN, which
-        // would make the downstream authorization (hasRole("ADMIN")) reject the request. Grant the
-        // authority from the DB so a promotion takes effect immediately, without a re-login.
-        boolean hasAdminAuthority = auth.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-        if (!hasAdminAuthority) {
-            List<GrantedAuthority> authorities = new ArrayList<>(auth.getAuthorities());
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        // The DB confirms a staff status the JWT may not carry (promotion after token issuance, or
+        // moderator/editor which are NEVER in the JWT). Grant the missing authorities so the
+        // downstream authorization rules (hasRole/hasAnyRole) see the live truth.
+        List<GrantedAuthority> authorities = new ArrayList<>(auth.getAuthorities());
+        boolean changed = false;
+        changed |= grantIfMissing(authorities, admin, "ROLE_ADMIN");
+        changed |= grantIfMissing(authorities, moderator, "ROLE_MODERATOR");
+        changed |= grantIfMissing(authorities, editor, "ROLE_EDITOR");
+        if (changed) {
             UsernamePasswordAuthenticationToken upgraded =
                     new UsernamePasswordAuthenticationToken(auth.getPrincipal(), auth.getCredentials(), authorities);
             upgraded.setDetails(auth.getDetails());
@@ -78,5 +86,13 @@ public class AdminRoleVerificationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean grantIfMissing(List<GrantedAuthority> authorities, boolean granted, String role) {
+        if (!granted || authorities.stream().anyMatch(a -> role.equals(a.getAuthority()))) {
+            return false;
+        }
+        authorities.add(new SimpleGrantedAuthority(role));
+        return true;
     }
 }

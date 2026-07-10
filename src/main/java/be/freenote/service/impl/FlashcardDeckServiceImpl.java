@@ -36,6 +36,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     private final CourseRepository courseRepository;
     private final SectionRepository sectionRepository;
     private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
+    private final be.freenote.service.NotificationService notificationService;
 
     @Override
     @Transactional
@@ -121,6 +122,24 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
             throw new ForbiddenException("Vous ne pouvez supprimer que vos propres paquets.");
         }
         deckRepository.delete(deck);
+    }
+
+    @Override
+    @Transactional
+    public void unpublish(Long id) {
+        FlashcardDeck deck = Repositories.findByIdOrThrow(deckRepository, id, "FlashcardDeck");
+        if (!deck.isPublished()) {
+            return; // déjà privé : re-cliquer ne doit ni échouer ni re-notifier
+        }
+        deck.setPublished(false);
+        deckRepository.save(deck);
+        // Même contrat que QuizServiceImpl.unpublish : le contenu redevient privé, l'auteur est prévenu.
+        User owner = deck.getOwner();
+        if (owner != null) {
+            notificationService.push(owner.getId(), "revision.unpublished", java.util.Map.of(
+                    "kind", "deck",
+                    "title", deck.getTitle()));
+        }
     }
 
     private static boolean isOwner(FlashcardDeck deck, Long userId) {

@@ -216,6 +216,13 @@ export default function UserPublic() {
                   sx={{ fontSize: 11 }}
                 />
               )}
+              {/* Rôles staff V18 — reconnaissance publique volontaire (recrutement de bénévoles). */}
+              {user.moderator && (
+                <Chip label={`🛡️ ${t('profile.moderatorChip')}`} size="small" variant="outlined" color="warning" sx={{ fontSize: 11 }} />
+              )}
+              {user.editor && (
+                <Chip label={`✍️ ${t('profile.editorChip')}`} size="small" variant="outlined" color="info" sx={{ fontSize: 11 }} />
+              )}
               <UserBadges
                 graduated={user.graduated}
                 studyEndYear={user.studyEndYear}

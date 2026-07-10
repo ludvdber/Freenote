@@ -41,5 +41,9 @@ public record UserResponse(
         // Flag BRUT « palettes à vie » (don ≥ 5 € ou grant admin) — l'admin en a besoin pour son
         // toggle (paletteEntitled est dérivé, il peut venir d'un simple sans-pub actif). Scrubbed
         // (false) sur les réponses publiques comme trusted.
-        boolean lifetimeSupporter
+        boolean lifetimeSupporter,
+        // Rôles staff V18 — PUBLICS par choix (chips de reconnaissance sur le profil, la seule
+        // monnaie pour recruter des bénévoles), contrairement à role/trusted qui restent scrubbed.
+        boolean moderator,
+        boolean editor
 ) {}

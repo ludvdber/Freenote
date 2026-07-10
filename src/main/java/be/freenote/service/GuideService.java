@@ -16,15 +16,17 @@ public interface GuideService {
      *  {@code membersOnly} et un appelant non vérifié, le contenu est retiré de la réponse. */
     GuideResponse getPublishedBySlug(String slug, boolean callerVerified);
 
-    /** Admin: all guides, drafts included. */
-    PageResponse<GuideSummary> listAll(Pageable pageable);
+    /** Panel : tous les guides pour un admin (brouillons inclus) ; un rédacteur (V18) ne voit
+     *  que LES SIENS. */
+    PageResponse<GuideSummary> listAll(Long callerId, boolean isAdmin, Pageable pageable);
 
-    /** Admin: any guide by id (drafts included), for the editor. */
-    GuideResponse getById(Long id);
+    /** Panel : un guide par id (brouillons inclus). Un rédacteur n'ouvre que les siens (403). */
+    GuideResponse getById(Long id, Long callerId, boolean isAdmin);
 
-    GuideResponse create(Long adminId, CreateGuideRequest request);
+    GuideResponse create(Long authorId, CreateGuideRequest request);
 
-    GuideResponse update(Long id, CreateGuideRequest request);
+    /** Un rédacteur ne modifie que ses propres guides (403) ; publication libre (option A). */
+    GuideResponse update(Long id, Long callerId, boolean isAdmin, CreateGuideRequest request);
 
-    void delete(Long id);
+    void delete(Long id, Long callerId, boolean isAdmin);
 }

@@ -97,10 +97,41 @@ class GuideServiceImplTest {
         when(guideRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(guideRepository.save(any(Guide.class))).thenAnswer(i -> i.getArgument(0));
 
-        GuideResponse res = service.update(7L, req("Tout nouveau titre", true));
+        GuideResponse res = service.update(7L, 1L, true, req("Tout nouveau titre", true));
 
         assertThat(res.slug()).isEqualTo("ancien-titre"); // URL stays stable
         assertThat(res.title()).isEqualTo("Tout nouveau titre");
         assertThat(res.published()).isTrue();
+    }
+
+    // ---- rôle Rédacteur (V18) : propriété vérifiée côté service ----
+
+    @Test
+    void editor_updates_his_own_guide_but_not_someone_elses() {
+        User author = admin(); // id 1
+        Guide own = Guide.builder().id(7L).slug("le-mien").title("T").content("c")
+                .published(false).author(author).authorName("admin").build();
+        when(guideRepository.findById(7L)).thenReturn(Optional.of(own));
+        when(guideRepository.save(any(Guide.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Le propriétaire (non-admin) modifie et PUBLIE librement (option A validée)
+        GuideResponse res = service.update(7L, 1L, false, req("Titre édité", true));
+        assertThat(res.published()).isTrue();
+
+        // Un AUTRE rédacteur (id 2) est refusé
+        assertThatThrownBy(() -> service.update(7L, 2L, false, req("Vol", true)))
+                .isInstanceOf(be.freenote.exception.ForbiddenException.class);
+    }
+
+    @Test
+    void editor_cannot_touch_an_orphan_guide_but_an_admin_can() {
+        Guide orphan = Guide.builder().id(9L).slug("orphelin").title("T").content("c")
+                .published(true).author(null).authorName("ancien").build();
+        when(guideRepository.findById(9L)).thenReturn(Optional.of(orphan));
+
+        assertThatThrownBy(() -> service.delete(9L, 2L, false))
+                .isInstanceOf(be.freenote.exception.ForbiddenException.class);
+
+        service.delete(9L, 1L, true); // admin : OK (verify via absence d'exception)
     }
 }

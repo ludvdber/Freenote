@@ -251,7 +251,8 @@
       "overview": "Vue d'ensemble",
       "analytics": "Analytics",
       "duplicates": "Doublons",
-      "logs": "Logs"
+      "logs": "Logs",
+      "revision": "Quiz & paquets"
     },
     "settings": {
       "countdownTitle": "Compte à rebours de l'accueil",
@@ -411,7 +412,15 @@
       "palettesChip": "Palettes à vie",
       "palettesHint": "Palettes d’accent débloquées à vie (don ≥ 5 € ou octroi admin).",
       "grantPalettes": "Donner les palettes à vie",
-      "revokePalettes": "Retirer les palettes à vie"
+      "revokePalettes": "Retirer les palettes à vie",
+      "moderatorChip": "Modérateur",
+      "moderatorHint": "Modérateur : accès au périmètre Modération du panel (documents, signalements, doublons, dépublication des quiz/paquets).",
+      "editorChip": "Rédacteur",
+      "editorHint": "Rédacteur : rédige des guides (ses propres guides, publication libre).",
+      "grantModerator": "Nommer modérateur",
+      "revokeModerator": "Retirer le rôle modérateur",
+      "grantEditor": "Nommer rédacteur",
+      "revokeEditor": "Retirer le rôle rédacteur"
     },
     "donations": {
       "title": "Dons & sans-pub",
@@ -534,6 +543,26 @@
     },
     "duplicates": {
       "empty": "Aucun doublon — la bibliothèque est propre ✓"
+    },
+    "revision": {
+      "title": "Quiz & paquets publiés",
+      "hint": "Retire de la bibliothèque un contenu problématique : il redevient privé chez son auteur (qui est notifié) — rien n'est supprimé.",
+      "searchPlaceholder": "Rechercher par titre, auteur ou cours…",
+      "quizzes": "Quiz publiés",
+      "decks": "Paquets publiés",
+      "emptyQuizzes": "Aucun quiz publié.",
+      "emptyDecks": "Aucun paquet publié.",
+      "unpublish": "Dépublier",
+      "unpublishTitle": "Dépublier ce contenu ?",
+      "unpublishConfirm": "« {{title}} » sera retiré de la bibliothèque publique et redeviendra privé chez son auteur (qui sera notifié). Rien n'est supprimé.",
+      "open": "Ouvrir",
+      "by": "par {{name}}",
+      "questionsCount_one": "{{count}} question",
+      "questionsCount_other": "{{count}} questions",
+      "attemptsCount_one": "{{count}} partie",
+      "attemptsCount_other": "{{count}} parties",
+      "cardsCount_one": "{{count}} carte",
+      "cardsCount_other": "{{count}} cartes"
     }
   },
   "upload": {
@@ -673,7 +702,9 @@
       "perkSmall": "Don de moins de 5 € : 1 mois sans pub + palettes d’accent pendant 1 mois.",
       "perkBig": "Don de 5 € ou plus : 1 mois sans pub par euro (max 36 mois), palettes illimitées à vie + rôle Discord Supporter.",
       "cta": "Faire un don sur Ko-fi"
-    }
+    },
+    "moderatorChip": "Modérateur",
+    "editorChip": "Rédacteur"
   },
   "auth": {
     "verificationRequired": "Vérification requise",
@@ -1755,6 +1786,9 @@
     },
     "quiz": {
       "questionReported": "{{by}} signale une possible erreur dans « {{title}} » (question {{question}})"
+    },
+    "revision": {
+      "unpublished": "« {{title}} » a été retiré de la bibliothèque par la modération. Il reste disponible dans tes contenus privés."
     }
   },
   "celebrations": {

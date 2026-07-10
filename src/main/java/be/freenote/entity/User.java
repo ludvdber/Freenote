@@ -43,6 +43,17 @@ public class User {
     @Builder.Default
     private boolean trusted = false;
 
+    /** Modérateur (V18) : accès au périmètre Modération du panel admin. Relu live en DB par
+     *  AdminRoleVerificationFilter — un retrait prend effet à la requête suivante. */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean moderator = false;
+
+    /** Rédacteur (V18) : rédige des guides (CRUD sur SES propres guides, publication libre). */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean editor = false;
+
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String role = "USER";

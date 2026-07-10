@@ -251,7 +251,8 @@
       "overview": "Overview",
       "analytics": "Analytics",
       "duplicates": "Duplicates",
-      "logs": "Logs"
+      "logs": "Logs",
+      "revision": "Quizzes & decks"
     },
     "settings": {
       "countdownTitle": "Home page countdown",
@@ -411,7 +412,15 @@
       "palettesChip": "Lifetime palettes",
       "palettesHint": "Accent palettes unlocked for life (donation ≥ €5 or admin grant).",
       "grantPalettes": "Grant lifetime palettes",
-      "revokePalettes": "Revoke lifetime palettes"
+      "revokePalettes": "Revoke lifetime palettes",
+      "moderatorChip": "Moderator",
+      "moderatorHint": "Moderator: access to the panel's Moderation scope (documents, reports, duplicates, quiz/deck unpublishing).",
+      "editorChip": "Writer",
+      "editorHint": "Writer: writes guides (their own guides, free publishing).",
+      "grantModerator": "Make moderator",
+      "revokeModerator": "Remove moderator role",
+      "grantEditor": "Make writer",
+      "revokeEditor": "Remove writer role"
     },
     "donations": {
       "title": "Donations & ad-free",
@@ -534,6 +543,26 @@
     },
     "duplicates": {
       "empty": "No duplicates — the library is clean ✓"
+    },
+    "revision": {
+      "title": "Published quizzes & decks",
+      "hint": "Remove problematic content from the library: it becomes private again for its author (who is notified) — nothing is deleted.",
+      "searchPlaceholder": "Search by title, author or course…",
+      "quizzes": "Published quizzes",
+      "decks": "Published decks",
+      "emptyQuizzes": "No published quiz.",
+      "emptyDecks": "No published deck.",
+      "unpublish": "Unpublish",
+      "unpublishTitle": "Unpublish this content?",
+      "unpublishConfirm": "“{{title}}” will be removed from the public library and become private again for its author (who will be notified). Nothing is deleted.",
+      "open": "Open",
+      "by": "by {{name}}",
+      "questionsCount_one": "{{count}} question",
+      "questionsCount_other": "{{count}} questions",
+      "attemptsCount_one": "{{count}} attempt",
+      "attemptsCount_other": "{{count}} attempts",
+      "cardsCount_one": "{{count}} card",
+      "cardsCount_other": "{{count}} cards"
     }
   },
   "upload": {
@@ -673,7 +702,9 @@
       "perkSmall": "Donation under €5: 1 month ad-free + accent palettes for 1 month.",
       "perkBig": "Donation of €5 or more: 1 ad-free month per euro (36 months max), lifetime palettes + the Supporter Discord role.",
       "cta": "Donate on Ko-fi"
-    }
+    },
+    "moderatorChip": "Moderator",
+    "editorChip": "Writer"
   },
   "auth": {
     "verificationRequired": "Verification required",
@@ -1755,6 +1786,9 @@
     },
     "quiz": {
       "questionReported": "{{by}} reports a possible error in “{{title}}” (question {{question}})"
+    },
+    "revision": {
+      "unpublished": "“{{title}}” was removed from the library by moderation. It is still available in your private content."
     }
   },
   "celebrations": {

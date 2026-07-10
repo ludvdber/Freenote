@@ -52,6 +52,7 @@ import type {
   FundingResponse,
   AdminOverviewResponse,
   AnalyticsResponse,
+  ModerationQueue,
 } from '@/types';
 
 // --- Stats ---
@@ -94,6 +95,18 @@ export const getAdminOverview = () =>
 
 export const getAdminAnalytics = (days: number) =>
   api.get<AnalyticsResponse>('/admin/analytics', { params: { days } }).then((r) => r.data);
+
+/** Badges des files de modération seuls — la source de la sidebar pour un MODÉRATEUR (V18),
+ *  qui n'a pas accès à la vue d'ensemble complète. */
+export const getModerationQueue = () =>
+  api.get<ModerationQueue>('/admin/moderation/queue').then((r) => r.data);
+
+/** Modération : retire un quiz/paquet publié de la bibliothèque (il redevient privé, auteur notifié). */
+export const adminUnpublishQuiz = (id: number) =>
+  api.put<void>(`/admin/quizzes/${id}/unpublish`).then((r) => r.data);
+
+export const adminUnpublishDeck = (id: number) =>
+  api.put<void>(`/admin/flashcard-decks/${id}/unpublish`).then((r) => r.data);
 
 // --- Documents ---
 export const getDocumentById = (id: number) =>
@@ -353,6 +366,19 @@ export const adminTrustUser = (id: number) =>
 
 export const adminUntrustUser = (id: number) =>
   api.put<User>(`/admin/users/${id}/untrust`).then((r) => r.data);
+
+/** Rôles staff V18 — PUT accorde, DELETE retire (pattern lifetime-palettes). */
+export const adminGrantModerator = (id: number) =>
+  api.put<User>(`/admin/users/${id}/moderator`).then((r) => r.data);
+
+export const adminRevokeModerator = (id: number) =>
+  api.delete<User>(`/admin/users/${id}/moderator`).then((r) => r.data);
+
+export const adminGrantEditor = (id: number) =>
+  api.put<User>(`/admin/users/${id}/editor`).then((r) => r.data);
+
+export const adminRevokeEditor = (id: number) =>
+  api.delete<User>(`/admin/users/${id}/editor`).then((r) => r.data);
 
 /** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
 export const adminGrantLifetimePalettes = (id: number) =>

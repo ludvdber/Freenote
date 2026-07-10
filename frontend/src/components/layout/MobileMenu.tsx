@@ -17,7 +17,7 @@ import * as s from './MobileMenu.styles';
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
   const { t, i18n } = useTranslation();
-  const { token, isAdmin } = useAuthStore();
+  const { token, user, isAdmin } = useAuthStore();
   const logout = useLogout();
   const promptLogin = useAuthPromptStore((s) => s.show);
   const { theme, toggle: toggleTheme } = useThemeStore();
@@ -80,7 +80,7 @@ export default function MobileMenu() {
                 <ListItemButton component={Link} to="/upload" onClick={() => setOpen(false)}>
                   <ListItemText primary={t('nav.upload')} />
                 </ListItemButton>
-                {isAdmin && (
+                {(isAdmin || user?.moderator || user?.editor) && (
                   <ListItemButton
                     component={Link}
                     to="/admin"

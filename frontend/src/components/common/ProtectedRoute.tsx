@@ -9,6 +9,8 @@ import PageWrapper from '@/components/layout/PageWrapper';
 interface Props {
   requireVerified?: boolean;
   requireAdmin?: boolean;
+  /** Staff = admin OU modérateur OU rédacteur (V18) — la page /admin filtre ensuite ses panes. */
+  requireStaff?: boolean;
   children: React.ReactNode;
 }
 
@@ -20,20 +22,22 @@ interface Props {
  * This component stays as a defence-in-depth layer for direct URL entry (bookmark,
  * shared link, back/forward button) — it fires the same snackbar + redirects home.
  */
-export default function ProtectedRoute({ requireVerified, requireAdmin, children }: Props) {
+export default function ProtectedRoute({ requireVerified, requireAdmin, requireStaff, children }: Props) {
   const { t } = useTranslation();
-  const { token, isVerified, isAdmin } = useAuthStore();
+  const { token, user, isVerified, isAdmin } = useAuthStore();
   const promptLogin = useAuthPromptStore((s) => s.show);
 
+  const isStaff = isAdmin || !!user?.moderator || !!user?.editor;
   const needsLogin = !token;
   const needsAdmin = !needsLogin && requireAdmin && !isAdmin;
+  const needsStaff = !needsLogin && requireStaff && !isStaff;
 
   useEffect(() => {
     if (needsLogin) promptLogin('auth.loginRequired');
-    else if (needsAdmin) promptLogin('auth.adminRequired');
-  }, [needsLogin, needsAdmin, promptLogin]);
+    else if (needsAdmin || needsStaff) promptLogin('auth.adminRequired');
+  }, [needsLogin, needsAdmin, needsStaff, promptLogin]);
 
-  if (needsLogin || needsAdmin) {
+  if (needsLogin || needsAdmin || needsStaff) {
     return <Navigate to="/" replace />;
   }
 

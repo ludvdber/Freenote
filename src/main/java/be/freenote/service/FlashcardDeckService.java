@@ -26,4 +26,8 @@ public interface FlashcardDeckService {
 
     /** Delete a deck — allowed for its owner or an admin (moderation). */
     void delete(Long userId, boolean isAdmin, Long id);
+
+    /** Modération (admin/modérateur) : retire un paquet de la bibliothèque publique SANS le détruire —
+     *  il redevient un enregistrement privé de son auteur, qui est notifié. Idempotent. */
+    void unpublish(Long id);
 }

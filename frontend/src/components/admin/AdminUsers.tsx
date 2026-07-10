@@ -13,7 +13,7 @@ import {
   MenuItem,
   Alert,
 } from '@mui/material';
-import { Verified, GppBad, Shield, DeleteForever, Block, Bolt, Palette } from '@mui/icons-material';
+import { Verified, GppBad, Shield, DeleteForever, Block, Bolt, Palette, LocalPolice, HistoryEdu } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -22,6 +22,10 @@ import {
   adminUnverifyUser,
   adminTrustUser,
   adminUntrustUser,
+  adminGrantModerator,
+  adminRevokeModerator,
+  adminGrantEditor,
+  adminRevokeEditor,
   adminGrantLifetimePalettes,
   adminRevokeLifetimePalettes,
   adminUpdateUserRole,
@@ -78,6 +82,29 @@ export default function AdminUsers() {
 
   const untrustMut = useMutation({
     mutationFn: adminUntrustUser,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+
+  // Rôles staff V18 : Modérateur (périmètre Modération du panel) et Rédacteur (guides). Relus
+  // live en DB côté serveur — l'octroi/le retrait est effectif à la requête suivante, sans re-login.
+  const grantModeratorMut = useMutation({
+    mutationFn: adminGrantModerator,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+  const revokeModeratorMut = useMutation({
+    mutationFn: adminRevokeModerator,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+  const grantEditorMut = useMutation({
+    mutationFn: adminGrantEditor,
+    onSuccess: invalidate,
+    onError: (e) => setError(extractApiError(e)),
+  });
+  const revokeEditorMut = useMutation({
+    mutationFn: adminRevokeEditor,
     onSuccess: invalidate,
     onError: (e) => setError(extractApiError(e)),
   });
@@ -201,6 +228,18 @@ export default function AdminUsers() {
             </Tooltip>
           )}
 
+          {u.moderator && (
+            <Tooltip title={t('admin.users.moderatorHint')}>
+              <Chip size="small" color="warning" icon={<LocalPolice />} label={t('admin.users.moderatorChip')} sx={{ cursor: 'help' }} />
+            </Tooltip>
+          )}
+
+          {u.editor && (
+            <Tooltip title={t('admin.users.editorHint')}>
+              <Chip size="small" color="info" icon={<HistoryEdu />} label={t('admin.users.editorChip')} sx={{ cursor: 'help' }} />
+            </Tooltip>
+          )}
+
           {u.lifetimeSupporter && (
             <Tooltip title={t('admin.users.palettesHint')}>
               <Chip size="small" color="secondary" icon={<Palette />} label={t('admin.users.palettesChip')} sx={{ cursor: 'help' }} />
@@ -248,6 +287,26 @@ export default function AdminUsers() {
               onClick={() => (u.trusted ? untrustMut : trustMut).mutate(u.id)}
             >
               <Bolt fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={u.moderator ? t('admin.users.revokeModerator') : t('admin.users.grantModerator')}>
+            <IconButton
+              size="small"
+              color={u.moderator ? 'warning' : 'default'}
+              onClick={() => (u.moderator ? revokeModeratorMut : grantModeratorMut).mutate(u.id)}
+            >
+              <LocalPolice fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={u.editor ? t('admin.users.revokeEditor') : t('admin.users.grantEditor')}>
+            <IconButton
+              size="small"
+              color={u.editor ? 'info' : 'default'}
+              onClick={() => (u.editor ? revokeEditorMut : grantEditorMut).mutate(u.id)}
+            >
+              <HistoryEdu fontSize="small" />
             </IconButton>
           </Tooltip>
 

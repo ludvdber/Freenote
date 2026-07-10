@@ -159,7 +159,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/stats").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/webhooks/kofi").permitAll()
 
-                // Admin endpoints
+                // Admin endpoints. Rôles staff granulaires (V18) : le périmètre Modération est
+                // ouvert aux modérateurs, la rédaction de guides aux rédacteurs — les matchers
+                // spécifiques DOIVENT précéder le wildcard /api/admin/** (piège d'ordre habituel).
+                // AdminRoleVerificationFilter re-lit rôle + flags en DB à chaque requête (promotion
+                // et rétrogradation immédiates) ; le service Guides re-vérifie en plus la propriété
+                // (un rédacteur ne touche que SES guides).
+                .requestMatchers("/api/admin/documents/**", "/api/admin/reports/**",
+                        "/api/admin/quizzes/**", "/api/admin/flashcard-decks/**",
+                        "/api/admin/moderation/**").hasAnyRole("ADMIN", "MODERATOR")
+                .requestMatchers("/api/admin/guides/**").hasAnyRole("ADMIN", "EDITOR")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 // Provisional accounts (logged in via Discord, ISFCE email NOT yet verified) may only

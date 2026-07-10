@@ -15,12 +15,15 @@ import * as s from './NotificationBell.styles';
 const TYPE_ICONS: Record<string, string> = {
   'document.verified': '⭐',
   'quiz.questionReported': '🚩',
+  'revision.unpublished': '🛡️',
 };
 
 /** Cible de navigation d'une notification (null = ligne non cliquable). */
 function targetFor(n: NotificationItem): string | null {
   if (n.type === 'document.verified' && n.payload?.documentId != null) return `/documents/${n.payload.documentId}`;
   if (n.type === 'quiz.questionReported') return '/outils/quiz';
+  // Dépublié par la modération : le contenu est redevenu privé — renvoyer vers « Mes quiz/paquets ».
+  if (n.type === 'revision.unpublished') return n.payload?.kind === 'deck' ? '/outils/flashcards' : '/outils/quiz';
   return null;
 }
 

@@ -52,7 +52,9 @@ public abstract class UserMapper {
                 p != null && p.isGraduated(),
                 p != null && isPaletteEntitled(p) ? p.getAccentPalette() : null,
                 isPaletteEntitled(p),
-                p != null && p.isLifetimeSupporter()
+                p != null && p.isLifetimeSupporter(),
+                user.isModerator(),
+                user.isEditor()
         );
     }
 
@@ -90,7 +92,11 @@ public abstract class UserMapper {
                 false,
                 null,
                 false,
-                false
+                false,
+                // Rôles staff : reconnaissance publique assumée, même sur un profil privé (comme
+                // le chip supporter) — c'est un statut du site, pas une donnée personnelle.
+                user.isModerator(),
+                user.isEditor()
         );
     }
 
@@ -109,7 +115,9 @@ public abstract class UserMapper {
                 null,
                 r.studyStartYear(), r.studyEndYear(), r.graduated(),
                 // La palette ne teinte que l'UI de son propriétaire — rien à exposer aux autres.
-                null, false, false
+                null, false, false,
+                // Rôles staff V18 : volontairement PUBLICS (chips de reconnaissance du profil).
+                r.moderator(), r.editor()
         );
     }
 

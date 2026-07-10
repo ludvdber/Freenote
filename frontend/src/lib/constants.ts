@@ -1,6 +1,6 @@
 // App version (SemVer). Source of truth stays build.gradle.kts `version`; kept here for reference and
 // potential reuse (not displayed in the UI). 1.x.0 = features, 1.0.x = fixes.
-export const APP_VERSION = '1.19.0';
+export const APP_VERSION = '1.20.0';
 
 export const CATEGORIES = ['SYNTHESE', 'EXAMEN', 'NOTES', 'EXERCICES', 'COURS', 'TFE', 'DIVERS'] as const;
 
