@@ -6,12 +6,16 @@
 #   ln -s /etc/nginx/sites-available/freenote.be /etc/nginx/sites-enabled/
 #   nginx -t && systemctl reload nginx
 #
-# ⚠️ THE DEPLOYED VHOST CAN DRIFT FROM THIS FILE. On 2026-09-08 the live nginx was still logging
-# Cloudflare IPs (172.64.x, 162.158.x, 104.2x.x) as $remote_addr, i.e. the real_ip block below had
-# never been applied — which silently breaks the backend's per-IP rate limiting (every anonymous
-# visitor shares ~20 Cloudflare IPs). Check the live one before trusting it:
-#     grep -c real_ip_header /etc/nginx/sites-enabled/freenote.be     # must be 1, not 0
-#     tail -3 /var/log/nginx/freenote.access.log                      # $remote_addr must be a REAL visitor IP
+# ⚠️ THE DEPLOYED VHOST CAN DRIFT FROM THIS FILE — and a missing real_ip block silently breaks the
+# backend's per-IP rate limiting (every anonymous visitor would share ~20 Cloudflare IPs). Note
+# that `real_ip_header` alone does NOTHING without `set_real_ip_from`: nginx trusts no proxy by
+# default. Check the live vhost rather than assuming:
+#     grep -c real_ip_header   /etc/nginx/sites-enabled/freenote.be   # must be 1
+#     grep -c set_real_ip_from /etc/nginx/sites-enabled/freenote.be   # must be ~22, not 0
+#     grep -E "GET /(api|browse)" /var/log/nginx/access.log | tail -3 # $remote_addr = REAL visitor IP
+# (Checked OK on 2026-09-08: real visitor IPs. Only 15 of the 22 CIDRs were present, i.e. IPv4
+#  only — harmless while nginx has no IPv6 listener, but keep the list synced with
+#  https://www.cloudflare.com/ips/.)
 #
 # ── Log format: declare ONCE in the http{} context, not here ──────────────────────────────
 # `log_format` is only valid inside http{}, so it cannot live in the server{} blocks below.
