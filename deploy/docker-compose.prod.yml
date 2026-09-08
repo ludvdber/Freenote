@@ -18,11 +18,22 @@
 #     MINIO_ROOT_USER/PASSWORD == MINIO_ACCESS_KEY / MINIO_SECRET_KEY
 #     MEILI_MASTER_KEY         == MEILISEARCH_API_KEY
 
+# Log rotation, applied to every service below. Docker's json-file driver has NO size limit by
+# default: freenote-meilisearch alone had grown a 386 MB log file in 3 months (it traces every
+# 15 s healthcheck at INFO, ANSI escape codes included — ~700 bytes/line, ~4 MB/day) and nothing
+# would ever have reclaimed it. 10 MB x 3 files caps each service at 30 MB.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:17-alpine
     container_name: freenote-postgres
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_DB: freenote
       POSTGRES_USER: ${POSTGRES_USER}
@@ -41,6 +52,7 @@ services:
     image: redis:7-alpine
     container_name: freenote-redis
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
@@ -55,6 +67,7 @@ services:
     image: minio/minio:latest
     container_name: freenote-minio
     restart: unless-stopped
+    logging: *default-logging
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -74,9 +87,13 @@ services:
     image: getmeili/meilisearch:latest
     container_name: freenote-meilisearch
     restart: unless-stopped
+    logging: *default-logging
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       MEILI_ENV: production
+      # Silences the per-request INFO trace — otherwise every healthcheck below (one every 15 s)
+      # writes a ~700-byte line forever. WARN keeps real problems visible.
+      MEILI_LOG_LEVEL: WARN
     ports:
       - "127.0.0.1:7700:7700"
     volumes:

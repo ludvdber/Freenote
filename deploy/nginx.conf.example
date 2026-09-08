@@ -6,6 +6,25 @@
 #   ln -s /etc/nginx/sites-available/freenote.be /etc/nginx/sites-enabled/
 #   nginx -t && systemctl reload nginx
 #
+# ⚠️ THE DEPLOYED VHOST CAN DRIFT FROM THIS FILE. On 2026-09-08 the live nginx was still logging
+# Cloudflare IPs (172.64.x, 162.158.x, 104.2x.x) as $remote_addr, i.e. the real_ip block below had
+# never been applied — which silently breaks the backend's per-IP rate limiting (every anonymous
+# visitor shares ~20 Cloudflare IPs). Check the live one before trusting it:
+#     grep -c real_ip_header /etc/nginx/sites-enabled/freenote.be     # must be 1, not 0
+#     tail -3 /var/log/nginx/freenote.access.log                      # $remote_addr must be a REAL visitor IP
+#
+# ── Log format: declare ONCE in the http{} context, not here ──────────────────────────────
+# `log_format` is only valid inside http{}, so it cannot live in the server{} blocks below.
+# Put this in /etc/nginx/conf.d/freenote-log.conf (conf.d is included from http{}):
+#
+#     log_format vhost '$remote_addr - $host [$time_local] "$request" '
+#                      '$status $body_bytes_sent "$http_referer" "$http_user_agent" '
+#                      'rt=$request_time us=$upstream_status';
+#
+# $host matters: this shared nginx pours every site into one access.log, so without it a
+# Freenote-only post-mortem is impossible (you cannot tell freenote.be requests apart from the
+# other vhosts'). The server{} below then writes its own file with that format.
+#
 # ── Topology: Cloudflare → nginx (shared LXC) → Freenote app LXC (<APP_LXC_IP>:8080) ──
 # Cloudflare terminates TLS at the edge and connects to this nginx from *its own* IPs, so the
 # real_ip block (inside the server{} below) rewrites $remote_addr to the true visitor IP via
@@ -86,8 +105,16 @@ server {
     set_real_ip_from 2a06:98c0::/29;
     set_real_ip_from 2c0f:f248::/32;
 
-    # Upload cap matches Spring's spring.servlet.multipart.max-request-size = 11MB.
-    client_max_body_size 12M;
+    # Own access log, in the `vhost` format declared in http{} (see the header of this file).
+    # Without it Freenote's traffic is mixed into the shared access.log of every other site.
+    access_log /var/log/nginx/freenote.access.log vhost;
+    error_log  /var/log/nginx/freenote.error.log;
+
+    # Upload cap: must sit just above Spring's spring.servlet.multipart.max-request-size = 50MB
+    # (one request can carry up to 8 images for the image→PDF feature; each part is separately
+    # capped at max-file-size = 8MB). It used to be 12M here, which would have 413'd any
+    # multi-image upload at the proxy before Spring ever saw it.
+    client_max_body_size 52M;
 
     # Security headers complementing the CSP Spring already emits.
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;

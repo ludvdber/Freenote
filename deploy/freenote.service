@@ -23,16 +23,35 @@ ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do pg_isready -h 127.0.0.1 -p 543
 
 # Java 25: Debian 13 (Trixie) ships openjdk-25 natively (apt install openjdk-25-jre-headless),
 # so /usr/bin/java IS Java 25 — no third-party repo needed (the Adoptium repo is broken on Trixie).
-# MaxRAMPercentage=50 (NOT 75): the JVM shares this 8 GB LXC with 4 Docker data containers —
-# 75% would starve Postgres/MinIO/Meili under load.
+#
+# Memory sizing (revised 2026-09-08 after an 18 h freeze of the LXC, see docs/INFRA-SETUP.md §16):
+#   -Xmx2g          FIXED heap, not a percentage. The previous -XX:MaxRAMPercentage=50 let the JVM
+#                   claim 4 GB of heap in an 8 GB LXC it SHARES with 4 Docker containers. The app's
+#                   live set is far below 2 GB (RSS dropped 1.9 GB -> 0.9 GB after this change).
+#   -XX:+UseG1GC    G1, not ZGC: ZGC targets multi-tens-of-GB heaps and reserves a lot of off-heap
+#                   metadata for nothing at this scale. Sub-millisecond pauses buy us nothing here.
+#   ExitOnOutOfMemoryError  die cleanly so systemd restarts us (5 s) instead of GC-thrashing and
+#                   dragging the whole container into swap.
+#   HeapDump*       so a future OOM names the culprit instead of leaving us guessing.
 ExecStart=/usr/bin/java \
-    -XX:+UseZGC \
-    -XX:MaxRAMPercentage=50 \
+    -Xmx2g \
+    -XX:+UseG1GC \
+    -XX:+ExitOnOutOfMemoryError \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:HeapDumpPath=/opt/freenote/logs \
     -Dspring.profiles.active=prod \
     -jar /opt/freenote/freenote.jar
 Restart=on-failure
 RestartSec=5
 SuccessExitStatus=143
+
+# Hard ceiling on the whole service cgroup — the belt to -Xmx's braces. If the JVM ever overruns
+# (heap + metaspace + thread stacks + native), IT gets OOM-killed inside ITS OWN cgroup and systemd
+# restarts it in 5 s. Without this, the overrun is absorbed by the LXC's cgroup instead, where
+# Proxmox sets memory.high 64 MiB below memory.max: the kernel then THROTTLES every allocation
+# without ever killing anything (oom_kill stays 0) and the container freezes for hours. That is
+# exactly what happened on 2026-09-07.
+MemoryMax=3G
 
 # Graceful shutdown: Spring Boot default is 30s — match it so systemd doesn't SIGKILL first.
 TimeoutStopSec=35
