@@ -197,9 +197,7 @@
     "noResults": "Aucun document trouvé. Essaie avec d'autres mots-clés.",
     "addFavorite": "Ajouter aux favoris",
     "removeFavorite": "Retirer des favoris",
-    "reportPlaceholder": "Raison...",
-    "rename": "Renommer",
-    "renamePlaceholder": "Nouveau titre (50 caractères max)",
+    "reportPlaceholder": "Ce qui ne va pas…",
     "deleteConfirm": "Supprimer définitivement ce document ? Cette action est irréversible.",
     "courseDocuments": "Documents du cours",
     "aiShort": "IA",
@@ -232,7 +230,26 @@
     "searchNoHits": "Aucun résultat",
     "searchPrev": "Page précédente avec résultat",
     "searchNext": "Page suivante avec résultat",
-    "searchClear": "Effacer la recherche"
+    "searchClear": "Effacer la recherche",
+    "editTitle": "Modifier le document",
+    "editFields": "Titre, cours, catégorie, professeur, année",
+    "editOwnerHint": "Tu as déposé ce document : tu peux corriger ses informations à tout moment.",
+    "editAdminHint": "Édition avec tes droits de modération — l'auteur sera prévenu si tu changes sa vérification.",
+    "editCourseRequired": "Choisis une section puis un cours.",
+    "editProfessorHint": "Laisse vide pour ne pas indiquer de professeur.",
+    "editVerifiedHint": "Le badge « Vérifié » met le document en avant. Le retirer reprend l'XP accordé à son auteur.",
+    "editSaved": "Document mis à jour.",
+    "staffMode": "Modération",
+    "staffVerified": "Document vérifié.",
+    "staffUnverified": "Vérification retirée.",
+    "unverify": "Retirer la vérification",
+    "unverifyHint": "Le document reste en ligne, sans le badge.",
+    "deleteStaffConfirm": "Supprimer définitivement le document de cet étudiant ? Son auteur perdra l'XP correspondant. Cette action est irréversible.",
+    "goneTitle": "Ce document n'existe plus",
+    "goneText": "Il a été supprimé par son auteur ou par la modération. Le lien que tu as suivi n'est plus valide.",
+    "loadError": "Impossible de charger ce document pour le moment. Réessaie dans un instant.",
+    "reportTitle": "Signaler ce document",
+    "reportReasonHelp": "Explique en une phrase — c'est ce message qui permet de traiter ton signalement."
   },
   "admin": {
     "tabs": {
@@ -352,10 +369,48 @@
       "deleteConfirm": "Supprimer « {{name}} » ? Les documents qui le référencent garderont juste un professeur vide."
     },
     "reports": {
-      "pending": "Signalements en attente",
       "noPending": "Aucun signalement en attente.",
       "resolve": "Résoudre",
-      "dismiss": "Rejeter"
+      "dismiss": "Rejeter",
+      "title": "Signalements",
+      "pendingCount_one": "{{count}} en attente",
+      "pendingCount_other": "{{count}} en attente",
+      "status": "Statut",
+      "statusPending": "En attente",
+      "statusResolved": "Traités",
+      "statusDismissed": "Rejetés",
+      "statusAll": "Tout l'historique",
+      "allTypes": "Tous",
+      "by": "déposé par",
+      "editDoc": "Corriger le document",
+      "decide": "Traiter…",
+      "decideTitle": "Traiter ce signalement",
+      "confirmDecision": "Valider la décision",
+      "deleteWarning": "Le document et son fichier seront supprimés définitivement, et l'XP qu'il a rapporté sera repris à son auteur.",
+      "note": "Mot pour la personne qui a signalé (facultatif)",
+      "noteHelp": "Il lui sera envoyé en notification avec ta décision.",
+      "resolutions": {
+        "EDITED": {
+          "label": "J'ai corrigé le document",
+          "hint": "Les informations ont été rectifiées ; le document reste en ligne."
+        },
+        "UNVERIFIED": {
+          "label": "Retirer la vérification",
+          "hint": "Le document reste consultable mais perd son badge — et son auteur l'XP correspondant."
+        },
+        "DELETED": {
+          "label": "Supprimer le document",
+          "hint": "Irréversible. Tous les signalements de ce document sont clos."
+        },
+        "NO_ACTION": {
+          "label": "Rien à changer",
+          "hint": "Le signalement était fondé mais le document n'a pas besoin d'être modifié."
+        },
+        "REJECTED": {
+          "label": "Signalement non retenu",
+          "hint": "Rien d'anormal : le document reste tel quel."
+        }
+      }
     },
     "delegates": {
       "title": "Gestion des délégués",
@@ -504,7 +559,6 @@
       "queueCount_other": "{{count}} éléments",
       "queueEmpty": "File vide ✓",
       "tagDoc": "DOC",
-      "tagReport": "SIGNALEMENT",
       "tagDuplicate": "DOUBLON",
       "duplicateLine_one": "{{count}} groupe de documents au même contenu exact",
       "duplicateLine_other": "{{count}} groupes de documents au même contenu exact",
@@ -1782,13 +1836,19 @@
     "unreadCount_one": "{{count}} non lue",
     "unreadCount_other": "{{count}} non lues",
     "document": {
-      "verified": "Ton document « {{title}} » a été vérifié !"
+      "verified": "Ton document « {{title}} » a été vérifié !",
+      "unverifiedByStaff": "La vérification de ton document « {{title}} » a été retirée suite à un signalement.",
+      "deletedByStaff": "Ton document « {{title}} » a été supprimé suite à un signalement."
     },
     "quiz": {
       "questionReported": "{{by}} signale une possible erreur dans « {{title}} » (question {{question}})"
     },
     "revision": {
       "unpublished": "« {{title}} » a été retiré de la bibliothèque par la modération. Il reste disponible dans tes contenus privés."
+    },
+    "report": {
+      "resolved": "Ton signalement sur « {{title}} » a été traité.",
+      "dismissed": "Ton signalement sur « {{title}} » n'a pas été retenu."
     }
   },
   "celebrations": {
@@ -1907,5 +1967,39 @@
     "loginLead": "Les dons passent par Ko-fi, mais ton code personnel est lié à ton compte Freenote : connecte-toi d’abord (et vérifie ton email ISFCE) pour l’obtenir — sans lui, le don ne sera pas rattaché à ton compte et tes avantages ne s’activeront pas.",
     "login": "Se connecter",
     "anyway": "Faire un don quand même"
+  },
+  "reportTypes": {
+    "SUPPRESSION": {
+      "label": "Demande de suppression",
+      "hint": "Ce document ne devrait pas être en ligne (droit d'auteur, données personnelles, publié par erreur)."
+    },
+    "INAPPROPRIE": {
+      "label": "Contenu inapproprié",
+      "hint": "Contenu choquant, insultant ou illégal."
+    },
+    "ERREUR": {
+      "label": "Erreur dans le contenu",
+      "hint": "Le document contient une information fausse (réponse erronée, formule incorrecte…)."
+    },
+    "OBSOLETE": {
+      "label": "Périmé",
+      "hint": "Plus au programme, ou remplacé par une version plus récente du cours."
+    },
+    "METADONNEES": {
+      "label": "Mauvaises informations",
+      "hint": "Mauvais cours, mauvaise catégorie, mauvais professeur ou mauvaise année. Le fichier, lui, est bon."
+    },
+    "AMELIORATION": {
+      "label": "À améliorer",
+      "hint": "Incomplet, pages manquantes, mal scanné, illisible."
+    },
+    "DOUBLON": {
+      "label": "Doublon",
+      "hint": "Le même document est déjà en ligne ailleurs."
+    },
+    "AUTRE": {
+      "label": "Autre",
+      "hint": "Décris le problème dans le message ci-dessous."
+    }
   }
 }

@@ -51,6 +51,8 @@ export interface DocumentResponse {
   title: string;
   courseId: number;
   courseName: string;
+  /** Id de la section — amorce la cascade section -> cours du formulaire d'édition. */
+  sectionId: number | null;
   sectionName: string;
   category: string;
   authorName: string;
@@ -60,12 +62,20 @@ export interface DocumentResponse {
   language: string;
   year: string | null;
   professorName: string | null;
+  /** Id du professeur — permet au formulaire d'édition de pré-sélectionner le prof actuel. */
+  professorId: number | null;
   averageRating: number;
   /** Nombre de votes — 0 = ne pas afficher d'étoiles (des ☆☆☆☆☆ se lisent comme « note 0 »). */
   ratingCount: number;
   downloadCount: number;
   /** Avatar résolu de l'uploader (null : doc anonyme ou avatar « lettre »). */
   authorAvatarUrl: string | null;
+  /**
+   * Le lecteur est-il l'auteur ? Renseigné par `GET /api/documents/{id}` uniquement (false dans
+   * les listes). À utiliser À LA PLACE de `authorId === user.id` : sur un document ANONYME
+   * `authorId` vaut null, ce qui retirait à son auteur toute action sur sa propre page.
+   */
+  owned: boolean;
   createdAt: string;
 }
 
@@ -272,6 +282,11 @@ export interface PageResponse<T> {
   totalPages: number;
 }
 
+/**
+ * Modification des métadonnées d'un document — même corps pour les deux chemins :
+ * propriétaire (`PUT /api/documents/{id}`) et admin (`PUT /api/admin/documents/{id}`).
+ * `verified` est ignoré côté propriétaire. Champ absent = « ne pas toucher ».
+ */
 export interface UpdateDocumentRequest {
   title?: string;
   courseId?: number;
@@ -279,6 +294,8 @@ export interface UpdateDocumentRequest {
   language?: string;
   year?: string;
   professorId?: number;
+  /** true = détacher le professeur (`professorId: undefined` signifiant déjà « ne pas toucher »). */
+  clearProfessor?: boolean;
   verified?: boolean;
 }
 
@@ -325,8 +342,25 @@ export interface RateRequest {
   score: number;
 }
 
+/** Nature d'un signalement — miroir de l'enum backend `ReportType`. */
+export type ReportType =
+  | 'SUPPRESSION' | 'AMELIORATION' | 'OBSOLETE' | 'ERREUR'
+  | 'METADONNEES' | 'DOUBLON' | 'INAPPROPRIE' | 'AUTRE';
+
+/** Ce que la modération a fait du signalement — miroir de l'enum backend `ReportResolution`. */
+export type ReportResolution = 'NO_ACTION' | 'EDITED' | 'UNVERIFIED' | 'DELETED' | 'REJECTED';
+
 export interface ReportRequest {
+  type: ReportType;
+  /** Message obligatoire : le type seul ne dit pas CE QUI ne va pas. */
   reason: string;
+}
+
+/** Décision de modération envoyée à `PUT /api/admin/reports/{id}/resolve|dismiss`. */
+export interface ReportDecisionRequest {
+  resolution: ReportResolution;
+  /** Mot renvoyé au signaleur dans sa notification. */
+  note?: string;
 }
 
 export interface CreateCourseRequest {
@@ -343,9 +377,22 @@ export interface ReportResponse {
   id: number;
   documentId: number;
   documentTitle: string;
-  reporterUsername: string;
+  documentCourseName: string | null;
+  documentCategory: string;
+  documentVerified: boolean;
+  /** Username technique de l'auteur du document (null si le compte a été supprimé). */
+  documentAuthorName: string | null;
+  documentAuthorId: number | null;
+  reporterUsername: string | null;
+  reporterId: number | null;
+  type: ReportType;
   reason: string;
-  status: string;
+  status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
+  /** null tant que le signalement est en attente. */
+  resolution: ReportResolution | null;
+  resolutionNote: string | null;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
   createdAt: string;
 }
 

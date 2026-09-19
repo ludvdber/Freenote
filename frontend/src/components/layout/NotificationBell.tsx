@@ -16,12 +16,25 @@ const TYPE_ICONS: Record<string, string> = {
   'document.verified': '⭐',
   'quiz.questionReported': '🚩',
   'revision.unpublished': '🛡️',
+  // Retours de modération : le signaleur apprend ce qui a été décidé, l'auteur ce qui est
+  // arrivé à son document — avant, les deux découvraient le résultat par hasard (ou jamais).
+  'report.resolved': '✅',
+  'report.dismissed': '💬',
+  'document.unverifiedByStaff': '⚠️',
+  'document.deletedByStaff': '🗑️',
 };
 
 /** Cible de navigation d'une notification (null = ligne non cliquable). */
 function targetFor(n: NotificationItem): string | null {
   if (n.type === 'document.verified' && n.payload?.documentId != null) return `/documents/${n.payload.documentId}`;
   if (n.type === 'quiz.questionReported') return '/outils/quiz';
+  // Le document existe encore : on peut aller voir le résultat de la décision.
+  if ((n.type === 'report.resolved' || n.type === 'report.dismissed'
+       || n.type === 'document.unverifiedByStaff') && n.payload?.documentId != null) {
+    return `/documents/${n.payload.documentId}`;
+  }
+  // « Supprimé » ne porte volontairement pas de documentId : la ligne reste non cliquable
+  // plutôt que d'envoyer vers un 404.
   // Dépublié par la modération : le contenu est redevenu privé — renvoyer vers « Mes quiz/paquets ».
   if (n.type === 'revision.unpublished') return n.payload?.kind === 'deck' ? '/outils/flashcards' : '/outils/quiz';
   return null;

@@ -3,6 +3,7 @@ package be.freenote.controller;
 import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.CreateCourseRequest;
 import be.freenote.dto.request.CreateProfessorRequest;
+import be.freenote.dto.request.ResolveReportRequest;
 import be.freenote.dto.request.UpdateDocumentRequest;
 import be.freenote.dto.response.ActivityLogResponse;
 import be.freenote.dto.response.CourseResponse;
@@ -14,6 +15,9 @@ import be.freenote.dto.response.ReportResponse;
 import be.freenote.dto.response.SectionResponse;
 import be.freenote.dto.response.SmtpStatusResponse;
 import be.freenote.dto.response.UserResponse;
+import be.freenote.enums.ReportResolution;
+import be.freenote.enums.ReportStatus;
+import be.freenote.enums.ReportType;
 import be.freenote.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -206,23 +210,73 @@ public class AdminController {
 
     // --- Reports ---
 
+    /**
+     * File de modération des signalements. {@code status} et {@code type} sont facultatifs :
+     * absent = pas de filtre sur ce critère (donc « tout l'historique » quand les deux le sont).
+     * Une valeur inconnue est traitée comme absente plutôt que 400 — un filtre mal orthographié
+     * dans une URL partagée ne doit pas casser l'écran.
+     */
+    @GetMapping("/reports")
+    public ResponseEntity<PageResponse<ReportResponse>> getReports(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(reportService.list(
+                parseEnum(ReportStatus.class, status),
+                parseEnum(ReportType.class, type),
+                PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100))));
+    }
+
+    /** Compteurs par type des signalements EN ATTENTE — chips de filtre du panel. */
+    @GetMapping("/reports/counts")
+    public ResponseEntity<Map<String, Long>> getReportCounts() {
+        return ResponseEntity.ok(reportService.pendingCountsByType());
+    }
+
+    /** Ancienne route de la file (uniquement les signalements en attente) — conservée pour compat. */
     @GetMapping("/reports/pending")
     public ResponseEntity<PageResponse<ReportResponse>> getPendingReports(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(reportService.listPending(PageRequest.of(page, size)));
+        return ResponseEntity.ok(reportService.list(ReportStatus.PENDING, null, PageRequest.of(page, size)));
     }
 
+    /**
+     * Tranche un signalement. Le corps porte la décision ({@code resolution}) et un mot facultatif
+     * pour le signaleur — le serveur EXÉCUTE cette décision (retrait de vérification, suppression)
+     * au lieu de se contenter de sortir la ligne de la file comme le faisait l'ancien « resolve ».
+     */
     @PutMapping("/reports/{id}/resolve")
-    public ResponseEntity<Void> resolveReport(@PathVariable Long id) {
-        reportService.resolve(id);
+    public ResponseEntity<Void> resolveReport(@PathVariable Long id,
+                                              @Valid @RequestBody(required = false) ResolveReportRequest request,
+                                              Authentication authentication) {
+        reportService.decide(id, SecurityUtils.currentUserId(authentication),
+                request == null ? new ResolveReportRequest() : request);
         return ResponseEntity.ok().build();
     }
 
+    /** Signalement non retenu — équivaut à {@code resolve} avec la résolution REJECTED. */
     @PutMapping("/reports/{id}/dismiss")
-    public ResponseEntity<Void> dismissReport(@PathVariable Long id) {
-        reportService.dismiss(id);
+    public ResponseEntity<Void> dismissReport(@PathVariable Long id,
+                                              @Valid @RequestBody(required = false) ResolveReportRequest request,
+                                              Authentication authentication) {
+        ResolveReportRequest body = request == null ? new ResolveReportRequest() : request;
+        body.setResolution(ReportResolution.REJECTED.name());
+        reportService.decide(id, SecurityUtils.currentUserId(authentication), body);
         return ResponseEntity.ok().build();
+    }
+
+    /** Filtre d'URL optionnel : null ou valeur inconnue = « pas de filtre », jamais une erreur. */
+    private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw) {
+        if (raw == null || raw.isBlank() || "ALL".equalsIgnoreCase(raw.trim())) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(type, raw.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     // --- Users ---

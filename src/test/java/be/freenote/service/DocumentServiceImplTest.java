@@ -73,8 +73,8 @@ class DocumentServiceImplTest {
     }
 
     private DocumentResponse dummyResponse() {
-        return new DocumentResponse(100L, "Test Doc", 1L, "Java", "IT", "SYNTHESE",
-                "author", null, false, false, "FR", null, null, 0.0, 0, 0, null,
+        return new DocumentResponse(100L, "Test Doc", 1L, "Java", 2L, "IT", "SYNTHESE",
+                "author", null, false, false, "FR", null, null, null, 0.0, 0, 0, null, false,
                 LocalDateTime.now());
     }
 
@@ -623,7 +623,7 @@ class DocumentServiceImplTest {
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
         when(documentMapper.toResponse(doc)).thenReturn(resp);
 
-        DocumentResponse result = documentService.getById(100L);
+        DocumentResponse result = documentService.getById(100L, null);
 
         assertThat(result).isEqualTo(resp);
     }
@@ -632,7 +632,7 @@ class DocumentServiceImplTest {
     void shouldThrowNotFoundWhenDocumentDoesNotExist() {
         when(documentRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> documentService.getById(999L))
+        assertThatThrownBy(() -> documentService.getById(999L, null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Typography, Box, Button, Chip, TextField, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, Collapse, useTheme } from '@mui/material';
-import { Download, Favorite, FavoriteBorder, Flag, Share, SmartToy, Edit, DeleteOutlined, NavigateNext, MoreHoriz, Visibility, Star, Close, Style, Quiz as QuizIcon, ArrowForward } from '@mui/icons-material';
+import { Typography, Box, Button, Chip, TextField, Snackbar, Alert, CircularProgress, Breadcrumbs, Link as MuiLink, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Collapse, useTheme } from '@mui/material';
+import { Download, Favorite, FavoriteBorder, Flag, Share, SmartToy, Edit, DeleteOutlined, NavigateNext, MoreHoriz, Visibility, Star, Close, Style, Quiz as QuizIcon, ArrowForward, Shield, CheckCircle, RemoveCircleOutlined, SearchOff } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,8 +15,10 @@ import {
   recordDocVisit,
   getFavoriteStatus,
   deleteDocument,
-  renameDocument,
   searchDocuments,
+  verifyDocument,
+  adminUpdateDocument,
+  adminDeleteDocument,
   listQuizzes,
   listSharedDecks,
 } from '@/api/endpoints';
@@ -30,6 +32,10 @@ import UploaderCard from '@/components/common/UploaderCard';
 import StarRating from '@/components/ui/StarRating';
 import Shimmer from '@/components/ui/Shimmer';
 import AdSlot from '@/components/ui/AdSlot';
+import DocumentEditDialog from '@/components/common/DocumentEditDialog';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { REPORT_TYPES } from '@/lib/reports';
+import type { ReportType } from '@/types';
 // import type = effacé à la compilation : ne charge PAS le chunk pdf.js, contrairement au lazy() dessous.
 import type { PdfOutlineEntry, PdfViewerHandle } from '@/components/common/PdfViewer';
 import * as s from './DocumentView.styles';
@@ -42,15 +48,18 @@ export default function DocumentView() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
-  const { token, isVerified, user } = useAuthStore();
+  const { token, isVerified, user, isAdmin } = useAuthStore();
   const queryClient = useQueryClient();
   const [reportReason, setReportReason] = useState('');
+  const [reportType, setReportType] = useState<ReportType>('AUTRE');
   const [showReport, setShowReport] = useState(false);
   const [isFav, setIsFav] = useState(false);
   const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
-  const [showRename, setShowRename] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  // Édition : le MÊME dialogue sert l'auteur et le staff, seul le mode change (le mode admin
+  // ajoute l'interrupteur « Vérifié »).
+  const [editMode, setEditMode] = useState<'owner' | 'admin' | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<'own' | 'admin' | null>(null);
   // Nudge « note ce doc » affiché juste APRÈS un téléchargement (jamais à l'arrivée sur la page).
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const nudgeTimer = useRef<number | null>(null);
@@ -66,15 +75,21 @@ export default function DocumentView() {
     setPrevId(id);
     setNudgeOpen(false);
     setShowReport(false);
-    setShowRename(false);
+    setReportReason('');
+    setReportType('AUTRE');
     setMenuAnchor(null);
+    setEditMode(null);
+    setConfirmDelete(null);
     setOutline([]);
   }
 
-  const { data: doc, isLoading } = useQuery({
+  const { data: doc, isLoading, isError, error: docError } = useQuery({
     queryKey: ['document', id],
     queryFn: () => getDocumentById(Number(id)),
     enabled: !!id,
+    // Un 404 est une réponse définitive (document supprimé) : réessayer trois fois ne fait
+    // qu'allonger l'attente avant d'afficher l'explication.
+    retry: (count, err) => !(axios.isAxiosError(err) && err.response?.status === 404) && count < 2,
   });
 
   const { data: avgRating } = useQuery({
@@ -210,32 +225,57 @@ export default function DocumentView() {
     },
   });
 
-  const renameMutation = useMutation({
-    mutationFn: () => renameDocument(Number(id), renameValue.trim()),
-    onSuccess: () => {
-      setShowRename(false);
-      queryClient.invalidateQueries({ queryKey: ['document', id] });
-      queryClient.invalidateQueries({ queryKey: ['search'] });
-      queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
-      if (user?.id) queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
-    },
-  });
+  const afterRemoval = () => {
+    queryClient.invalidateQueries({ queryKey: ['search'] });
+    queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-overview'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-all-docs'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-pending-docs'] });
+    if (user?.id) queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
+    navigate('/browse');
+  };
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteDocument(Number(id)),
+    onSuccess: afterRemoval,
+  });
+
+  // Suppression par le staff sur un document qui n'est pas le sien : passe par la route admin
+  // (DELETE /api/documents/{id} l'autorise aussi pour un ADMIN, mais pas pour un MODÉRATEUR).
+  const adminDeleteMutation = useMutation({
+    mutationFn: () => adminDeleteDocument(Number(id)),
+    onSuccess: afterRemoval,
+  });
+
+  const invalidateDoc = () => {
+    queryClient.invalidateQueries({ queryKey: ['document', id] });
+    queryClient.invalidateQueries({ queryKey: ['search'] });
+    queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-overview'] });
+  };
+
+  // Vérifier / dé-vérifier sans quitter la page — l'action de modération la plus courante.
+  const verifyMutation = useMutation({
+    mutationFn: () => verifyDocument(Number(id)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['search'] });
-      queryClient.invalidateQueries({ queryKey: ['popular-docs'] });
-      if (user?.id) queryClient.invalidateQueries({ queryKey: ['user-docs', user.id] });
-      navigate('/browse');
+      invalidateDoc();
+      setRatingFeedback({ severity: 'success', message: t('document.staffVerified') });
+    },
+  });
+  const unverifyMutation = useMutation({
+    mutationFn: () => adminUpdateDocument(Number(id), { verified: false }),
+    onSuccess: () => {
+      invalidateDoc();
+      setRatingFeedback({ severity: 'success', message: t('document.staffUnverified') });
     },
   });
 
   const reportMutation = useMutation({
-    mutationFn: () => reportDocument(Number(id), { reason: reportReason }),
+    mutationFn: () => reportDocument(Number(id), { type: reportType, reason: reportReason.trim() }),
     onSuccess: () => {
       setShowReport(false);
       setReportReason('');
+      setReportType('AUTRE');
       // Avant : aucun retour — impossible de savoir si le signalement était parti.
       setRatingFeedback({ severity: 'success', message: t('document.reportThanks') });
     },
@@ -247,7 +287,14 @@ export default function DocumentView() {
     },
   });
 
-  const isOwner = !!doc && doc.authorId != null && user?.id === doc.authorId;
+  // `owned` vient du serveur : c'est le SEUL signal fiable sur un document anonyme, dont
+  // `authorId` est volontairement nul — la comparaison « authorId === user.id » retirait donc à
+  // l'auteur d'un dépôt anonyme toute action sur son propre document. Le repli couvre les données
+  // encore en cache d'avant ce changement.
+  const isOwner = !!doc && (doc.owned || (doc.authorId != null && user?.id === doc.authorId));
+  const canModerate = !!token && (isAdmin || !!user?.moderator);
+  // Un membre du staff sur le document d'un autre : ses actions passent par les routes admin.
+  const staffOnOther = canModerate && !isOwner;
   const hasRated = (myRating ?? 0) > 0;
 
   const handleDownload = () => {
@@ -276,10 +323,27 @@ export default function DocumentView() {
       </PageWrapper>
     );
   }
+  // Un lien vers un document supprimé n'affichait qu'un « Une erreur est survenue » nu : le
+  // visiteur ne pouvait pas savoir si le document avait disparu, s'il n'y avait plus accès, ou si
+  // le site était cassé. Le cas est légitime (le document N'EXISTE plus) — il mérite une réponse.
   if (!doc) {
+    const gone = isError && axios.isAxiosError(docError) && docError.response?.status === 404;
     return (
-      <PageWrapper>
-        <Typography>{t('common.error')}</Typography>
+      <PageWrapper maxWidth="sm">
+        <Helmet><title>{`${t(gone ? 'document.goneTitle' : 'common.error')} · Freenote`}</title></Helmet>
+        <GlassCard sx={{ p: 4, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'center' }}>
+          <SearchOff sx={{ fontSize: 48, opacity: 0.5 }} aria-hidden="true" />
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            {t(gone ? 'document.goneTitle' : 'common.error')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t(gone ? 'document.goneText' : 'document.loadError')}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Button variant="contained" component={RouterLink} to="/browse">{t('nav.browse')}</Button>
+            <Button color="inherit" onClick={() => navigate(-1)}>{t('common.back')}</Button>
+          </Box>
+        </GlassCard>
       </PageWrapper>
     );
   }
@@ -370,10 +434,10 @@ export default function DocumentView() {
         </Box>
       </Box>
 
-      {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage/favori/
-          signaler en icônes (le drapeau vaut mieux qu'un item caché dans un menu) ; seules
-          les actions du propriétaire (renommer, supprimer) restent dans le « ⋯ ». Signaler
-          est masqué sur son propre doc (le backend le refuse déjà). */}
+      {/* Hiérarchie d'actions : Télécharger est LA seule action primaire ; partage / favori /
+          signaler / modifier en icônes ; le « ⋯ » ne garde que le rare et l'irréversible
+          (vérifier, dé-vérifier, supprimer). Signaler est masqué sur son propre document —
+          le backend le refuse désormais aussi, on corrige son dépôt, on ne le signale pas. */}
       <Box sx={s.actionsRow}>
         {isVerified && pdfSrc && (
           <Button variant="contained" startIcon={<Download />} onClick={handleDownload}>
@@ -417,7 +481,33 @@ export default function DocumentView() {
             </IconButton>
           </Tooltip>
         )}
-        {isOwner && (
+        {/* Édition SORTIE du menu : « je corrige mon dépôt » est l'action la plus fréquente après
+            le téléchargement, elle ne mérite pas d'être cachée derrière un « ⋯ ». */}
+        {(isOwner || staffOnOther) && (
+          <Tooltip title={t('document.editTitle')}>
+            <IconButton
+              aria-label={t('document.editTitle')}
+              onClick={() => setEditMode(isOwner ? 'owner' : 'admin')}
+            >
+              <Edit />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Marqueur explicite quand on agit AVEC ses droits de staff sur le document d'autrui :
+            sans lui, rien ne distingue une action d'auteur d'une action de modération. */}
+        {staffOnOther && (
+          <Chip
+            size="small"
+            icon={<Shield sx={{ fontSize: 14 }} />}
+            label={t('document.staffMode')}
+            color="warning"
+            variant="outlined"
+            sx={{ ml: 0.5 }}
+          />
+        )}
+
+        {(isOwner || staffOnOther) && (
           <>
             <Tooltip title={t('document.moreActions')}>
               <IconButton
@@ -432,18 +522,47 @@ export default function DocumentView() {
               <MenuItem
                 onClick={() => {
                   setMenuAnchor(null);
-                  setRenameValue(doc.title);
-                  setShowRename(true);
+                  setEditMode(isOwner ? 'owner' : 'admin');
                 }}
               >
                 <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
-                {t('document.rename')}
+                <ListItemText
+                  primary={t('document.editTitle')}
+                  secondary={t('document.editFields')}
+                  slotProps={{ secondary: { variant: 'caption' } }}
+                />
               </MenuItem>
+
+              {staffOnOther && <Divider />}
+              {staffOnOther && !doc.verified && (
+                <MenuItem
+                  disabled={verifyMutation.isPending}
+                  onClick={() => { setMenuAnchor(null); verifyMutation.mutate(); }}
+                >
+                  <ListItemIcon><CheckCircle fontSize="small" color="success" /></ListItemIcon>
+                  {t('admin.docs.verify')}
+                </MenuItem>
+              )}
+              {staffOnOther && doc.verified && (
+                <MenuItem
+                  disabled={unverifyMutation.isPending}
+                  onClick={() => { setMenuAnchor(null); unverifyMutation.mutate(); }}
+                >
+                  <ListItemIcon><RemoveCircleOutlined fontSize="small" /></ListItemIcon>
+                  <ListItemText
+                    primary={t('document.unverify')}
+                    secondary={t('document.unverifyHint')}
+                    slotProps={{ secondary: { variant: 'caption' } }}
+                  />
+                </MenuItem>
+              )}
+
+              <Divider />
               <MenuItem
-                disabled={deleteMutation.isPending}
+                disabled={deleteMutation.isPending || adminDeleteMutation.isPending}
                 onClick={() => {
                   setMenuAnchor(null);
-                  if (window.confirm(t('document.deleteConfirm'))) deleteMutation.mutate();
+                  setConfirmDelete(isOwner ? 'own' : 'admin');
                 }}
                 sx={{ color: 'error.main' }}
               >
@@ -455,46 +574,51 @@ export default function DocumentView() {
         )}
       </Box>
 
-      {showReport && (
-        <Box sx={s.reportRow}>
+      {/* Signaler = dire CE QUI ne va pas, pas juste « il y a un souci ». Le type choisi ici est
+          ce qui rend la file de modération triable par problème ; le message reste obligatoire
+          (un type seul n'est jamais actionnable). */}
+      <Collapse in={showReport} unmountOnExit>
+        <GlassCard sx={{ p: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>{t('document.reportTitle')}</Typography>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+            {REPORT_TYPES.map((rt) => (
+              <Chip
+                key={rt.id}
+                size="small"
+                label={`${rt.emoji} ${t(`reportTypes.${rt.id}.label`)}`}
+                color={reportType === rt.id ? rt.color : 'default'}
+                variant={reportType === rt.id ? 'filled' : 'outlined'}
+                onClick={() => setReportType(rt.id)}
+              />
+            ))}
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            {t(`reportTypes.${reportType}.hint`)}
+          </Typography>
           <TextField
             size="small"
             fullWidth
+            multiline
+            minRows={2}
             value={reportReason}
-            onChange={(e) => setReportReason(e.target.value)}
+            onChange={(e) => setReportReason(e.target.value.slice(0, 1000))}
             placeholder={t('document.reportPlaceholder')}
+            helperText={t('document.reportReasonHelp')}
+            slotProps={{ htmlInput: { maxLength: 1000 } }}
           />
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => reportMutation.mutate()}
-            disabled={!reportReason}
-          >
-            {t('common.confirm')}
-          </Button>
-        </Box>
-      )}
-
-      {showRename && isOwner && (
-        <Box sx={s.reportRow}>
-          <TextField
-            size="small"
-            fullWidth
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value.slice(0, 50))}
-            placeholder={t('document.renamePlaceholder')}
-            helperText={`${renameValue.length}/50`}
-            slotProps={{ htmlInput: { maxLength: 50 } }}
-          />
-          <Button
-            variant="contained"
-            onClick={() => renameMutation.mutate()}
-            disabled={!renameValue.trim() || renameMutation.isPending}
-          >
-            {t('common.save')}
-          </Button>
-        </Box>
-      )}
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <Button color="inherit" onClick={() => setShowReport(false)}>{t('common.cancel')}</Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => reportMutation.mutate()}
+              disabled={!reportReason.trim() || reportMutation.isPending}
+            >
+              {t('document.report')}
+            </Button>
+          </Box>
+        </GlassCard>
+      </Collapse>
 
       {/* Nudge post-téléchargement : demander la note juste après la consommation de la valeur
           (timing Udemy/Booking) — jamais à l'arrivée sur la page. */}
@@ -676,6 +800,32 @@ export default function DocumentView() {
           {ratingFeedback?.message}
         </Alert>
       </Snackbar>
+
+      {/* Même fiche d'édition que dans le panel admin — seul le mode diffère (le mode « admin »
+          ajoute l'interrupteur Vérifié). */}
+      {editMode && (
+        <DocumentEditDialog
+          open
+          doc={doc}
+          mode={editMode}
+          onClose={() => setEditMode(null)}
+          onSaved={() => setRatingFeedback({ severity: 'success', message: t('document.editSaved') })}
+        />
+      )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title={t('document.delete')}
+        message={confirmDelete === 'admin' ? t('document.deleteStaffConfirm') : t('document.deleteConfirm')}
+        confirmLabel={t('document.delete')}
+        loading={deleteMutation.isPending || adminDeleteMutation.isPending}
+        onConfirm={() => {
+          if (confirmDelete === 'admin') adminDeleteMutation.mutate();
+          else deleteMutation.mutate();
+          setConfirmDelete(null);
+        }}
+        onClose={() => setConfirmDelete(null)}
+      />
 
       <AdSlot width={728} height={90} sx={{ mt: 4 }} />
     </PageWrapper>

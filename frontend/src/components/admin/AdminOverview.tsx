@@ -11,6 +11,7 @@ import {
   verifyDocument,
 } from '@/api/endpoints';
 import { formatDate } from '@/lib/utils';
+import { reportTypeMeta } from '@/lib/reports';
 import GlassCard from '@/components/ui/GlassCard';
 import { KpiTile, DayBars, type DayPoint } from './charts';
 import type { AdminPane } from '@/pages/Admin';
@@ -176,7 +177,14 @@ export default function AdminOverview({ onNavigate }: { onNavigate: (pane: Admin
 
           {(pendingReports?.content ?? []).map((report) => (
             <Box key={report.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Chip size="small" variant="outlined" color="error" label={t('admin.overview.tagReport')} />
+              {/* Le type dit d'un coup d'œil s'il faut ouvrir tout de suite (suppression) ou
+                  si ça peut attendre (suggestion) — le tri commence dès la vue d'ensemble. */}
+              <Chip
+                size="small"
+                variant="outlined"
+                color={reportTypeMeta(report.type).color}
+                label={`${reportTypeMeta(report.type).emoji} ${t(`reportTypes.${reportTypeMeta(report.type).id}.label`)}`}
+              />
               <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 180 }} title={report.reason}>
                 <strong>{report.documentTitle}</strong> — « {report.reason} »
               </Typography>

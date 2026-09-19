@@ -49,12 +49,6 @@ export const actionsRow: Sx = {
   mb: 2.5,
 };
 
-export const reportRow: Sx = {
-  mb: 2,
-  display: 'flex',
-  gap: 1,
-};
-
 // ——— Nudge post-téléchargement (timing Udemy/Booking : on demande la note juste après la
 // consommation de la valeur, jamais à l'arrivée sur la page) ———
 export const nudge: Sx = {

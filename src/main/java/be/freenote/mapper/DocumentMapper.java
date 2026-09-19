@@ -10,14 +10,18 @@ public interface DocumentMapper {
     @Mapping(target = "courseId", source = "course.id")
     @Mapping(target = "courseName", source = "course.name")
     @Mapping(target = "sectionName", source = "course.section.name")
+    @Mapping(target = "sectionId", source = "course.section.id")
     @Mapping(target = "category", source = "category")
     @Mapping(target = "authorName", expression = "java(mapAuthorName(document))")
     @Mapping(target = "authorId", expression = "java(mapAuthorId(document))")
     @Mapping(target = "professorName", source = "professor.name")
+    @Mapping(target = "professorId", source = "professor.id")
     @Mapping(target = "averageRating", expression = "java(document.getAverageRating().doubleValue())")
     @Mapping(target = "ratingCount", source = "ratingCount")
     @Mapping(target = "downloadCount", source = "downloadCount")
     @Mapping(target = "authorAvatarUrl", expression = "java(mapAuthorAvatarUrl(document))")
+    // Dépend du LECTEUR, pas du document : posé après coup par DocumentServiceImpl.getById.
+    @Mapping(target = "owned", ignore = true)
     DocumentResponse toResponse(Document document);
 
     default String mapAuthorName(Document document) {

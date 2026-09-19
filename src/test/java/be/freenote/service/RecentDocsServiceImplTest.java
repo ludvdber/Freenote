@@ -110,8 +110,8 @@ class RecentDocsServiceImplTest {
 
     private static DocumentResponse stubDoc(Long id) {
         return new DocumentResponse(
-                id, "title", 1L, "course", "section", "NOTES",
-                "author", null, true, false, "FR", null, null,
-                0.0, 0, 0, null, null);
+                id, "title", 1L, "course", 2L, "section", "NOTES",
+                "author", null, true, false, "FR", null, null, null,
+                0.0, 0, 0, null, false, null);
     }
 }

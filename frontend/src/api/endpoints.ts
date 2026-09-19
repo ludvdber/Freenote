@@ -24,6 +24,8 @@ import type {
   RateRequest,
   ReportRequest,
   ReportResponse,
+  ReportDecisionRequest,
+  ReportType,
   DonationResponse,
   ActivityLog,
   PublishDeckRequest,
@@ -156,6 +158,13 @@ export const deleteDocument = (id: number) =>
 
 export const renameDocument = (id: number, title: string) =>
   api.patch<DocumentResponse>(`/documents/${id}`, null, { params: { title } }).then((r) => r.data);
+
+/**
+ * Édition de SON propre document (titre, cours, catégorie, professeur, année, langue).
+ * `verified` est ignoré serveur : la vérification reste un jugement de la modération.
+ */
+export const updateOwnDocument = (id: number, data: UpdateDocumentRequest) =>
+  api.put<DocumentResponse>(`/documents/${id}`, data).then((r) => r.data);
 
 export const downloadDocument = (id: number) =>
   api.get<Blob>(`/documents/${id}/file`, { responseType: 'blob' }).then((r) => r.data);
@@ -410,14 +419,33 @@ export const adminDeleteProfessor = (id: number) =>
   api.delete(`/admin/professors/${id}`);
 
 // --- Admin: Reports ---
+/** File de modération. `status`/`type` omis = pas de filtre sur ce critère. */
+export const getReports = (params: {
+  status?: 'PENDING' | 'RESOLVED' | 'DISMISSED';
+  type?: ReportType;
+  page?: number;
+  size?: number;
+} = {}) =>
+  api.get<PageResponse<ReportResponse>>('/admin/reports', { params }).then((r) => r.data);
+
+/** Compteurs par type des signalements EN ATTENTE — chips de filtre du panel. */
+export const getReportCounts = () =>
+  api.get<Record<string, number>>('/admin/reports/counts').then((r) => r.data);
+
 export const getPendingReports = (page = 0, size = 20) =>
   api.get<PageResponse<ReportResponse>>('/admin/reports/pending', { params: { page, size } }).then((r) => r.data);
 
-export const resolveReport = (id: number) =>
-  api.put(`/admin/reports/${id}/resolve`);
+/** Tranche un signalement EN AGISSANT : la résolution dit ce que le serveur doit faire du document. */
+export const resolveReport = (id: number, data: ReportDecisionRequest) =>
+  api.put(`/admin/reports/${id}/resolve`, data);
 
-export const dismissReport = (id: number) =>
-  api.put(`/admin/reports/${id}/dismiss`);
+export const dismissReport = (id: number, note?: string) => {
+  // Annotation explicite : axios 1.20 fait remonter le type du CORPS envoyé dans AxiosResponse.
+  // Sans elle, l'objet littéral garde son type inféré et les deux branches de la mutation
+  // « traiter / rejeter » d'AdminReports ne partagent plus le même type de retour.
+  const body: ReportDecisionRequest = { resolution: 'REJECTED', note };
+  return api.put(`/admin/reports/${id}/dismiss`, body);
+};
 
 // --- Admin: Donations ---
 export const getAdminDonations = (page = 0, size = 30) =>

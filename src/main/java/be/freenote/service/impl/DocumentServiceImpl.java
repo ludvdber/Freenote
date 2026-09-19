@@ -183,9 +183,19 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public DocumentResponse getById(Long id) {
+    public DocumentResponse getById(Long id, Long callerId) {
         Document document = Repositories.findByIdOrThrow(documentRepository, id, "Document");
-        return documentMapper.toResponse(document);
+        DocumentResponse response = documentMapper.toResponse(document);
+        // « owned » ne peut PAS venir du mapper : il dépend du lecteur, pas du document. Et il ne
+        // peut pas se déduire d'authorId côté client, qui est nul sur un document anonyme — c'est
+        // exactement pour ça que l'auteur d'un doc anonyme n'avait plus aucune action sur sa page.
+        return isOwner(document, callerId) ? response.asOwned() : response;
+    }
+
+    private static boolean isOwner(Document document, Long callerId) {
+        return callerId != null
+                && document.getUser() != null
+                && document.getUser().getId().equals(callerId);
     }
 
     @Override
@@ -403,8 +413,61 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse adminUpdate(Long documentId, UpdateDocumentRequest request) {
         Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
 
+        applyMetadata(document, request);
+
+        if (request.getVerified() != null && request.getVerified() != document.isVerified()) {
+            document.setVerified(request.getVerified());
+            // Symétrie XP : passer vérifié crédite l'auteur, retirer la vérification reprend le crédit —
+            // sans ça, un aller-retour unverify/verify doublerait l'XP (farming admin accidentel).
+            if (document.getUser() != null) {
+                Long authorId = document.getUser().getId();
+                eventPublisher.publishEvent(request.getVerified()
+                        ? new XpEvent.DocumentVerified(authorId, documentId, document.getTitle())
+                        : new XpEvent.DocumentUnverified(authorId, documentId));
+            }
+            statsService.invalidateCache();
+        }
+
+        Document saved = documentRepository.save(document);
+        meilisearchService.indexDocument(saved);
+        return documentMapper.toResponse(saved);
+    }
+
+    /**
+     * Édition par le PROPRIÉTAIRE. Même formulaire que côté admin, moins la vérification : celle-ci
+     * reste un jugement de la modération. Le reste des métadonnées appartient légitimement à celui
+     * qui a déposé le fichier — jusqu'ici il ne pouvait QUE renommer, et devait supprimer/re-déposer
+     * pour corriger une catégorie ou un professeur choisi trop vite.
+     *
+     * <p>La vérification n'est PAS retirée au passage : rien du fichier ne change, seulement son
+     * étiquetage. La retirer punirait la correction d'une faute de frappe et reprendrait l'XP.
+     */
+    @Override
+    @Transactional
+    public DocumentResponse updateOwn(Long documentId, Long userId, UpdateDocumentRequest request) {
+        Document document = Repositories.findByIdOrThrow(documentRepository, documentId, "Document");
+        // isOwner et non « authorId » : sur un document anonyme, l'auteur est bien en base (seule
+        // sa restitution est masquée) — le propriétaire garde donc la main sur son dépôt.
+        if (!isOwner(document, userId)) {
+            throw new ForbiddenException("You can only edit your own documents");
+        }
+        applyMetadata(document, request);
+        Document saved = documentRepository.save(document);
+        meilisearchService.indexDocument(saved);
+        return documentMapper.toResponse(saved).asOwned();
+    }
+
+    /**
+     * Champs de métadonnées communs aux deux chemins d'édition (admin et propriétaire).
+     * Convention : {@code null} = « ne pas toucher ».
+     */
+    private void applyMetadata(Document document, UpdateDocumentRequest request) {
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            document.setTitle(request.getTitle().trim());
+            String title = request.getTitle().trim();
+            if (title.length() > 50) {
+                throw new IllegalArgumentException("Le titre doit faire entre 1 et 50 caractères.");
+            }
+            document.setTitle(title);
         }
         if (request.getCourseId() != null) {
             Course course = Repositories.findByIdOrThrow(courseRepository, request.getCourseId(), "Course");
@@ -420,25 +483,13 @@ public class DocumentServiceImpl implements DocumentService {
         if (request.getYear() != null) {
             document.setYear(request.getYear());
         }
-        if (request.getVerified() != null && request.getVerified() != document.isVerified()) {
-            document.setVerified(request.getVerified());
-            // Symétrie XP : passer vérifié crédite l'auteur, retirer la vérification reprend le crédit —
-            // sans ça, un aller-retour unverify/verify doublerait l'XP (farming admin accidentel).
-            if (document.getUser() != null) {
-                Long authorId = document.getUser().getId();
-                eventPublisher.publishEvent(request.getVerified()
-                        ? new XpEvent.DocumentVerified(authorId, documentId, document.getTitle())
-                        : new XpEvent.DocumentUnverified(authorId, documentId));
-            }
-            statsService.invalidateCache();
-        }
-        if (request.getProfessorId() != null) {
+        // Détacher est un choix explicite : professorId null veut déjà dire « ne pas toucher ».
+        if (Boolean.TRUE.equals(request.getClearProfessor())) {
+            document.setProfessor(null);
+        } else if (request.getProfessorId() != null) {
             Professor professor = Repositories.findByIdOrThrow(professorRepository, request.getProfessorId(), "Professor");
             document.setProfessor(professor);
         }
-        Document saved = documentRepository.save(document);
-        meilisearchService.indexDocument(saved);
-        return documentMapper.toResponse(saved);
     }
 
     @Override

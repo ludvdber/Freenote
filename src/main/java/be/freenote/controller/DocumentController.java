@@ -2,6 +2,7 @@ package be.freenote.controller;
 
 import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.CreateDocumentRequest;
+import be.freenote.dto.request.UpdateDocumentRequest;
 import be.freenote.dto.response.AdjacentDocumentsResponse;
 import be.freenote.dto.response.DocumentResponse;
 import be.freenote.dto.response.PageResponse;
@@ -50,8 +51,11 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(documentService.getById(id));
+    public ResponseEntity<DocumentResponse> getById(@PathVariable Long id, Authentication authentication) {
+        // L'appelant est transmis pour que la réponse porte « owned » : c'est le seul moyen pour le
+        // front de savoir qu'on est l'auteur d'un document ANONYME (dont authorId est masqué).
+        Long callerId = authentication != null ? SecurityUtils.currentUserId(authentication) : null;
+        return ResponseEntity.ok(documentService.getById(id, callerId));
     }
 
     /** Voisins précédent/suivant du même cours (navigation de la page document). */
@@ -144,6 +148,19 @@ public class DocumentController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Édition complète par le propriétaire : titre, cours, catégorie, professeur, année, langue.
+     * Le champ {@code verified} du corps est ignoré ici (réservé à {@code /api/admin/documents}).
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<DocumentResponse> update(@PathVariable Long id,
+                                                   @Valid @RequestBody UpdateDocumentRequest request,
+                                                   Authentication authentication) {
+        Long userId = SecurityUtils.currentUserId(authentication);
+        return ResponseEntity.ok(documentService.updateOwn(id, userId, request));
+    }
+
+    /** Renommage seul — conservé pour les appels existants ; l'édition complète passe par PUT. */
     @PatchMapping("/{id}")
     public ResponseEntity<DocumentResponse> rename(@PathVariable Long id,
                                                    @RequestParam String title,

@@ -2,7 +2,9 @@ package be.freenote.seed;
 
 import be.freenote.entity.*;
 import be.freenote.enums.Category;
+import be.freenote.enums.ReportResolution;
 import be.freenote.enums.ReportStatus;
+import be.freenote.enums.ReportType;
 import be.freenote.repository.*;
 import be.freenote.service.MinioService;
 import lombok.RequiredArgsConstructor;
@@ -588,24 +590,47 @@ public class DataSeeder implements CommandLineRunner {
     private int seedReports(List<Document> documents, Map<String, User> users) {
         List<Document> verifiedDocs = documents.stream().filter(Document::isVerified).toList();
 
+        // Types variés à dessein : c'est ce qui rend les filtres de la file admin (et le tri par
+        // problème) testables en dev sans avoir à signaler cinq documents à la main.
         List<Report> reports = List.of(
                 Report.builder()
                         .document(verifiedDocs.get(5))
                         .user(users.get("Thomas_R"))
+                        .type(ReportType.AMELIORATION)
                         .reason("Document incomplet, manque les 3 derniers chapitres de la matiere.")
                         .status(ReportStatus.PENDING)
                         .build(),
                 Report.builder()
                         .document(verifiedDocs.get(12))
                         .user(users.get("Lucas_P"))
+                        .type(ReportType.SUPPRESSION)
                         .reason("Contenu copie depuis un autre site sans attribution. Voir https://example.com pour la source originale.")
+                        .status(ReportStatus.PENDING)
+                        .build(),
+                Report.builder()
+                        .document(verifiedDocs.get(8))
+                        .user(users.get("Sophie_M"))
+                        .type(ReportType.METADONNEES)
+                        .reason("Ce document est range dans la mauvaise categorie : c'est un examen, pas une synthese.")
+                        .status(ReportStatus.PENDING)
+                        .build(),
+                Report.builder()
+                        .document(verifiedDocs.get(15))
+                        .user(users.get("Lea_F"))
+                        .type(ReportType.OBSOLETE)
+                        .reason("Base sur l'ancien programme, le chapitre 4 n'existe plus depuis la reforme.")
                         .status(ReportStatus.PENDING)
                         .build(),
                 Report.builder()
                         .document(verifiedDocs.get(20))
                         .user(users.get("Mehdi_A"))
+                        .type(ReportType.ERREUR)
                         .reason("Le fichier PDF est corrompu, impossible de l'ouvrir apres la page 5.")
                         .status(ReportStatus.RESOLVED)
+                        .resolution(ReportResolution.UNVERIFIED)
+                        .resolutionNote("Verification retiree en attendant un nouveau depot, merci du signalement.")
+                        .resolvedBy(users.get("admin"))
+                        .resolvedAt(LocalDateTime.now().minusDays(2))
                         .build()
         );
 

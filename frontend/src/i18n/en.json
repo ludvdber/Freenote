@@ -197,9 +197,7 @@
     "noResults": "No documents found. Try different keywords.",
     "addFavorite": "Add to favorites",
     "removeFavorite": "Remove from favorites",
-    "reportPlaceholder": "Reason...",
-    "rename": "Rename",
-    "renamePlaceholder": "New title (50 characters max)",
+    "reportPlaceholder": "What's wrong…",
     "deleteConfirm": "Permanently delete this document? This cannot be undone.",
     "courseDocuments": "Course documents",
     "aiShort": "AI",
@@ -232,7 +230,26 @@
     "searchNoHits": "No matches",
     "searchPrev": "Previous page with a match",
     "searchNext": "Next page with a match",
-    "searchClear": "Clear search"
+    "searchClear": "Clear search",
+    "editTitle": "Edit document",
+    "editFields": "Title, course, category, professor, year",
+    "editOwnerHint": "You uploaded this document: you can fix its details at any time.",
+    "editAdminHint": "Editing with your moderation rights — the author is notified if you change its verification.",
+    "editCourseRequired": "Pick a section, then a course.",
+    "editProfessorHint": "Leave empty for no professor.",
+    "editVerifiedHint": "The « Verified » badge highlights the document. Removing it takes back the XP granted to its author.",
+    "editSaved": "Document updated.",
+    "staffMode": "Moderation",
+    "staffVerified": "Document verified.",
+    "staffUnverified": "Verification removed.",
+    "unverify": "Remove verification",
+    "unverifyHint": "The document stays online, without the badge.",
+    "deleteStaffConfirm": "Permanently delete this student's document? Its author will lose the matching XP. This cannot be undone.",
+    "goneTitle": "This document no longer exists",
+    "goneText": "It was deleted by its author or by moderation. The link you followed is no longer valid.",
+    "loadError": "This document can't be loaded right now. Try again in a moment.",
+    "reportTitle": "Report this document",
+    "reportReasonHelp": "Explain in one sentence — your message is what makes the report actionable."
   },
   "admin": {
     "tabs": {
@@ -352,10 +369,48 @@
       "deleteConfirm": "Delete \"{{name}}\"? Documents referencing them will simply keep an empty professor field."
     },
     "reports": {
-      "pending": "Pending reports",
       "noPending": "No pending reports.",
       "resolve": "Resolve",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "title": "Reports",
+      "pendingCount_one": "{{count}} pending",
+      "pendingCount_other": "{{count}} pending",
+      "status": "Status",
+      "statusPending": "Pending",
+      "statusResolved": "Handled",
+      "statusDismissed": "Dismissed",
+      "statusAll": "Full history",
+      "allTypes": "All",
+      "by": "uploaded by",
+      "editDoc": "Fix the document",
+      "decide": "Handle…",
+      "decideTitle": "Handle this report",
+      "confirmDecision": "Confirm decision",
+      "deleteWarning": "The document and its file will be permanently deleted, and the XP it earned will be taken back from its author.",
+      "note": "Message for the reporter (optional)",
+      "noteHelp": "It is sent to them as a notification along with your decision.",
+      "resolutions": {
+        "EDITED": {
+          "label": "I fixed the document",
+          "hint": "Details corrected; the document stays online."
+        },
+        "UNVERIFIED": {
+          "label": "Remove verification",
+          "hint": "The document stays readable but loses its badge — and its author the matching XP."
+        },
+        "DELETED": {
+          "label": "Delete the document",
+          "hint": "Cannot be undone. Every report on this document is closed."
+        },
+        "NO_ACTION": {
+          "label": "Nothing to change",
+          "hint": "The report was fair but the document needs no change."
+        },
+        "REJECTED": {
+          "label": "Report not upheld",
+          "hint": "Nothing wrong: the document stays as is."
+        }
+      }
     },
     "delegates": {
       "title": "Delegate Management",
@@ -504,7 +559,6 @@
       "queueCount_other": "{{count}} items",
       "queueEmpty": "Queue clear ✓",
       "tagDoc": "DOC",
-      "tagReport": "REPORT",
       "tagDuplicate": "DUPLICATE",
       "duplicateLine_one": "{{count}} group of documents with identical content",
       "duplicateLine_other": "{{count}} groups of documents with identical content",
@@ -1782,13 +1836,19 @@
     "unreadCount_one": "{{count}} unread",
     "unreadCount_other": "{{count}} unread",
     "document": {
-      "verified": "Your document \"{{title}}\" has been verified!"
+      "verified": "Your document \"{{title}}\" has been verified!",
+      "unverifiedByStaff": "Your document « {{title}} » lost its verification after a report.",
+      "deletedByStaff": "Your document « {{title}} » was deleted after a report."
     },
     "quiz": {
       "questionReported": "{{by}} reports a possible error in “{{title}}” (question {{question}})"
     },
     "revision": {
       "unpublished": "“{{title}}” was removed from the library by moderation. It is still available in your private content."
+    },
+    "report": {
+      "resolved": "Your report on « {{title}} » has been handled.",
+      "dismissed": "Your report on « {{title}} » was not upheld."
     }
   },
   "celebrations": {
@@ -1907,5 +1967,39 @@
     "loginLead": "Donations go through Ko-fi, but your personal code is tied to your Freenote account: log in first (and verify your ISFCE email) to get it — without it, the donation won’t be linked to your account and your perks won’t activate.",
     "login": "Log in",
     "anyway": "Donate anyway"
+  },
+  "reportTypes": {
+    "SUPPRESSION": {
+      "label": "Takedown request",
+      "hint": "This document shouldn't be online (copyright, personal data, published by mistake)."
+    },
+    "INAPPROPRIE": {
+      "label": "Inappropriate content",
+      "hint": "Offensive, insulting or illegal content."
+    },
+    "ERREUR": {
+      "label": "Wrong content",
+      "hint": "The document contains incorrect information (wrong answer, bad formula…)."
+    },
+    "OBSOLETE": {
+      "label": "Outdated",
+      "hint": "No longer on the syllabus, or superseded by a newer version of the course."
+    },
+    "METADONNEES": {
+      "label": "Wrong details",
+      "hint": "Wrong course, category, professor or year. The file itself is fine."
+    },
+    "AMELIORATION": {
+      "label": "Needs improvement",
+      "hint": "Incomplete, missing pages, badly scanned, unreadable."
+    },
+    "DOUBLON": {
+      "label": "Duplicate",
+      "hint": "The same document is already online elsewhere."
+    },
+    "AUTRE": {
+      "label": "Other",
+      "hint": "Describe the problem in the message below."
+    }
   }
 }

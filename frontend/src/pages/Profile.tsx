@@ -16,6 +16,7 @@ import {
   MenuItem,
   Collapse,
   IconButton,
+  Tooltip,
   useTheme,
 } from '@mui/material';
 import {
@@ -38,6 +39,7 @@ import {
   Coffee,
   ContentCopy,
   Check,
+  Edit,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -67,8 +69,9 @@ import UserBadges from '@/components/common/UserBadges';
 import DelegateMandates from '@/components/common/DelegateMandates';
 import LevelChip from '@/components/common/LevelChip';
 import LevelProgress from '@/components/common/LevelProgress';
+import DocumentEditDialog from '@/components/common/DocumentEditDialog';
 import { useLogout } from '@/hooks/useLogout';
-import type { AvatarSource } from '@/types';
+import type { AvatarSource, DocumentResponse } from '@/types';
 import * as s from './Profile.styles';
 
 const DICEBEAR_URL = (username: string) =>
@@ -120,6 +123,8 @@ export default function Profile() {
     enabled: !!user?.verified,
   });
 
+  // Correction d'un de ses propres dépôts sans passer par sa page — même fiche que partout ailleurs.
+  const [editDoc, setEditDoc] = useState<DocumentResponse | null>(null);
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
   const [github, setGithub] = useState('');
@@ -831,13 +836,17 @@ export default function Profile() {
             {myDocs && myDocs.content.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 {myDocs.content.slice(0, 6).map((d) => (
+                  // Le lien ne couvre plus toute la ligne : un bouton dans un lien est invalide,
+                  // et corriger un dépôt depuis son profil doit rester à un clic.
                   <Box
                     key={d.id}
-                    component={RouterLink}
-                    to={`/documents/${d.id}`}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', color: 'inherit', px: 1, py: 0.75, borderRadius: 2, '&:hover': { bgcolor: 'action.hover' } }}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.75, borderRadius: 2, '&:hover': { bgcolor: 'action.hover' } }}
                   >
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      component={RouterLink}
+                      to={`/documents/${d.id}`}
+                      sx={{ flex: 1, minWidth: 0, textDecoration: 'none', color: 'inherit' }}
+                    >
                       <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>{d.title}</Typography>
                       <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>{d.courseName}</Typography>
                     </Box>
@@ -851,6 +860,11 @@ export default function Profile() {
                         <Typography variant="caption" className="mono">{d.averageRating.toFixed(1)}</Typography>
                       </Box>
                     )}
+                    <Tooltip title={t('document.editTitle')}>
+                      <IconButton size="small" onClick={() => setEditDoc(d)} aria-label={t('document.editTitle')}>
+                        <Edit sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 ))}
                 <Box component={RouterLink} to={`/users/${user.id}`} sx={{ mt: 0.5, fontSize: '0.85rem', fontWeight: 600, color: 'primary.main', textDecoration: 'none' }}>
@@ -946,6 +960,16 @@ export default function Profile() {
             {saveMutation.isPending ? t('common.loading') : t('profile.save')}
           </Button>
         </Box>
+      )}
+
+      {editDoc && (
+        <DocumentEditDialog
+          open
+          doc={editDoc}
+          mode="owner"
+          onClose={() => setEditDoc(null)}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['user-docs', user?.id] })}
+        />
       )}
     </PageWrapper>
   );

@@ -2,14 +2,15 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     java
-    id("org.springframework.boot") version "4.1.0"
+    jacoco
+    id("org.springframework.boot") version "4.1.1"
 }
 
 group = "be"
 // SemVer : 1.x.0 = nouvelles fonctionnalités, 1.0.x = correctifs. Le jar est renommé freenote.jar
 // au déploiement (deploy/freenote.service), donc bumper la version ne casse pas systemd ; les scripts
 // locaux résolvent build/libs/freenote-*.jar par glob. Garder frontend/src/lib/constants.ts APP_VERSION synchro.
-version = "1.20.0"
+version = "1.21.0"
 
 java {
     toolchain {
@@ -53,9 +54,9 @@ dependencies {
     implementation("io.minio:minio:9.0.3")
 
     // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
-    implementation("org.apache.pdfbox:pdfbox:3.0.7")
+    implementation("org.apache.pdfbox:pdfbox:3.0.8")
     // metadata-extractor — read the EXIF Orientation tag so phone photos aren't rotated in the PDF
-    implementation("com.drewnoakes:metadata-extractor:2.20.0")
+    implementation("com.drewnoakes:metadata-extractor:2.21.0")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")
@@ -104,6 +105,41 @@ tasks.register<Test>("integrationTest") {
         includeTags("integration")
     }
     jvmArgs("--add-opens=java.base/sun.misc=ALL-UNNAMED")
+}
+
+// --- Couverture (JaCoCo) ---
+// `./gradlew coverageReport` agrege les deux suites : mesurer les tests unitaires SEULS donnerait
+// un chiffre faux, la moitie du code (Flyway, requetes JPA reelles, chaine securite) n'etant
+// exercee que par les tests d'integration Testcontainers.
+// Le code genere par Lombok porte @lombok.Generated (voir lombok.config) et est ignore par JaCoCo :
+// sans ca, des milliers de getters/setters/builders jamais ecrits a la main gonfleraient le
+// denominateur et le pourcentage ne voudrait plus rien dire. Meme raison pour les *MapperImpl,
+// generes par MapStruct.
+val coverageExcludes = listOf(
+    "**/*MapperImpl*",              // implementations generees par MapStruct
+    "**/FreenoteApplication*",      // point d'entree (main)
+    "**/config/**",                 // configuration declarative Spring
+    "**/dto/**",                    // records / requetes : pas de logique
+    "**/entity/**",                 // entites JPA (le reste est deja @Generated par Lombok)
+    "**/enums/**"
+)
+
+tasks.register<JacocoReport>("coverageReport") {
+    description = "Rapport de couverture agrege (test + integrationTest)"
+    group = "verification"
+    dependsOn(tasks.named("test"), tasks.named("integrationTest"))
+    executionData(fileTree(layout.buildDirectory).include("jacoco/*.exec"))
+    sourceSets(sourceSets["main"])
+    classDirectories.setFrom(
+        files(sourceSets["main"].output.classesDirs.map { dir ->
+            fileTree(dir) { exclude(coverageExcludes) }
+        })
+    )
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = true
+    }
 }
 
 // --- Frontend packaging ---

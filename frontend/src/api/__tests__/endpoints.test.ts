@@ -203,9 +203,12 @@ describe('endpoints — POST/PUT/PATCH/DELETE', () => {
     await ep.approveProfessor(1);
     await ep.adminDeleteProfessor(1);
 
-    await ep.resolveReport(1);
-    expect(put).toHaveBeenCalledWith('/admin/reports/1/resolve');
+    // La décision voyage dans le corps : c'est elle que le serveur exécute (retirer la
+    // vérification, supprimer…), là où l'ancien « resolve » nu ne faisait que ranger la ligne.
+    await ep.resolveReport(1, { resolution: 'UNVERIFIED', note: 'corrigé' });
+    expect(put).toHaveBeenCalledWith('/admin/reports/1/resolve', { resolution: 'UNVERIFIED', note: 'corrigé' });
     await ep.dismissReport(1);
+    expect(put).toHaveBeenCalledWith('/admin/reports/1/dismiss', { resolution: 'REJECTED', note: undefined });
     await ep.adminGrantAdFree(3, 30);
     expect(post).toHaveBeenCalledWith('/admin/users/3/grant-ad-free', null, { params: { days: 30 } });
     await ep.purgeActivityLogs(90);

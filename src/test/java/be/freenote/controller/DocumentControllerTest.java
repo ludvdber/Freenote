@@ -34,14 +34,14 @@ class DocumentControllerTest {
     @MockitoBean private AdminRoleVerificationFilter adminRoleVerificationFilter;
 
     private static final DocumentResponse DOC = new DocumentResponse(
-            1L, "Test Doc", 1L, "Java", "Info", "SYNTHESE", "Alice", 7L,
-            true, false, "FR", "2025", null, 4.5, 3, 10, null,
+            1L, "Test Doc", 1L, "Java", 2L, "Info", "SYNTHESE", "Alice", 7L,
+            true, false, "FR", "2025", null, null, 4.5, 3, 10, null, false,
             LocalDateTime.now()
     );
 
     @Test
     void getById_shouldReturnDocument() throws Exception {
-        when(documentService.getById(1L)).thenReturn(DOC);
+        when(documentService.getById(eq(1L), any())).thenReturn(DOC);
 
         mockMvc.perform(get("/api/documents/1"))
                 .andExpect(status().isOk())
@@ -71,7 +71,7 @@ class DocumentControllerTest {
 
     @Test
     void getById_shouldReturn404WhenNotFound() throws Exception {
-        when(documentService.getById(999L))
+        when(documentService.getById(eq(999L), any()))
                 .thenThrow(new ResourceNotFoundException("Document", "id", 999L));
 
         mockMvc.perform(get("/api/documents/999"))
