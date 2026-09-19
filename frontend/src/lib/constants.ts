@@ -40,3 +40,6 @@ export const ADSENSE_SLOT = import.meta.env.VITE_ADSENSE_SLOT ?? '';
 // TanStack Query staleTime for rarely-changing data (sections, professors, news, tag suggestions).
 // Backend caches these too (5 min Redis), so 15 min on the client avoids useless refetches between pages.
 export const STALE_15M = 15 * 60 * 1000;
+
+/** Auto-promo affichée dans les emplacements pub (AdSense refusé) — autre projet de l'auteur. */
+export const ACCIO_URL = 'https://acciolauncher.be/';

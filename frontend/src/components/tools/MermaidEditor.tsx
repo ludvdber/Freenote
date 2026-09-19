@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { FileDownload, Image as ImageIcon, ContentCopy, ExpandMore, PlayArrow } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import GlassCard from '@/components/ui/GlassCard';
 
 interface GuideEntry {
@@ -83,7 +84,14 @@ export default function MermaidEditor() {
         const mermaid = (await import('mermaid')).default;
         mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict' });
         const { svg: out } = await mermaid.render(`mmd-${++renderSeq}`, code);
-        if (!cancelled) { setSvg(out); setError(''); }
+        // Défense en profondeur : `securityLevel: 'strict'` nettoie déjà, mais le SVG est injecté
+        // tel quel dans le DOM — on ne s'en remet pas à un seul verrou. foreignObject est gardé :
+        // Mermaid y dessine les libellés HTML des nœuds.
+        const clean = DOMPurify.sanitize(out, {
+          USE_PROFILES: { svg: true, svgFilters: true, html: true },
+          ADD_TAGS: ['foreignObject'],
+        });
+        if (!cancelled) { setSvg(clean); setError(''); }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'parse error');
       }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useKofiLinkProps } from '@/stores/useKofiDialogStore';
 import { ADSENSE_CLIENT, ADSENSE_SLOT } from '@/lib/constants';
+import PromoBanner from './PromoBanner';
 
 declare global {
   interface Window {
@@ -17,8 +18,8 @@ interface AdBannerProps {
 }
 
 /**
- * Renders a real Google AdSense unit when a slot id is configured (VITE_ADSENSE_SLOT), else a styled
- * placeholder (dev/preview, or until the slot exists). Returns `null` for Ko-fi supporters so the
+ * Renders a real Google AdSense unit when a slot id is configured (VITE_ADSENSE_SLOT), else the Accio Launcher
+ * self-promo banner (AdSense refused the site). Returns `null` for Ko-fi supporters so the
  * surrounding layout collapses instead of leaving a reserved empty slot. EEA consent is enforced by
  * Google's certified CMP (Consent Mode v2, loaded by adsbygoogle.js) — not by this component.
  */
@@ -35,25 +36,7 @@ export default function AdBanner({ width = 728, height = 90 }: AdBannerProps) {
   return (
     <Fade in timeout={600}>
       <Box sx={{ textAlign: 'center' }}>
-        <Box
-          sx={{
-            width: { xs: '100%', md: width },
-            height,
-            mx: 'auto',
-            borderRadius: 2,
-            background: (th) => th.palette.mode === 'dark'
-              ? 'rgba(123, 47, 247, 0.08)'
-              : 'rgba(123, 47, 247, 0.05)',
-            border: (th) => `1px dashed ${th.palette.mode === 'dark' ? 'rgba(123, 47, 247, 0.25)' : 'rgba(123, 47, 247, 0.2)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.6 }}>
-            Ad {width}x{height}
-          </Typography>
-        </Box>
+        <PromoBanner width={width} height={height} />
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', opacity: 0.5, fontSize: 10 }}>
           {t('ad.disclaimer')}{' '}
           <MuiLink

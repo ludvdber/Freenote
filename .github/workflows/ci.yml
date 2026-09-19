@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Moindre privilège : le CI ne fait que lire le code et publier des artefacts.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

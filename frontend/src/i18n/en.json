@@ -147,7 +147,14 @@
     "seeProfile": "See profile"
   },
   "ad": {
-    "disclaimer": "Ad — one coffee = 30 days ad-free."
+    "disclaimer": "Ad — one coffee = 30 days ad-free.",
+    "promo": {
+      "title": "Accio Launcher",
+      "tagline": "All 8 Harry Potter PC games in one launcher",
+      "points": "One click · modernised graphics · free & open-source",
+      "cta": "Discover",
+      "label": "Another project by Freenote's author"
+    }
   },
   "links": {
     "title": "Useful links",

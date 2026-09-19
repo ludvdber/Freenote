@@ -147,7 +147,14 @@
     "seeProfile": "Voir le profil"
   },
   "ad": {
-    "disclaimer": "Pub — un café = 30 jours sans pub."
+    "disclaimer": "Pub — un café = 30 jours sans pub.",
+    "promo": {
+      "title": "Accio Launcher",
+      "tagline": "Les 8 jeux Harry Potter PC dans un seul launcher",
+      "points": "Un clic · graphismes modernisés · gratuit & open-source",
+      "cta": "Découvrir",
+      "label": "Un autre projet de l'auteur de Freenote"
+    }
   },
   "links": {
     "title": "Liens utiles",
