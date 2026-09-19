@@ -64,7 +64,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest  # Docker Hub ne publie plus MinIO (dépôt retiré) — Quay reste la source officielle
     container_name: freenote-minio
     restart: unless-stopped
     logging: *default-logging

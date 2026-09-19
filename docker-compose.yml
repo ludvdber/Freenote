@@ -30,7 +30,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest  # Docker Hub ne publie plus MinIO (dépôt retiré) — Quay reste la source officielle
     container_name: freenote-minio
     command: server /data --console-address ":9001"
     environment:

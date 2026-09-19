@@ -65,7 +65,7 @@ public abstract class AbstractIntegrationTest {
 
     @SuppressWarnings("resource")
     private static GenericContainer<?> createMinio() {
-        return new GenericContainer<>(DockerImageName.parse("minio/minio:latest"))
+        return new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio:latest"))
                 .withCommand("server", "/data")
                 .withEnv("MINIO_ROOT_USER", "minioadmin")
                 .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")
