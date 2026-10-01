@@ -389,6 +389,13 @@ function FullBrowse() {
           >
             {t('search.resetFilters')}
           </Button>
+          {/* Un écran vide doit proposer une suite : « ce qui manque » transforme la frustration
+              en dépôt, là où le catalogue a réellement un trou. */}
+          <Box sx={{ mt: 2 }}>
+            <Button component={RouterLink} to="/manques" size="small">
+              {t('search.seeGaps')}
+            </Button>
+          </Box>
         </Box>
       )}
     </PageWrapper>

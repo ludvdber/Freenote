@@ -137,6 +137,16 @@ export default function HeroSection() {
               )}
             </Box>
           </motion.div>
+
+          {/* Le grief n°1 contre les plateformes concurrentes est le paywall et les prélèvements
+              après résiliation. Freenote en est exempt par construction, et ne l'écrivait nulle
+              part : c'est l'argument que les autres ne peuvent pas écrire, il doit être lisible
+              avant même de cliquer. */}
+          <motion.div variants={s.fadeUpVariants}>
+            <Typography variant="body2" sx={s.freeNote}>
+              {t('hero.free')}
+            </Typography>
+          </motion.div>
         </Container>
 
         <Box

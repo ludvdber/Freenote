@@ -161,3 +161,12 @@ export const ctaSecondary: Sx = {
   py: 1.5,
   fontSize: '1rem',
 };
+
+/** « Gratuit, sans abonnement, sans carte bancaire » sous les CTA. Discret à dessein : c'est une
+ *  levée d'objection, pas une promesse commerciale — elle rassure sans crier. */
+export const freeNote: Sx = {
+  mt: 2.5,
+  color: 'text.secondary',
+  fontSize: 13,
+  letterSpacing: 0.2,
+};

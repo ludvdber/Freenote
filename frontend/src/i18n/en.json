@@ -27,7 +27,8 @@
     "ctaSecondary": "Share a doc",
     "ctaLogin": "Sign in",
     "scrollDown": "Scroll down",
-    "restricted": "Reserved for ISFCE students"
+    "restricted": "Reserved for ISFCE students",
+    "free": "Free · no subscription · no card details · open source"
   },
   "stats": {
     "docs": "Documents",
@@ -862,7 +863,8 @@
     "openCourse": "Open the course page",
     "sectionSuperseded": "Inactive filter: the selected course takes precedence, and its equivalents may belong to another section.",
     "equivalentsIncluded": "≈ linked courses included",
-    "countsIgnoreQuery": "Category counts cover the whole filtered catalogue, not your search."
+    "countsIgnoreQuery": "Category counts cover the whole filtered catalogue, not your search.",
+    "seeGaps": "See courses without documents"
   },
   "common": {
     "loading": "Loading...",

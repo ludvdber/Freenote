@@ -142,6 +142,31 @@ tasks.register<JacocoReport>("coverageReport") {
     }
 }
 
+// Garde-fou : l'objectif de 60 % sur les quatre metriques a ete atteint a la main, il s'effriterait
+// au premier lot presse. Les seuils portent sur le MEME perimetre que coverageReport (memes
+// exclusions, memes deux suites) — un seuil mesure autrement dirait autre chose que le rapport.
+// Lance par la tache `check`, donc par le CI, et echoue la construction en nommant la metrique.
+tasks.register<JacocoCoverageVerification>("coverageVerification") {
+    description = "Echoue si la couverture agregee passe sous 60 % (voir coverageReport)"
+    group = "verification"
+    dependsOn(tasks.named("coverageReport"))
+    executionData(fileTree(layout.buildDirectory).include("jacoco/*.exec"))
+    sourceSets(sourceSets["main"])
+    classDirectories.setFrom(
+        files(sourceSets["main"].output.classesDirs.map { dir ->
+            fileTree(dir) { exclude(coverageExcludes) }
+        })
+    )
+    violationRules {
+        rule {
+            limit { counter = "INSTRUCTION"; value = "COVEREDRATIO"; minimum = "0.60".toBigDecimal() }
+            limit { counter = "LINE"; value = "COVEREDRATIO"; minimum = "0.60".toBigDecimal() }
+            limit { counter = "BRANCH"; value = "COVEREDRATIO"; minimum = "0.60".toBigDecimal() }
+            limit { counter = "METHOD"; value = "COVEREDRATIO"; minimum = "0.60".toBigDecimal() }
+        }
+    }
+}
+
 // --- Frontend packaging ---
 // Build the Vite frontend and embed dist/ into the Spring Boot fat jar under /static.
 // Result: a single `build/libs/freenote-0.0.1-SNAPSHOT.jar` servable with `java -jar`

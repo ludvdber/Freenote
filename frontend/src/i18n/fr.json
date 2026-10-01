@@ -27,7 +27,8 @@
     "ctaSecondary": "Partager un doc",
     "ctaLogin": "Se connecter",
     "scrollDown": "Faire défiler",
-    "restricted": "Réservé aux étudiants de l'ISFCE"
+    "restricted": "Réservé aux étudiants de l'ISFCE",
+    "free": "Gratuit · sans abonnement · sans carte bancaire · code ouvert"
   },
   "stats": {
     "docs": "Documents",
@@ -862,7 +863,8 @@
     "openCourse": "Ouvrir la page du cours",
     "sectionSuperseded": "Filtre inactif : le cours choisi prime, et ses équivalents peuvent appartenir à une autre section.",
     "equivalentsIncluded": "≈ cours liés inclus",
-    "countsIgnoreQuery": "Les compteurs de catégories portent sur tout le catalogue filtré, pas sur ta recherche."
+    "countsIgnoreQuery": "Les compteurs de catégories portent sur tout le catalogue filtré, pas sur ta recherche.",
+    "seeGaps": "Voir les cours sans documents"
   },
   "common": {
     "loading": "Chargement...",

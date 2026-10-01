@@ -1,0 +1,65 @@
+# Mises à jour de dépendances automatisées.
+#
+# Le dépôt a un seul mainteneur : l'objectif n'est pas d'ouvrir beaucoup de demandes de tirage, mais
+# d'en ouvrir PEU et de laisser le CI répondre à leur place. D'où le regroupement : un lot
+# hebdomadaire par écosystème pour les versions mineures et correctives (celles qu'on accepte en
+# regardant juste le CI), et une demande séparée par version MAJEURE (celles qui demandent une
+# relecture — TypeScript 7 est aujourd'hui bloqué par typescript-eslint, il doit rester visible sans
+# noyer le reste).
+#
+# `github-actions` est inclus parce que les actions sont épinglées par empreinte SHA : sans
+# Dependabot, elles ne seraient plus jamais mises à jour. Une étiquette mutable comme
+# `actions/checkout@v4` laisse quiconque contrôle ce dépôt modifier ce qui tourne dans notre CI,
+# lequel a accès au code — l'empreinte supprime cette confiance implicite, Dependabot en reprend
+# l'entretien.
+version: 2
+
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Brussels
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      backend-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      backend-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Brussels
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      frontend-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      frontend-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+      timezone: Europe/Brussels
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        applies-to: version-updates
+        update-types: [minor, patch]
