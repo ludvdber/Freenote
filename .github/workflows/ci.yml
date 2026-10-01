@@ -59,6 +59,11 @@ jobs:
       - name: Integration tests (Testcontainers)
         run: ./gradlew integrationTest --no-daemon
 
+      # Les seuils (60 % instructions/lignes/branches/méthodes) portent sur le MÊME périmètre que
+      # coverageReport, et les deux suites sont déjà exécutées : la tâche réutilise leurs données.
+      - name: Coverage gate (>= 60%)
+        run: ./gradlew coverageVerification --no-daemon
+
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
