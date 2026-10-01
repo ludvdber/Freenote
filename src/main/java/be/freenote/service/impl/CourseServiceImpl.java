@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import be.freenote.util.Names;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +51,7 @@ public class CourseServiceImpl implements CourseService {
         }
         return courseRepository.findApprovedBySectionIdWithDocCount(sectionId).stream()
                 .map(row -> courseMapper.toResponse((Course) row[0], (Long) row[1]))
+                .sorted(Names.byName(CourseResponse::name))
                 .toList();
     }
 
@@ -125,6 +127,7 @@ public class CourseServiceImpl implements CourseService {
     public List<CourseResponse> getAllForAdmin() {
         return courseRepository.findAllWithDocCount().stream()
                 .map(row -> courseMapper.toResponse((Course) row[0], (Long) row[1]))
+                .sorted(Names.byName(CourseResponse::name))
                 .toList();
     }
 

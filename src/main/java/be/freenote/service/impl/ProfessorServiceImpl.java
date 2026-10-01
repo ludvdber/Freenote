@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import be.freenote.util.Names;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,7 @@ public class ProfessorServiceImpl implements ProfessorService {
     public List<ProfessorResponse> getAll() {
         return professorRepository.findByApprovedTrueOrderByNameAsc().stream()
                 .map(professorMapper::toResponse)
+                .sorted(Names.byName(ProfessorResponse::name))
                 .toList();
     }
 
@@ -53,6 +55,7 @@ public class ProfessorServiceImpl implements ProfessorService {
     public List<ProfessorResponse> getAllForAdmin() {
         return professorRepository.findAllByOrderByNameAsc().stream()
                 .map(professorMapper::toResponse)
+                .sorted(Names.byName(ProfessorResponse::name))
                 .toList();
     }
 

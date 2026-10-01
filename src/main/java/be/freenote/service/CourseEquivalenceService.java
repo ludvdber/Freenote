@@ -15,4 +15,18 @@ public interface CourseEquivalenceService {
      * cours non lié → liste singleton {@code [courseId]}.
      */
     List<Long> expand(Long courseId);
+
+    /**
+     * Portée « section » à appliquer À CÔTÉ d'un filtre cours déjà étendu aux équivalences.
+     *
+     * <p>Un groupe d'équivalence traverse justement les sections (« Statistiques » en Informatique
+     * ET en Marketing) : conserver le filtre section en plus du filtre cours exclurait exactement
+     * les documents que l'expansion vient d'inclure — le cours équivalent appartient, par
+     * définition, à une AUTRE section. Le filtre cours est le plus précis des deux : il gagne, et
+     * la section est neutralisée. Même règle qu'à l'écriture ({@code resolveSection} : un cours
+     * impose SA section, on ne lui en superpose pas une seconde).</p>
+     */
+    static Long scopeSection(Long sectionId, Long courseId) {
+        return courseId == null ? sectionId : null;
+    }
 }

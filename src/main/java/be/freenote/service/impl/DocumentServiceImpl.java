@@ -208,10 +208,12 @@ public class DocumentServiceImpl implements DocumentService {
         String safeSort = parseSort(sort);
         // Équivalences (V15) : filtrer sur « Stats (Info) » inclut les docs de « Stats (Compta) »
         List<Long> courseIds = courseEquivalenceService.expand(courseId);
+        // Un filtre cours actif neutralise le filtre section : le groupe traverse les sections.
+        Long scope = CourseEquivalenceService.scopeSection(sectionId, courseId);
 
         if (query != null && !query.isBlank()) {
             MeilisearchService.SearchResult result = meilisearchService.search(
-                    query, sectionId, courseIds, cat != null ? cat.name() : null, safeSort, pageable);
+                    query, scope, courseIds, cat != null ? cat.name() : null, safeSort, pageable);
             List<Long> ids = result.ids();
             if (ids.isEmpty()) {
                 return new PageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
@@ -229,7 +231,7 @@ public class DocumentServiceImpl implements DocumentService {
             return new PageResponse<>(content, pageable.getPageNumber(), pageable.getPageSize(), total, totalPages);
         }
 
-        Page<Document> page = documentRepository.findFiltered(sectionId, courseIds, cat,
+        Page<Document> page = documentRepository.findFiltered(scope, courseIds, cat,
                 withDbSort(pageable, safeSort));
 
         List<DocumentResponse> content = page.getContent().stream()
@@ -572,7 +574,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Map<String, Long> getCategoryCounts(Long sectionId, Long courseId) {
-        return documentRepository.countByCategory(sectionId, courseEquivalenceService.expand(courseId)).stream()
+        return documentRepository.countByCategory(
+                        CourseEquivalenceService.scopeSection(sectionId, courseId),
+                        courseEquivalenceService.expand(courseId)).stream()
                 .collect(Collectors.toMap(
                         row -> ((Category) row[0]).name(),
                         row -> (Long) row[1]));

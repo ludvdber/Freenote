@@ -18,6 +18,7 @@ import be.freenote.repository.FlashcardDeckRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
+import be.freenote.service.CourseEquivalenceService;
 import be.freenote.service.FlashcardDeckService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,7 +36,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final SectionRepository sectionRepository;
-    private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
+    private final CourseEquivalenceService courseEquivalenceService;
     private final be.freenote.service.NotificationService notificationService;
 
     @Override
@@ -89,7 +90,8 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     public PageResponse<FlashcardDeckSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
         // Équivalences (V15) : les paquets de « Stats (Compta) » remontent aussi pour « Stats (Info) »
         Page<DeckListRow> page = deckRepository.findPublishedRows(
-                courseEquivalenceService.expand(courseId), sectionId, ownerId, pageable);
+                courseEquivalenceService.expand(courseId),
+                CourseEquivalenceService.scopeSection(sectionId, courseId), ownerId, pageable);
         return PageResponse.from(page,
                 page.getContent().stream().map(r -> FlashcardDeckMapper.toSummary(r, callerId)).toList());
     }

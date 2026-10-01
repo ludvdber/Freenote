@@ -26,6 +26,7 @@ import be.freenote.repository.QuizRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.repository.SectionRepository;
 import be.freenote.repository.UserRepository;
+import be.freenote.service.CourseEquivalenceService;
 import be.freenote.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -60,7 +61,7 @@ public class QuizServiceImpl implements QuizService {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final SectionRepository sectionRepository;
-    private final be.freenote.service.CourseEquivalenceService courseEquivalenceService;
+    private final CourseEquivalenceService courseEquivalenceService;
     private final be.freenote.service.NotificationService notificationService;
     private final be.freenote.service.TrackingService trackingService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
@@ -116,7 +117,8 @@ public class QuizServiceImpl implements QuizService {
     public PageResponse<QuizSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
         // Équivalences (V15) : les quiz de « Stats (Compta) » remontent aussi pour « Stats (Info) »
         Page<QuizListRow> page = quizRepository.findPublishedRows(
-                courseEquivalenceService.expand(courseId), sectionId, ownerId, pageable);
+                courseEquivalenceService.expand(courseId),
+                CourseEquivalenceService.scopeSection(sectionId, courseId), ownerId, pageable);
         return PageResponse.from(page, page.getContent().stream().map(r -> QuizMapper.toSummary(r, callerId)).toList());
     }
 

@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import be.freenote.util.Names;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class SectionServiceImpl implements SectionService {
                         row.getDocumentCount() != null ? row.getDocumentCount() : 0,
                         Boolean.TRUE.equals(row.getApproved())
                 ))
+                .sorted(Names.byName(SectionResponse::name))
                 .toList();
     }
 
@@ -54,6 +56,7 @@ public class SectionServiceImpl implements SectionService {
                         row.getDocumentCount() != null ? row.getDocumentCount() : 0,
                         Boolean.TRUE.equals(row.getApproved())
                 ))
+                .sorted(Names.byName(SectionResponse::name))
                 .toList();
     }
 
