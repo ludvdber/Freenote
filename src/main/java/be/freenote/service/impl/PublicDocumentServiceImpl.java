@@ -5,6 +5,7 @@ import be.freenote.dto.response.PublicCourseResponse;
 import be.freenote.dto.response.PublicDocumentSummary;
 import be.freenote.entity.Course;
 import be.freenote.entity.Document;
+import be.freenote.entity.Section;
 import be.freenote.enums.Category;
 import be.freenote.exception.ResourceNotFoundException;
 import be.freenote.mapper.PublicDocumentMapper;
@@ -13,6 +14,7 @@ import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.Repositories;
 import be.freenote.service.CourseEquivalenceService;
 import be.freenote.service.PublicDocumentService;
+import be.freenote.util.Names;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -85,5 +89,33 @@ public class PublicDocumentServiceImpl implements PublicDocumentService {
                         ? be.freenote.dto.response.PublicDocumentStatus.visible(doc.getTitle())
                         : be.freenote.dto.response.PublicDocumentStatus.reserved(doc.getTitle()))
                 .orElseGet(be.freenote.dto.response.PublicDocumentStatus::unknown);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public be.freenote.dto.response.CatalogueGapsResponse getCatalogueGaps() {
+        List<Course> empty = courseRepository.findApprovedWithoutDocuments();
+        // Groupage en Java (le référentiel tient en quelques centaines de lignes) puis tri par
+        // Names : un ORDER BY SQL classerait « Économie » après « Zoologie » sur une base en
+        // collation C, celle des images postgres:*-alpine.
+        Map<Long, List<Course>> bySection = empty.stream()
+                .filter(c -> c.getSection() != null)
+                .collect(Collectors.groupingBy(c -> c.getSection().getId()));
+        List<be.freenote.dto.response.CatalogueGapsResponse.SectionGap> sections = bySection.values().stream()
+                .map(courses -> {
+                    Section section = courses.getFirst().getSection();
+                    return new be.freenote.dto.response.CatalogueGapsResponse.SectionGap(
+                            section.getId(), section.getName(), section.getIcon(),
+                            courses.stream()
+                                    .sorted(Names.byName(Course::getName))
+                                    .map(c -> new be.freenote.dto.response.CatalogueGapsResponse.CourseGap(
+                                            c.getId(), c.getName()))
+                                    .toList());
+                })
+                .sorted(Names.byName(be.freenote.dto.response.CatalogueGapsResponse.SectionGap::sectionName))
+                .toList();
+
+        return new be.freenote.dto.response.CatalogueGapsResponse(
+                courseRepository.countByApprovedTrue(), empty.size(), sections);
     }
 }

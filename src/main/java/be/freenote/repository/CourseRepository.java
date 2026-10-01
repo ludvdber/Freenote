@@ -47,6 +47,21 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c JOIN FETCH c.section WHERE c.equivalenceGroup = :group ORDER BY c.name")
     List<Course> findByEquivalenceGroupWithSection(@Param("group") Long group);
 
+    /**
+     * Cours approuvés auxquels AUCUN document n'est rattaché — page publique « ce qui manque ».
+     * { NOT EXISTS} plutôt qu'un { GROUP BY … HAVING COUNT(d) = 0} : PostgreSQL est strict
+     * sur le GROUP BY dès qu'une colonne de la table jointe apparaît ailleurs (voir le piège
+     * documenté dans CLAUDE.md), et la section est justement fetch-jointe ici pour le groupage.
+     */
+    @Query("""
+        SELECT c FROM Course c JOIN FETCH c.section
+        WHERE c.approved = true
+          AND NOT EXISTS (SELECT 1 FROM Document d WHERE d.course = c)
+        """)
+    List<Course> findApprovedWithoutDocuments();
+
+    long countByApprovedTrue();
+
     /** Id de groupe frais — jamais un id de cours réutilisé (voir le commentaire de V15). */
     @Query(value = "SELECT nextval('course_equivalence_seq')", nativeQuery = true)
     Long nextEquivalenceGroup();

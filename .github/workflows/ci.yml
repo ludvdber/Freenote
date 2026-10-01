@@ -38,13 +38,13 @@ jobs:
       - name: Unit tests
         run: ./gradlew test --no-daemon
 
-      # Testcontainers abandonne un pull trop lent avec une ContainerFetchException levée dans
-      # l'initialisation statique de la classe de base : les 26 tests tombent alors en bloc sans
-      # que le log dise un mot du registre. Tirer les images ici, avec réessais, transforme un
-      # aléa réseau en une étape explicite et réparable d'elle-même.
+      # Testcontainers lève une ContainerFetchException depuis l'initialisation statique de la classe
+      # de base : les 26 tests tombent alors en bloc, sans que le log dise un mot du registre. Tirer
+      # les images ici rend le vrai motif visible (c'est ainsi qu'on a vu que MinIO renvoyait
+      # « unauthorized » sur Quay, et pas un simple délai dépassé) et absorbe un aléa réseau.
       - name: Pre-pull Testcontainers images
         run: |
-          for image in postgres:17-alpine redis:7-alpine quay.io/minio/minio:latest getmeili/meilisearch:latest; do
+          for image in postgres:17-alpine redis:7-alpine cgr.dev/chainguard/minio:latest getmeili/meilisearch:latest; do
             for attempt in 1 2 3; do
               if docker pull --quiet "$image"; then break; fi
               echo "::warning::docker pull $image failed (attempt $attempt/3), retrying in 15s"

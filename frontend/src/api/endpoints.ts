@@ -44,6 +44,7 @@ import type {
   PublicDocumentSummary,
   PublicDocumentStatus,
   PublicCourse,
+  CatalogueGaps,
   NotificationItem,
   GanttSummary,
   GanttResponse,
@@ -574,6 +575,10 @@ export const adminDeleteGuide = (id: number) =>
 // --- Public catalogue teaser (anonymous) ---
 export const listPublicDocuments = (params: { page?: number; size?: number; courseId?: number } = {}) =>
   api.get<PageResponse<PublicDocumentSummary>>('/public/documents', { params }).then((r) => r.data);
+
+/** Cours sans aucun document, groupés par section — page publique « ce qui manque ». */
+export const getCatalogueGaps = () =>
+  api.get<CatalogueGaps>('/public/courses/gaps').then((r) => r.data);
 
 /** Teaser public d'un cours (page /courses/:id anonyme — SEO). */
 export const getPublicCourse = (id: number) =>

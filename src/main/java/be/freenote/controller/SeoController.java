@@ -50,6 +50,9 @@ public class SeoController {
             new String[]{"/browse", "daily", "0.7"},
             new String[]{"/guides", "weekly", "0.8"},
             new String[]{"/reviser", "daily", "0.8"},
+            // « Ce qui manque » : nomme des cours de l'école que personne d'autre ne liste, sans
+            // exposer le moindre contenu protégé.
+            new String[]{"/manques", "weekly", "0.5"},
             new String[]{"/a-propos", "monthly", "0.6"},
             new String[]{"/outils", "monthly", "0.8"},
             new String[]{"/outils/flashcards", "monthly", "0.8"},

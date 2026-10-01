@@ -683,6 +683,18 @@ export interface PublicCourse {
   publicDocumentCount: number;
 }
 
+/** « Ce qui manque » : cours approuvés sans aucun document, groupés par section (page publique). */
+export interface CatalogueGaps {
+  totalCourses: number;
+  emptyCourses: number;
+  sections: {
+    sectionId: number;
+    sectionName: string;
+    icon: string | null;
+    courses: { id: number; name: string }[];
+  }[];
+}
+
 // --- Notifications (historique persisté serveur) ---
 export interface NotificationItem {
   id: number;

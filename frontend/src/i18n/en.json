@@ -93,6 +93,19 @@
     "readTime": "{{count}} min read",
     "readNext": "Read next"
   },
+  "gaps": {
+    "metaTitle": "Courses without documents — Freenote ISFCE",
+    "metaDescription": "The ISFCE courses for which no document has been shared on Freenote yet.",
+    "title": "What's missing",
+    "intro": "The courses nobody has uploaded anything for yet. If one of them is yours, you are the person who can unlock it for your whole year.",
+    "coverage": "{{filled}}% of the catalogue covered, out of {{total}} courses",
+    "remaining_one": "{{count}} course is still waiting for its first document.",
+    "remaining_other": "{{count}} courses are still waiting for their first document.",
+    "sectionCount_one": "{{count}} course",
+    "sectionCount_other": "{{count}} courses",
+    "cta": "Upload a document",
+    "empty": "Every course in the catalogue has at least one document. Well done, everyone ✨"
+  },
   "guides": {
     "title": "Guides",
     "heroLine1": "Understand it once,",
@@ -186,6 +199,8 @@
     "pending": "Pending review",
     "badgeNew": "New",
     "badgeHot": "Trending lately",
+    "datedHint": "Content from the {{year}} academic year — the syllabus may have changed since.",
+    "datedShort": "Dated content",
     "votes_one": "{{count}} vote",
     "votes_other": "{{count}} votes",
     "noVotesYet": "No rating yet — be the first to vote.",

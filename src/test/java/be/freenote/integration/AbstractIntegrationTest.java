@@ -73,9 +73,22 @@ public abstract class AbstractIntegrationTest {
         ).withExposedPorts(6379);
     }
 
+    /**
+     * MinIO n'est <b>plus distribué publiquement</b> : le dépôt a disparu de Docker Hub, puis Quay
+     * est passé en accès authentifié (un pull anonyme de {@code quay.io/minio/minio} renvoie
+     * « unauthorized », y compris sur l'API des tags). C'était la vraie cause des 26 tests rouges
+     * dans le CI — invisible en local, où l'image restait en cache depuis un pull antérieur.
+     *
+     * <p>La reconstruction Chainguard est un vrai MinIO, téléchargeable sans compte. Elle tourne en
+     * utilisateur {@code nonroot} (65532), or MinIO exige d'être <b>propriétaire</b> du répertoire
+     * de données et pas seulement d'y avoir le droit d'écrire : sans {@code withUser("0")} il
+     * échoue sur « Unable to initialize backend: file access denied » bien que {@code /data} soit
+     * en 777. Tourner en root dans un conteneur de test jetable est sans conséquence.</p>
+     */
     @SuppressWarnings("resource")
     private static GenericContainer<?> createMinio() {
-        return new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio:latest"))
+        return new GenericContainer<>(DockerImageName.parse("cgr.dev/chainguard/minio:latest"))
+                .withCreateContainerCmdModifier(cmd -> cmd.withUser("0"))
                 .withCommand("server", "/data")
                 .withEnv("MINIO_ROOT_USER", "minioadmin")
                 .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")

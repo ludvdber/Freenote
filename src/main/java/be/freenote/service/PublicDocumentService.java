@@ -21,6 +21,13 @@ public interface PublicDocumentService {
     /** Teaser public d'un cours (page /courses/{id} anonyme — SEO). */
     be.freenote.dto.response.PublicCourseResponse getCourse(Long id);
 
+    /**
+     * Cours approuvés sans aucun document, groupés par section — page publique « ce qui manque ».
+     * Compte TOUS les documents, vérifiés ou non : un cours où quelque chose a déjà été déposé
+     * n'est pas un manque, même si la relecture n'est pas faite.
+     */
+    be.freenote.dto.response.CatalogueGapsResponse getCatalogueGaps();
+
     /** Ids des cours ayant au moins un doc public — sitemap (jamais de page cours vide indexée). */
     java.util.List<Long> publicCourseIds();
 }

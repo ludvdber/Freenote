@@ -9,6 +9,8 @@ import {
   isNewDoc,
   isHotDoc,
   daysUntil,
+  docAgeInYears,
+  isDatedDoc,
 } from '../utils';
 
 describe('daysUntil', () => {
@@ -138,5 +140,41 @@ describe('shareOrCopy', () => {
   it('returns "error" when clipboard also fails', async () => {
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('no')) } });
     expect(await shareOrCopy({ url: 'https://x' })).toBe('error');
+  });
+});
+
+describe('docAgeInYears / isDatedDoc', () => {
+  // L'année académique bascule en août : en février 2026 on est encore dans l'année 2025-2026.
+  const janvier2026 = new Date('2026-01-15T12:00:00');
+  const septembre2026 = new Date('2026-09-15T12:00:00');
+
+  it('traite l\'année en cours comme âge zéro avant le basculement d\'août', () => {
+    expect(docAgeInYears('2025', janvier2026)).toBe(0);
+  });
+
+  it('bascule d\'année académique en août', () => {
+    expect(docAgeInYears('2025', septembre2026)).toBe(1);
+    expect(docAgeInYears('2026', septembre2026)).toBe(0);
+  });
+
+  it('renvoie null sans année exploitable', () => {
+    expect(docAgeInYears(null, janvier2026)).toBeNull();
+    expect(docAgeInYears('', janvier2026)).toBeNull();
+    expect(docAgeInYears('20', janvier2026)).toBeNull();
+  });
+
+  /** Une année future (faute de saisie) ne doit pas donner un âge négatif. */
+  it('plancher à zéro sur une année future', () => {
+    expect(docAgeInYears('2030', janvier2026)).toBe(0);
+  });
+
+  it('signale un document à partir de trois années académiques', () => {
+    expect(isDatedDoc('2023', janvier2026)).toBe(false); // 2 ans
+    expect(isDatedDoc('2022', janvier2026)).toBe(true);  // 3 ans
+    expect(isDatedDoc('2019', janvier2026)).toBe(true);
+  });
+
+  it('ne signale jamais un document sans année', () => {
+    expect(isDatedDoc(null, janvier2026)).toBe(false);
   });
 });

@@ -25,7 +25,8 @@ const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
 const Reviser = lazy(() => import('@/pages/Reviser'));
 const News = lazy(() => import('@/pages/News'));
 const NewsDetail = lazy(() => import('@/pages/NewsDetail'));
-const GuidesIndex = lazy(() => import('@/pages/GuidesIndex'));
+const GuidesIndex = lazy(() => import("@/pages/GuidesIndex"));
+const CatalogueGaps = lazy(() => import("@/pages/CatalogueGaps"));
 const GuideDetail = lazy(() => import('@/pages/GuideDetail'));
 const ResourceDetail = lazy(() => import('@/pages/ResourceDetail'));
 const PublicCourse = lazy(() => import('@/pages/PublicCourse'));
@@ -142,6 +143,8 @@ export default function App() {
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/guides" element={<GuidesIndex />} />
+          {/* Publique : ce qui manque au catalogue (appel au dépôt + surface SEO). */}
+          <Route path="/manques" element={<CatalogueGaps />} />
           <Route path="/guides/:slug" element={<GuideDetail />} />
           {/* Anciennes URLs de la page « Ressources » (fusionnée dans /browse le 2026-07-03). */}
           <Route path="/ressources" element={<Navigate to="/browse" replace />} />

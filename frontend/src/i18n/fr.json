@@ -93,6 +93,19 @@
     "readTime": "{{count}} min de lecture",
     "readNext": "À lire ensuite"
   },
+  "gaps": {
+    "metaTitle": "Cours sans documents — Freenote ISFCE",
+    "metaDescription": "Les cours de l'ISFCE pour lesquels aucun document n'a encore été partagé sur Freenote.",
+    "title": "Ce qui manque",
+    "intro": "Les cours pour lesquels personne n'a encore rien déposé. Si l'un d'eux est le tien, tu es la personne qui peut le débloquer pour toute ta promo.",
+    "coverage": "{{filled}} % du catalogue couvert, sur {{total}} cours",
+    "remaining_one": "{{count}} cours attend encore son premier document.",
+    "remaining_other": "{{count}} cours attendent encore leur premier document.",
+    "sectionCount_one": "{{count}} cours",
+    "sectionCount_other": "{{count}} cours",
+    "cta": "Déposer un document",
+    "empty": "Chaque cours du catalogue a au moins un document. Bravo à la promo ✨"
+  },
   "guides": {
     "title": "Guides",
     "heroLine1": "Comprends une fois,",
@@ -186,6 +199,8 @@
     "pending": "En attente",
     "badgeNew": "Nouveau",
     "badgeHot": "Très consulté ces derniers temps",
+    "datedHint": "Contenu de l'année {{year}} — le programme a peut-être changé depuis.",
+    "datedShort": "Contenu daté",
     "votes_one": "{{count}} vote",
     "votes_other": "{{count}} votes",
     "noVotesYet": "Pas encore de note — sois le premier à voter.",

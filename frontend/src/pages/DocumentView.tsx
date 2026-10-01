@@ -25,7 +25,7 @@ import {
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { categoryColor, formatRelativeDate, shareOrCopy } from '@/lib/utils';
+import { categoryColor, formatRelativeDate, shareOrCopy, isDatedDoc } from '@/lib/utils';
 import PageWrapper from '@/components/layout/PageWrapper';
 import GlassCard from '@/components/ui/GlassCard';
 import UploaderCard from '@/components/common/UploaderCard';
@@ -413,6 +413,15 @@ export default function DocumentView() {
         <Box sx={s.metaLine}>
           {doc.year && (
             <Typography component="span" variant="caption" className="mono">{doc.year}</Typography>
+          )}
+          {/* « Est-ce encore le bon programme ? » — la question se pose ICI, au moment de décider
+              de télécharger, pas seulement sur la carte du catalogue. */}
+          {isDatedDoc(doc.year) && (
+            <Tooltip title={t('document.datedHint', { year: doc.year })}>
+              <Typography component="span" variant="caption" sx={{ opacity: 0.8 }}>
+                ⏳ {t('document.datedShort')}
+              </Typography>
+            </Tooltip>
           )}
           {doc.ratingCount > 0 && (
             <Typography component="span" variant="caption" className="mono" sx={s.metaItem}>

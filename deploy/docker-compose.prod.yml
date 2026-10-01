@@ -64,7 +64,9 @@ services:
       retries: 10
 
   minio:
-    image: quay.io/minio/minio:latest  # Docker Hub ne publie plus MinIO (dépôt retiré) — Quay reste la source officielle
+    image: cgr.dev/chainguard/minio:latest  # MinIO a quitté Docker Hub puis fermé Quay aux pulls anonymes ;
+    # cette reconstruction Chainguard est un vrai MinIO, téléchargeable sans compte.
+    user: "0"  # MinIO exige d'être PROPRIÉTAIRE du répertoire de données, pas seulement d'y écrire
     container_name: freenote-minio
     restart: unless-stopped
     logging: *default-logging

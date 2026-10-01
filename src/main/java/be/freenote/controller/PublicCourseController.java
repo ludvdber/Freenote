@@ -24,6 +24,18 @@ public class PublicCourseController {
 
     private final PublicDocumentService service;
 
+    /**
+     * « Ce qui manque » : les cours sans aucun document. Au-dessus de la liste du frontend, c'est
+     * un appel au dépôt là où le besoin est réel ; pour les moteurs, une page qui nomme des cours
+     * que personne d'autre ne liste. Cache 1 h : le catalogue bouge au rythme des dépôts.
+     */
+    @GetMapping("/gaps")
+    public ResponseEntity<be.freenote.dto.response.CatalogueGapsResponse> gaps() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
+                .body(service.getCatalogueGaps());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PublicCourseResponse> get(@PathVariable Long id) {
         return ResponseEntity.ok()
