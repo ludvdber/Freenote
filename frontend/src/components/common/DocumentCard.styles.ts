@@ -257,3 +257,19 @@ export const rowStats: Sx = {
   gap: 1.5,
   flexShrink: 0,
 };
+
+/** « ⏳ 2021 » posé en bas à droite de la couverture : l'année du contenu quand elle commence à
+ *  dater. Volontairement NEUTRE (pas d'orange d'avertissement) — c'est une information de
+ *  fraîcheur, pas un défaut du document, qui reste parfaitement consultable. */
+export const coverDated: Sx = {
+  position: 'absolute',
+  zIndex: 1,
+  bottom: 8,
+  right: 12,
+  height: 20,
+  fontSize: 10,
+  fontWeight: 700,
+  color: 'rgba(245,242,234,0.78)',
+  bgcolor: 'rgba(10,10,26,0.6)',
+  backdropFilter: 'blur(6px)',
+};

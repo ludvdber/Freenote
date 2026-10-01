@@ -57,6 +57,30 @@ export function isHotDoc(createdAt: string, downloadCount: number, now: Date = n
   return downloadCount >= 20 && downloadCount / days >= 2;
 }
 
+/**
+ * Nombre d'années académiques écoulées depuis l'année d'un document, ou `null` si elle est absente
+ * ou illisible. L'année académique bascule en **août** : de janvier à juillet 2026, on est encore
+ * dans l'année 2025-2026, donc un document marqué 2025 est de l'année en cours, pas de l'an passé.
+ */
+export function docAgeInYears(year: string | null | undefined, now: Date = new Date()): number | null {
+  if (!year || !/^\d{4}$/.test(year)) return null;
+  const currentAcademicYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  return Math.max(0, currentAcademicYear - Number(year));
+}
+
+/**
+ * « Ce document est-il encore d'actualité ? » — la question muette de tout étudiant devant une
+ * synthèse. Trois années académiques, soit la durée d'un bachelier : au-delà, la personne qui a
+ * déposé le document a quitté l'école et le programme a pu changer. Signaler n'est pas déprécier :
+ * le document reste parfaitement consultable, l'étudiant est seulement prévenu.
+ */
+export const DATED_DOC_YEARS = 3;
+
+export function isDatedDoc(year: string | null | undefined, now: Date = new Date()): boolean {
+  const age = docAgeInYears(year, now);
+  return age !== null && age >= DATED_DOC_YEARS;
+}
+
 /** Jours calendaires (minuit à minuit) d'ici une date ISO `yyyy-mm-dd`.
  *  0 = aujourd'hui, négatif = passée — la bannière compte à rebours se masque alors d'elle-même. */
 export function daysUntil(dateStr: string, now: Date = new Date()): number {

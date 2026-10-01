@@ -216,6 +216,12 @@ public class DocumentServiceImpl implements DocumentService {
                     query, scope, courseIds, cat != null ? cat.name() : null, safeSort, pageable);
             List<Long> ids = result.ids();
             if (ids.isEmpty()) {
+                // Une recherche qui ne trouve rien est une demande de contenu : sans cette trace,
+                // l'étudiant repart et personne ne sait ce qui manquait. Seulement sur la première
+                // page — les pages suivantes d'une recherche vide n'apportent aucune information.
+                if (pageable.getPageNumber() == 0) {
+                    trackingService.trackSearchMiss(query);
+                }
                 return new PageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
             }
             // Preserve Meilisearch relevance/sort ordering — the batch fetch returns rows in DB order.
@@ -523,8 +529,10 @@ public class DocumentServiceImpl implements DocumentService {
             // Buffer in Redis — no DB write on each download
             redisTemplate.opsForValue().increment(DL_BUFFER_PREFIX + documentId);
             // Série journalière « vues de docs » du panel admin (le downloadCount par doc est
-            // cumulatif — sans ceci, aucune évolution par jour n'est reconstituable).
-            trackingService.increment(TrackingService.METRIC_DOC_VIEW, "");
+            // cumulatif — sans ceci, aucune évolution par jour n'est reconstituable). La cible porte
+            // l'id du document : c'est ce qui permet un « top de la période » plutôt qu'un classement
+            // all-time figé sur le compteur dénormalisé.
+            trackingService.increment(TrackingService.METRIC_DOC_VIEW, String.valueOf(documentId));
 
             // Award 1 XP to author — skip if downloader is the author (anti-farming)
             if (document.getUser() != null && !document.getUser().getId().equals(userId)) {

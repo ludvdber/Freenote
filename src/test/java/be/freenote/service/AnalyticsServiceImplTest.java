@@ -83,16 +83,16 @@ class AnalyticsServiceImplTest {
         when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
         when(dailyStatRepository.topTargetsBetween(anyString(), any(), any(), any())).thenReturn(List.of());
         when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
-        when(quizRepository.findTopByAttempts(any())).thenReturn(List.of());
-        when(documentRepository.findTop8ByVerifiedTrueOrderByDownloadCountDesc()).thenReturn(List.of());
 
         assertThat(analyticsService.getAnalytics(1000).days()).isEqualTo(365);
         assertThat(analyticsService.getAnalytics(1).days()).isEqualTo(7);
-        assertThat(analyticsService.getAnalytics(30).visitsByDay()).hasSize(30);
+        // 30 jours complets + le jour en cours : la série montre la journée partielle, dont les KPI
+        // s'abstiennent pour ne pas fausser les comparaisons.
+        assertThat(analyticsService.getAnalytics(30).visitsByDay()).hasSize(31);
     }
 
     @Test
-    void analyticsMapsSourcesTopsAndDenormalizedCounters() {
+    void analyticsMapsSourcesAndPeriodScopedTops() {
         when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(4L);
         when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
         when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
@@ -102,14 +102,18 @@ class AnalyticsServiceImplTest {
                 .thenReturn(List.of(target("quiz", 9)));
         when(dailyStatRepository.topTargetsBetween(eq("guide"), any(), any(), any()))
                 .thenReturn(List.of(target("jointures-sql", 6)));
-        QuizRepository.QuizTopRow topQuiz = new QuizRepository.QuizTopRow() {
-            @Override public Long getId() { return 42L; }
-            @Override public String getTitle() { return "Réseaux OSI"; }
-            @Override public int getAttemptCount() { return 88; }
-        };
-        when(quizRepository.findTopByAttempts(any())).thenReturn(List.of(topQuiz));
-        when(documentRepository.findTop8ByVerifiedTrueOrderByDownloadCountDesc())
-                .thenReturn(List.of(Document.builder().id(7L).title("Synthèse Java").downloadCount(231).build()));
+        when(dailyStatRepository.topTargetsBetween(eq("campaign"), any(), any(), any()))
+                .thenReturn(List.of(target("qr-rentree", 30)));
+        when(dailyStatRepository.topTargetsBetween(eq("search_miss"), any(), any(), any()))
+                .thenReturn(List.of(target("compta analytique", 11)));
+        when(dailyStatRepository.topTargetsBetween(eq("quiz_play"), any(), any(), any()))
+                .thenReturn(List.of(target("42", 88)));
+        when(dailyStatRepository.topTargetsBetween(eq("doc_view"), any(), any(), any()))
+                .thenReturn(List.of(target("7", 231)));
+        when(quizRepository.findAllById(List.of(42L)))
+                .thenReturn(List.of(be.freenote.entity.Quiz.builder().id(42L).title("Réseaux OSI").build()));
+        when(documentRepository.findAllById(List.of(7L)))
+                .thenReturn(List.of(Document.builder().id(7L).title("Synthèse Java").build()));
 
         AnalyticsResponse a = analyticsService.getAnalytics(30);
 
@@ -117,11 +121,57 @@ class AnalyticsServiceImplTest {
                 .containsExactly("organic", "direct");
         assertThat(a.topTools().get(0).label()).isEqualTo("quiz");
         assertThat(a.topGuides().get(0).count()).isEqualTo(6);
-        // Les tops quiz/docs portent l'id (liens cliquables côté client) ; le tracking non.
+        assertThat(a.campaigns().get(0).label()).isEqualTo("qr-rentree");
+        assertThat(a.searchMisses().get(0).label()).isEqualTo("compta analytique");
+        // Tops lus dans daily_stats SUR LA PÉRIODE (cible = id) et non plus sur les compteurs
+        // all-time, qui ignoraient le sélecteur 30/90 jours juste au-dessus d'eux.
         assertThat(a.topQuizzes().get(0).label()).isEqualTo("Réseaux OSI");
         assertThat(a.topQuizzes().get(0).id()).isEqualTo(42L);
         assertThat(a.topDocs().get(0).count()).isEqualTo(231);
         assertThat(a.topDocs().get(0).id()).isEqualTo(7L);
         assertThat(a.topTools().get(0).id()).isNull();
+    }
+
+    /**
+     * Les lignes historiques du tracking portent une cible VIDE (l'id n'y était pas écrit avant le
+     * 1ᵉʳ octobre), et un objet supprimé laisse sa ligne de statistiques derrière lui. Dans les deux
+     * cas le classement doit sauter la ligne, pas afficher un identifiant nu ni planter.
+     */
+    @Test
+    void skipsTopRowsWithoutAResolvableObject() {
+        when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(0L);
+        when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
+        when(dailyStatRepository.topTargetsBetween(anyString(), any(), any(), any())).thenReturn(List.of());
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+        when(dailyStatRepository.topTargetsBetween(eq("doc_view"), any(), any(), any()))
+                .thenReturn(List.of(target("", 900), target("7", 12), target("999", 3)));
+        when(documentRepository.findAllById(List.of(7L, 999L)))
+                .thenReturn(List.of(Document.builder().id(7L).title("Synthèse Java").build()));
+
+        AnalyticsResponse a = analyticsService.getAnalytics(30);
+
+        assertThat(a.topDocs()).hasSize(1);
+        assertThat(a.topDocs().get(0).label()).isEqualTo("Synthèse Java");
+    }
+
+    /**
+     * Les KPI s'arrêtent à hier. Avant, une période « dont aujourd'hui, incomplet » était comparée à
+     * une période complète : tous les deltas étaient négatifs le matin sans que rien n'ait baissé.
+     * La série journalière, elle, garde le jour en cours — une barre partielle se lit pour ce
+     * qu'elle est.
+     */
+    @Test
+    void kpiWindowsStopAtYesterdayWhileTheSeriesKeepsToday() {
+        when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(0L);
+        when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
+        when(dailyStatRepository.topTargetsBetween(anyString(), any(), any(), any())).thenReturn(List.of());
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+
+        AnalyticsResponse a = analyticsService.getAnalytics(30);
+
+        assertThat(a.through()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(a.visitsByDay().getLast().day()).isEqualTo(LocalDate.now());
+        // Borne haute exclusive = aujourd'hui : la somme ne touche aucune ligne du jour en cours.
+        verify(dailyStatRepository).sumBetween("visit", LocalDate.now().minusDays(30), LocalDate.now());
     }
 }

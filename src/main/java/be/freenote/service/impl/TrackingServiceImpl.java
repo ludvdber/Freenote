@@ -40,6 +40,12 @@ public class TrackingServiceImpl implements TrackingService {
     private static final Pattern SLUG = Pattern.compile("^[a-z0-9][a-z0-9-]{0,99}$");
     private static final Pattern NUMERIC = Pattern.compile("^\\d{1,18}$");
 
+    /** Requête de recherche normalisée : lettres, chiffres, espaces et tirets, 60 caractères max. */
+    private static final int SEARCH_MISS_MAX_LENGTH = 60;
+    private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9 -]");
+    private static final Pattern SPACES = Pattern.compile("\\s+");
+    private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
+
     private final StringRedisTemplate redisTemplate;
     private final DailyStatRepository dailyStatRepository;
 
@@ -66,9 +72,16 @@ public class TrackingServiceImpl implements TrackingService {
         // Whitelist stricte — une entrée forgée est ignorée en silence (pas d'oracle pour un
         // attaquant, pas de pollution de la table par des cibles arbitraires).
         switch (metric) {
-            case METRIC_VISIT -> {
+            case METRIC_VISIT, METRIC_VISIT_NEW -> {
                 if (VISIT_SOURCES.contains(target)) {
-                    increment(METRIC_VISIT, target);
+                    increment(metric, target);
+                }
+            }
+            case METRIC_CAMPAIGN -> {
+                // Même whitelist que les slugs d'outils : une valeur de ?src= forgée ne crée pas
+                // de ligne arbitraire dans la table.
+                if (SLUG.matcher(target).matches()) {
+                    increment(METRIC_CAMPAIGN, target);
                 }
             }
             case METRIC_TOOL, METRIC_GUIDE -> {
@@ -89,6 +102,35 @@ public class TrackingServiceImpl implements TrackingService {
             }
             default -> { /* métrique inconnue — ignorée */ }
         }
+    }
+
+    @Override
+    public void trackSearchMiss(String query) {
+        String normalized = normalizeQuery(query);
+        if (normalized.isEmpty()) {
+            return;
+        }
+        increment(METRIC_SEARCH_MISS, normalized);
+    }
+
+    /**
+     * Minuscules, accents retirés, ponctuation écartée, espaces repliés, longueur bornée à la
+     * colonne. Sans ça, « Compta Analytique », « compta analytique ! » et « comptabilité
+     * analytique » occuperaient trois lignes du classement pour une seule demande.
+     */
+    static String normalizeQuery(String query) {
+        if (query == null) {
+            return "";
+        }
+        String folded = java.text.Normalizer.normalize(query.toLowerCase(java.util.Locale.ROOT),
+                java.text.Normalizer.Form.NFD);
+        String cleaned = SPACES.matcher(
+                        NON_ALNUM.matcher(DIACRITICS.matcher(folded).replaceAll("")).replaceAll(" "))
+                .replaceAll(" ")
+                .trim();
+        return cleaned.length() > SEARCH_MISS_MAX_LENGTH
+                ? cleaned.substring(0, SEARCH_MISS_MAX_LENGTH).trim()
+                : cleaned;
     }
 
     /** Flush périodique : la base est en retard d'au plus ~10 min sur le réel. */

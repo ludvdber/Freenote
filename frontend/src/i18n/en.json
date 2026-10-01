@@ -599,7 +599,12 @@
       "topGuides": "Most-read guides",
       "topQuizzes": "Most-played quizzes",
       "topDocs": "Most-viewed docs",
-      "allTime": "All-time total",
+      "through": "Complete days, up to and including {{date}} — the current day is excluded from comparisons.",
+      "kpiNewVisitors": "New visitors",
+      "campaignsTitle": "Campaign breakdown (?src=)",
+      "searchMissesTitle": "Searches with no results",
+      "searchMissesHint": "What students looked for and did not find — each line is content worth producing.",
+      "searchMissesEmpty": "No fruitless search over this period ✓",
       "empty": "No data yet."
     },
     "duplicates": {
@@ -841,7 +846,8 @@
     "resetFilters": "Reset filters",
     "openCourse": "Open the course page",
     "sectionSuperseded": "Inactive filter: the selected course takes precedence, and its equivalents may belong to another section.",
-    "equivalentsIncluded": "≈ linked courses included"
+    "equivalentsIncluded": "≈ linked courses included",
+    "countsIgnoreQuery": "Category counts cover the whole filtered catalogue, not your search."
   },
   "common": {
     "loading": "Loading...",

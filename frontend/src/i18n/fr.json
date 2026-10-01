@@ -599,7 +599,12 @@
       "topGuides": "Guides les plus lus",
       "topQuizzes": "Quiz les plus joués",
       "topDocs": "Docs les plus vus",
-      "allTime": "Cumul depuis le lancement",
+      "through": "Jours complets, jusqu'au {{date}} inclus — le jour en cours est exclu des comparaisons.",
+      "kpiNewVisitors": "Nouveaux visiteurs",
+      "campaignsTitle": "Détail des campagnes (?src=)",
+      "searchMissesTitle": "Recherches sans résultat",
+      "searchMissesHint": "Ce que les étudiants ont cherché sans rien trouver — autant de contenus à produire.",
+      "searchMissesEmpty": "Aucune recherche infructueuse sur la période ✓",
       "empty": "Pas encore de données."
     },
     "duplicates": {
@@ -841,7 +846,8 @@
     "resetFilters": "Réinitialiser les filtres",
     "openCourse": "Ouvrir la page du cours",
     "sectionSuperseded": "Filtre inactif : le cours choisi prime, et ses équivalents peuvent appartenir à une autre section.",
-    "equivalentsIncluded": "≈ cours liés inclus"
+    "equivalentsIncluded": "≈ cours liés inclus",
+    "countsIgnoreQuery": "Les compteurs de catégories portent sur tout le catalogue filtré, pas sur ta recherche."
   },
   "common": {
     "loading": "Chargement...",

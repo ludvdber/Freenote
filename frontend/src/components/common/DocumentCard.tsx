@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { DocumentResponse } from '@/types';
 import GlassCard from '@/components/ui/GlassCard';
 import UserAvatar from '@/components/common/UserAvatar';
-import { categoryColor, categoryEmoji, formatRelativeDate, isNewDoc, isHotDoc } from '@/lib/utils';
+import { categoryColor, categoryEmoji, formatRelativeDate, isNewDoc, isHotDoc, isDatedDoc } from '@/lib/utils';
 import * as s from './DocumentCard.styles';
 
 interface Props {
@@ -24,6 +24,9 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
   // UN seul badge de fraîcheur calculé — « Nouveau » prime sur « 🔥 », jamais les deux (bruit).
   const isNew = isNewDoc(doc.createdAt);
   const isHot = !isNew && isHotDoc(doc.createdAt, doc.downloadCount);
+  // Fraîcheur du CONTENU (année du cours), indépendante de la date de dépôt : « est-ce encore le
+  // bon programme ? » est la question muette de tout étudiant devant une synthèse.
+  const isDated = isDatedDoc(doc.year);
   const courseLine = [doc.courseName, doc.sectionName].filter(Boolean).join(' · ');
   const relativeDateText = formatRelativeDate(doc.createdAt, i18n.language);
 
@@ -143,6 +146,11 @@ export default function DocumentCard({ document: doc, haloStrength = 0, variant 
           size="small"
           sx={s.coverCatChip(categoryColor(doc.category, 'dark'))}
         />
+        {isDated && (
+          <Tooltip title={t('document.datedHint', { year: doc.year })} enterDelay={300}>
+            <Chip label={`⏳ ${doc.year}`} size="small" sx={s.coverDated} />
+          </Tooltip>
+        )}
       </Box>
       <CardContent sx={s.content}>
         <Tooltip title={doc.title} enterDelay={400}>

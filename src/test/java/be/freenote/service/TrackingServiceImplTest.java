@@ -102,4 +102,68 @@ class TrackingServiceImplTest {
 
         verifyNoInteractions(hashOps);
     }
+
+    // --- Recherches sans résultat (2026-10-01) ---
+
+    /**
+     * La normalisation existe pour que la même demande ne se disperse pas en plusieurs lignes du
+     * classement : c'est tout l'intérêt du panneau, qui sert à décider quoi produire.
+     */
+    @Test
+    void normalizesSearchMissQueries() {
+        trackingService.trackSearchMiss("  Comptabilité   ANALYTIQUE !! ");
+
+        verify(hashOps).increment(todayKey(), "search_miss|comptabilite analytique", 1);
+    }
+
+    @Test
+    void foldsAccentsAndCaseToASingleTarget() {
+        trackingService.trackSearchMiss("Réseaux");
+        trackingService.trackSearchMiss("reseaux");
+
+        verify(hashOps, times(2)).increment(todayKey(), "search_miss|reseaux", 1);
+    }
+
+    /** La colonne est bornée : une requête absurde ne doit pas faire échouer l'INSERT du flush. */
+    @Test
+    void capsTheQueryLength() {
+        trackingService.trackSearchMiss("a".repeat(200));
+
+        verify(hashOps).increment(todayKey(), "search_miss|" + "a".repeat(60), 1);
+    }
+
+    @Test
+    void ignoresAQueryWithNothingSearchable() {
+        trackingService.trackSearchMiss("   ");
+        trackingService.trackSearchMiss("???");
+        trackingService.trackSearchMiss(null);
+
+        verify(hashOps, never()).increment(anyString(), anyString(), anyLong());
+    }
+
+    // --- Nouvelles métriques client ---
+
+    @Test
+    void acceptsNewVisitorWithTheSameSourceWhitelist() {
+        trackingService.trackClientEvent("visit_new", "social", "1");
+
+        verify(hashOps).increment(todayKey(), "visit_new|social", 1);
+    }
+
+    @Test
+    void rejectsAForgedVisitSource() {
+        trackingService.trackClientEvent("visit_new", "<script>", "1");
+
+        verify(hashOps, never()).increment(anyString(), anyString(), anyLong());
+    }
+
+    /** Le détail des campagnes doit rester une whitelist : sinon n'importe qui crée des lignes. */
+    @Test
+    void acceptsACampaignSlugAndRejectsAnythingElse() {
+        trackingService.trackClientEvent("campaign", "qr-rentree-2026", "1");
+        trackingService.trackClientEvent("campaign", "QR Rentrée", "1");
+
+        verify(hashOps).increment(todayKey(), "campaign|qr-rentree-2026", 1);
+        verify(hashOps, never()).increment(todayKey(), "campaign|QR Rentrée", 1);
+    }
 }

@@ -172,21 +172,29 @@ export interface AdminOverviewResponse extends ModerationQueue {
   activity14d: { day: string; visits: number; docViews: number; quizPlays: number }[];
 }
 
+export type LabelCount = { label: string; count: number; id: number | null };
+
 export interface AnalyticsResponse {
   days: number;
+  /* Dernier jour inclus dans les KPI (= hier) : les fenêtres portent sur des jours COMPLETS. */
+  through: string;
   visits: KpiPair;
+  newVisitors: KpiPair;
   docViews: KpiPair;
   quizPlays: KpiPair;
   guideReads: KpiPair;
   toolUses: KpiPair;
   signups: KpiPair;
+  /* Série journalière, jour en cours inclus (une barre partielle se lit, un delta non). */
   visitsByDay: { day: string; count: number }[];
   /* id : renseigné pour les tops quiz/docs (liens cliquables), null pour le tracking (slugs). */
-  sources: { label: string; count: number; id: number | null }[];
-  topTools: { label: string; count: number; id: number | null }[];
-  topGuides: { label: string; count: number; id: number | null }[];
-  topQuizzes: { label: string; count: number; id: number | null }[];
-  topDocs: { label: string; count: number; id: number | null }[];
+  sources: LabelCount[];
+  campaigns: LabelCount[];
+  topTools: LabelCount[];
+  topGuides: LabelCount[];
+  topQuizzes: LabelCount[];
+  topDocs: LabelCount[];
+  searchMisses: LabelCount[];
 }
 
 export interface LeaderboardEntry {

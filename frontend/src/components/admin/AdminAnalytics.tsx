@@ -9,9 +9,13 @@ import GlassCard from '@/components/ui/GlassCard';
 import { KpiTile, DayBars, HBarList, TopList } from './charts';
 
 /**
- * Page « Analytics » : mini-GA interne. Visites/outils/guides viennent du tracking anonyme
- * (daily_stats — vide tant que la version n'est pas déployée : bandeau « collecte en cours ») ;
- * tops quiz/docs viennent des compteurs déjà en base (all-time).
+ * Page « Analytics » : mini-GA interne, entièrement alimentée par le tracking anonyme
+ * (daily_stats — vide tant que la version n'est pas déployée : bandeau « collecte en cours »).
+ *
+ * Deux règles de lecture, posées côté serveur : les KPI portent sur des **jours complets** (le jour
+ * en cours est exclu, sinon tous les deltas sont rouges le matin) et **tous** les classements
+ * suivent la période demandée — y compris les tops documents et quiz, qui étaient auparavant
+ * all-time et ignoraient donc le sélecteur juste au-dessus d'eux.
  */
 export default function AdminAnalytics() {
   const { t, i18n } = useTranslation();
@@ -43,6 +47,7 @@ export default function AdminAnalytics() {
 
   const trackingEmpty = data.visits.value === 0 && data.visits.previous === 0;
   const vsLabel = t('admin.analytics.vsPrev', { days: data.days });
+  const throughLabel = t('admin.analytics.through', { date: fmtDay(data.through) });
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -57,9 +62,16 @@ export default function AdminAnalytics() {
 
       {trackingEmpty && <Alert severity="info">{t('admin.overview.trackingEmpty')}</Alert>}
 
+      {/* Jours complets uniquement : le dire, plutôt que laisser croire que « 30 jours » inclut
+          une journée en cours dont la comparaison serait faussée. */}
+      <Typography variant="caption" color="text.secondary" sx={{ mt: -1.5 }}>
+        {throughLabel}
+      </Typography>
+
       {/* KPI de la période */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3, 1fr)', xl: 'repeat(6, 1fr)' }, gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)', xl: 'repeat(7, 1fr)' }, gap: 2 }}>
         <KpiTile label={t('admin.analytics.kpiVisits')} value={data.visits.value} previous={data.visits.previous} vsLabel={vsLabel} />
+        <KpiTile label={t('admin.analytics.kpiNewVisitors')} value={data.newVisitors.value} previous={data.newVisitors.previous} vsLabel={vsLabel} />
         <KpiTile label={t('admin.analytics.kpiDocViews')} value={data.docViews.value} previous={data.docViews.previous} vsLabel={vsLabel} />
         <KpiTile label={t('admin.analytics.kpiQuizPlays')} value={data.quizPlays.value} previous={data.quizPlays.previous} vsLabel={vsLabel} />
         <KpiTile label={t('admin.analytics.kpiGuideReads')} value={data.guideReads.value} previous={data.guideReads.previous} vsLabel={vsLabel} />
@@ -98,6 +110,16 @@ export default function AdminAnalytics() {
           </Typography>
           <HBarList rows={data.sources.map((r) => ({ label: sourceLabel(r.label), count: r.count }))}
                     emptyLabel={t('admin.analytics.empty')} />
+          {/* Détail des campagnes : « campagne » en bloc ne dit pas QUEL QR a fonctionné. */}
+          {data.campaigns.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {t('admin.analytics.campaignsTitle')}
+              </Typography>
+              <HBarList rows={data.campaigns.map((r) => ({ label: r.label, count: r.count }))}
+                        emptyLabel={t('admin.analytics.empty')} />
+            </Box>
+          )}
         </GlassCard>
         <GlassCard sx={{ p: 2.5 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
@@ -124,9 +146,6 @@ export default function AdminAnalytics() {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
             {t('admin.analytics.topQuizzes')}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-            {t('admin.analytics.allTime')}
-          </Typography>
           <TopList rows={data.topQuizzes.map((r) => ({
                      ...r, to: r.id !== null ? `/outils/quiz#play=${r.id}` : undefined,
                    }))}
@@ -136,15 +155,25 @@ export default function AdminAnalytics() {
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
             {t('admin.analytics.topDocs')}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-            {t('admin.analytics.allTime')}
-          </Typography>
           <TopList rows={data.topDocs.map((r) => ({
                      ...r, to: r.id !== null ? `/documents/${r.id}` : undefined,
                    }))}
                    emptyLabel={t('admin.analytics.empty')} />
         </GlassCard>
       </Box>
+
+      {/* Recherches sans résultat : chaque ligne est une demande de contenu, écrite par un
+          étudiant dans ses mots. C'est le lien direct entre l'Analytics et quoi produire ensuite. */}
+      <GlassCard sx={{ p: 2.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+          {t('admin.analytics.searchMissesTitle')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          {t('admin.analytics.searchMissesHint')}
+        </Typography>
+        <HBarList rows={data.searchMisses.map((r) => ({ label: r.label, count: r.count }))}
+                  emptyLabel={t('admin.analytics.searchMissesEmpty')} />
+      </GlassCard>
     </Box>
   );
 }

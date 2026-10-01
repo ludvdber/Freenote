@@ -199,8 +199,9 @@ public class QuizServiceImpl implements QuizService {
                     .quiz(quiz).user(user).score(score).total(total).durationMs(duration).build());
         }
         quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
-        // Série journalière « parties de quiz » (panel admin) — l'attemptCount par quiz est cumulatif.
-        trackingService.increment(be.freenote.service.TrackingService.METRIC_QUIZ_PLAY, "");
+        // Série journalière « parties de quiz » (panel admin) — l'attemptCount par quiz est cumulatif ;
+        // la cible porte l'id du quiz, d'où un top sur la période demandée.
+        trackingService.increment(be.freenote.service.TrackingService.METRIC_QUIZ_PLAY, String.valueOf(quizId));
 
         int rank = user == null ? 0 : rankOf(quizId, userId);
         return new AttemptResultResponse(score, total, duration, correct, correctAnswers, explanations, rank);

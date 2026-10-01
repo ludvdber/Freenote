@@ -249,6 +249,16 @@ function FullBrowse() {
         ))}
       </Box>
 
+      {/* Les compteurs décrivent le périmètre STRUCTUREL (section/cours) et ignorent la recherche
+          textuelle, qui passe par Meilisearch. Sans cette mention, chercher « réseau » affichait
+          4 résultats sous des chips annonçant « Synthèse 46 » : deux chiffres qui se contredisent
+          à l'écran. */}
+      {urlQuery && catCounts && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1.5, mb: 2 }}>
+          {t('search.countsIgnoreQuery')}
+        </Typography>
+      )}
+
       {/* Pas de pub au-dessus d'un résultat vide (écran pauvre — policy AdSense). */}
       {(isLoading || (data?.content.length ?? 0) > 0) && <AdSlot width={728} height={90} sx={{ mb: 3 }} />}
 
