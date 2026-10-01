@@ -839,7 +839,9 @@
     "newSinceVisit_one": "{{count}} new since your last visit",
     "newSinceVisit_other": "{{count}} new since your last visit",
     "resetFilters": "Reset filters",
-    "openCourse": "Open the course page"
+    "openCourse": "Open the course page",
+    "sectionSuperseded": "Inactive filter: the selected course takes precedence, and its equivalents may belong to another section.",
+    "equivalentsIncluded": "≈ linked courses included"
   },
   "common": {
     "loading": "Loading...",

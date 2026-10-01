@@ -4,7 +4,6 @@ import be.freenote.dto.response.AdminOverviewResponse;
 import be.freenote.dto.response.AnalyticsResponse;
 import be.freenote.entity.Document;
 import be.freenote.enums.ReportStatus;
-import be.freenote.repository.ActivityLogRepository;
 import be.freenote.repository.DailyStatRepository;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.QuizRepository;
@@ -27,7 +26,7 @@ import static org.mockito.Mockito.*;
 class AnalyticsServiceImplTest {
 
     @Mock private DailyStatRepository dailyStatRepository;
-    @Mock private ActivityLogRepository activityLogRepository;
+    @Mock private be.freenote.repository.UserRepository userRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private ReportRepository reportRepository;
     @Mock private QuizRepository quizRepository;
@@ -54,7 +53,7 @@ class AnalyticsServiceImplTest {
         when(reportRepository.countByStatus(ReportStatus.PENDING)).thenReturn(2L);
         when(documentRepository.countDuplicateGroups()).thenReturn(1L);
         when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(10L);
-        when(activityLogRepository.countByTypeAndCreatedAtGreaterThanEqual(eq("SIGNUP"), any()))
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
                 .thenReturn(5L);
         LocalDate today = LocalDate.now();
         when(dailyStatRepository.seriesBetween(eq("visit"), any(), any()))
@@ -73,8 +72,9 @@ class AnalyticsServiceImplTest {
         assertThat(last.day()).isEqualTo(today);
         assertThat(last.visits()).isEqualTo(7);
         assertThat(last.docViews()).isZero();
-        // Les SIGNUP sont dérivés d'activity_logs : deux COUNT (depuis from, depuis to) soustraits.
-        assertThat(overview.signups7d().value()).isZero();
+        // Inscriptions comptées sur users.created_at (jamais purgé, contrairement à activity_logs,
+        // dont la purge à 90 jours vidait la période de comparaison de la vue « 90 jours »).
+        assertThat(overview.signups7d().value()).isEqualTo(5);
     }
 
     @Test
@@ -82,7 +82,7 @@ class AnalyticsServiceImplTest {
         when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(0L);
         when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
         when(dailyStatRepository.topTargetsBetween(anyString(), any(), any(), any())).thenReturn(List.of());
-        when(activityLogRepository.countByTypeAndCreatedAtGreaterThanEqual(anyString(), any())).thenReturn(0L);
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
         when(quizRepository.findTopByAttempts(any())).thenReturn(List.of());
         when(documentRepository.findTop8ByVerifiedTrueOrderByDownloadCountDesc()).thenReturn(List.of());
 
@@ -95,7 +95,7 @@ class AnalyticsServiceImplTest {
     void analyticsMapsSourcesTopsAndDenormalizedCounters() {
         when(dailyStatRepository.sumBetween(anyString(), any(), any())).thenReturn(4L);
         when(dailyStatRepository.seriesBetween(anyString(), any(), any())).thenReturn(List.of());
-        when(activityLogRepository.countByTypeAndCreatedAtGreaterThanEqual(anyString(), any())).thenReturn(0L);
+        when(userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
         when(dailyStatRepository.topTargetsBetween(eq("visit"), any(), any(), any()))
                 .thenReturn(List.of(target("organic", 12), target("direct", 5)));
         when(dailyStatRepository.topTargetsBetween(eq("tool"), any(), any(), any()))

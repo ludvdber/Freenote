@@ -38,6 +38,24 @@ jobs:
       - name: Unit tests
         run: ./gradlew test --no-daemon
 
+      # Testcontainers abandonne un pull trop lent avec une ContainerFetchException levée dans
+      # l'initialisation statique de la classe de base : les 26 tests tombent alors en bloc sans
+      # que le log dise un mot du registre. Tirer les images ici, avec réessais, transforme un
+      # aléa réseau en une étape explicite et réparable d'elle-même.
+      - name: Pre-pull Testcontainers images
+        run: |
+          for image in postgres:17-alpine redis:7-alpine quay.io/minio/minio:latest getmeili/meilisearch:latest; do
+            for attempt in 1 2 3; do
+              if docker pull --quiet "$image"; then break; fi
+              echo "::warning::docker pull $image failed (attempt $attempt/3), retrying in 15s"
+              sleep 15
+              if [ "$attempt" = 3 ]; then
+                echo "::error::unable to pull $image after 3 attempts"
+                exit 1
+              fi
+            done
+          done
+
       - name: Integration tests (Testcontainers)
         run: ./gradlew integrationTest --no-daemon
 

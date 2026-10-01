@@ -47,10 +47,20 @@ public abstract class AbstractIntegrationTest {
         meilisearch.start();
     }
 
+    /**
+     * Même image que {@code docker-compose.yml} et {@code deploy/docker-compose.prod.yml}. Les
+     * tests tournaient sur {@code pgvector/pgvector:pg17}, reliquat de l'extension vectorielle
+     * supprimée en mai : plus aucune migration ne déclare {@code CREATE EXTENSION vector}, donc
+     * l'image n'apportait que ses ~450 Mo (contre ~80 Mo pour l'Alpine) — c'est ce pull qui
+     * dépassait le délai d'attente de Testcontainers dans le CI et faisait tomber les 26 tests
+     * d'un bloc. Deuxième bénéfice, le plus important : l'Alpine repose sur musl et tourne donc en
+     * collation <b>C</b>, exactement comme la prod — un test d'ordre alphabétique vaut désormais
+     * pour la prod au lieu de passer sur une base plus permissive que la vraie.
+     */
     @SuppressWarnings("resource")
     private static PostgreSQLContainer createPostgres() {
         return new PostgreSQLContainer(
-                DockerImageName.parse("pgvector/pgvector:pg17")
+                DockerImageName.parse("postgres:17-alpine")
         ).withDatabaseName("freenote_test")
          .withUsername("freenote")
          .withPassword("freenote");

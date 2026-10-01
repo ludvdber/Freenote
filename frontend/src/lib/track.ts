@@ -31,16 +31,24 @@ export function classifySource(referrer: string, search: string, host: string): 
 
 const VISIT_FLAG = 'freenote-visit-tracked';
 
-/** Une visite par session navigateur. « internal » (rechargement SPA) est compté en direct. */
+/**
+ * Une visite par session navigateur (sessionStorage = par onglet).
+ *
+ * Un referrer interne n'est PAS une visite : c'est un onglet ouvert depuis le site lui-même (lien
+ * en `target="_blank"`, « Voir le profil », PDF…). Il était auparavant reclassé en « direct », ce
+ * qui gonflait silencieusement le poste le plus gros du tableau de provenance avec de la
+ * navigation interne — et rendait la part réelle de l'organique et du social illisible.
+ */
 export function trackVisit(): void {
+  const source = classifySource(document.referrer, window.location.search, window.location.host);
+  if (source === 'internal') return;
   try {
     if (sessionStorage.getItem(VISIT_FLAG)) return;
     sessionStorage.setItem(VISIT_FLAG, '1');
   } catch {
     return; // sessionStorage bloqué (navigation privée stricte) — tant pis pour la stat
   }
-  const source = classifySource(document.referrer, window.location.search, window.location.host);
-  trackEvent('visit', source === 'internal' ? 'direct' : source);
+  trackEvent('visit', source);
 }
 
 /** Usage d'un outil / lecture d'un guide / vue d'un profil (dédup profil côté serveur). */

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -19,6 +20,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Number of users strictly above the given XP — used to derive a 1-based leaderboard rank
      *  (rank = countByXpGreaterThan(xp) + 1) without loading the whole leaderboard. */
     long countByXpGreaterThan(int xp);
+
+    /**
+     * Inscriptions sur une fenêtre, pour les KPI du panel admin ({@code to} exclu).
+     *
+     * <p>La source précédente était {@code activity_logs} (type SIGNUP), que l'auto-purge tronque à
+     * 90 jours : sur la vue « 90 jours », la période de comparaison (jours 90 à 180) était déjà
+     * supprimée, donc le précédent valait zéro et la tuile annonçait une croissance imaginaire.
+     * {@code users.created_at} n'est jamais purgé. Contrepartie assumée : un compte supprimé ou
+     * banni disparaît aussi de l'historique des inscriptions — c'est rare, et un chiffre cohérent
+     * dans le temps vaut mieux qu'un chiffre complet qui s'effondre à une date arbitraire.</p>
+     */
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime from, LocalDateTime to);
 
     @Query("SELECT u FROM User u JOIN u.profile p WHERE p.section.id = :sectionId ORDER BY u.xp DESC")
     List<User> findBySectionOrderByXpDesc(Long sectionId, Pageable pageable);

@@ -839,7 +839,9 @@
     "newSinceVisit_one": "{{count}} nouveau depuis ta dernière visite",
     "newSinceVisit_other": "{{count}} nouveaux depuis ta dernière visite",
     "resetFilters": "Réinitialiser les filtres",
-    "openCourse": "Ouvrir la page du cours"
+    "openCourse": "Ouvrir la page du cours",
+    "sectionSuperseded": "Filtre inactif : le cours choisi prime, et ses équivalents peuvent appartenir à une autre section.",
+    "equivalentsIncluded": "≈ cours liés inclus"
   },
   "common": {
     "loading": "Chargement...",

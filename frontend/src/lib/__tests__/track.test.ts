@@ -36,3 +36,44 @@ describe('classifySource', () => {
     expect(classifySource('pas-une-url', '', HOST)).toBe('direct');
   });
 });
+
+describe('trackVisit', () => {
+  const setup = async (referrer: string) => {
+    sessionStorage.clear();
+    vi.resetModules();
+    Object.defineProperty(document, 'referrer', { value: referrer, configurable: true });
+    const endpoints = await import('@/api/endpoints');
+    vi.mocked(endpoints.trackEvent).mockClear();
+    const { trackVisit } = await import('../track');
+    return { trackVisit, trackEvent: endpoints.trackEvent };
+  };
+
+  it('compte une arrivée externe avec sa provenance', async () => {
+    const { trackVisit, trackEvent } = await setup('https://discord.com/channels/1/2');
+    trackVisit();
+    expect(trackEvent).toHaveBeenCalledWith('visit', 'social');
+  });
+
+  it('ne compte qu\'une fois par session', async () => {
+    const { trackVisit, trackEvent } = await setup('');
+    trackVisit();
+    trackVisit();
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  /** Un onglet ouvert depuis le site n'est pas une visite : avant, il gonflait « direct ». */
+  it('ignore un referrer interne au lieu de le compter en direct', async () => {
+    const { trackVisit, trackEvent } = await setup(`https://${window.location.host}/browse`);
+    trackVisit();
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  /** Et il ne doit pas consommer le drapeau : la vraie visite suivante compte encore. */
+  it('ne consomme pas le drapeau de session sur un referrer interne', async () => {
+    const { trackVisit, trackEvent } = await setup(`https://${window.location.host}/browse`);
+    trackVisit();
+    Object.defineProperty(document, 'referrer', { value: '', configurable: true });
+    trackVisit();
+    expect(trackEvent).toHaveBeenCalledWith('visit', 'direct');
+  });
+});

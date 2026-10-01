@@ -2,13 +2,12 @@ package be.freenote.service.impl;
 
 import be.freenote.dto.response.AdminOverviewResponse;
 import be.freenote.dto.response.AnalyticsResponse;
-import be.freenote.enums.ActivityType;
 import be.freenote.enums.ReportStatus;
-import be.freenote.repository.ActivityLogRepository;
 import be.freenote.repository.DailyStatRepository;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.repository.QuizRepository;
 import be.freenote.repository.ReportRepository;
+import be.freenote.repository.UserRepository;
 import be.freenote.service.AnalyticsService;
 import be.freenote.service.TrackingService;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +28,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private static final int TOP_LIMIT = 8;
 
     private final DailyStatRepository dailyStatRepository;
-    private final ActivityLogRepository activityLogRepository;
     private final DocumentRepository documentRepository;
     private final ReportRepository reportRepository;
     private final QuizRepository quizRepository;
+    private final UserRepository userRepository;
 
     @Override
     public AdminOverviewResponse getOverview() {
@@ -136,12 +135,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         return new AdminOverviewResponse.Kpi(countSignups(from, to), countSignups(prevFrom, from));
     }
 
-    /** Les SIGNUP vivent dans activity_logs (horodatés) — pas besoin de les re-tracker. */
+    /** Comptées sur users.created_at, jamais purgé — voir le javadoc du repository. */
     private long countSignups(LocalDate from, LocalDate to) {
-        return activityLogRepository.countByTypeAndCreatedAtGreaterThanEqual(
-                ActivityType.SIGNUP.name(), from.atStartOfDay())
-                - activityLogRepository.countByTypeAndCreatedAtGreaterThanEqual(
-                ActivityType.SIGNUP.name(), to.atStartOfDay());
+        return userRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                from.atStartOfDay(), to.atStartOfDay());
     }
 
     private List<AnalyticsResponse.LabelCount> labelCounts(String metric, LocalDate from, LocalDate to,

@@ -263,12 +263,24 @@ function FullBrowse() {
             <Typography variant="body2" color="text.secondary" sx={s.resultsCount} className="mono">
               {t('search.results', { count: data.totalElements })}
             </Typography>
+            {/* Un filtre cours neutralise le filtre section côté serveur (un groupe d'équivalence
+                traverse les sections) : la chip reste — elle pilote la liste des cours — mais est
+                affichée comme inactive, sinon elle prétend restreindre ce qu'elle ne restreint
+                plus. */}
             {sectionId !== '' && (
-              <Chip
-                size="small"
-                label={sections?.find((sec) => sec.id === sectionId)?.name ?? t('document.section')}
-                onDelete={() => patchParams({ section: '', course: '', page: 0 })}
-              />
+              <Tooltip title={courseId !== '' ? t('search.sectionSuperseded') : ''}>
+                <Chip
+                  size="small"
+                  variant={courseId !== '' ? 'outlined' : 'filled'}
+                  sx={courseId !== '' ? { opacity: 0.55, textDecoration: 'line-through' } : undefined}
+                  label={sections?.find((sec) => sec.id === sectionId)?.name ?? t('document.section')}
+                  onDelete={() => patchParams({ section: '', course: '', page: 0 })}
+                />
+              </Tooltip>
+            )}
+            {courseId !== '' && courses?.find((c) => c.id === courseId)?.equivalenceGroup != null && (
+              <Chip size="small" variant="outlined" color="info"
+                    label={t('search.equivalentsIncluded')} />
             )}
             {courseId !== '' && (
               /* Chip cliquable → page du cours (accès facile au hub) ; la croix garde son rôle de
