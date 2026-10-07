@@ -61,11 +61,15 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
      * { NOT EXISTS} plutôt qu'un { GROUP BY … HAVING COUNT(d) = 0} : PostgreSQL est strict
      * sur le GROUP BY dès qu'une colonne de la table jointe apparaît ailleurs (voir le piège
      * documenté dans CLAUDE.md), et la section est justement fetch-jointe ici pour le groupage.
+     * Un cours LIÉ à un cours alimenté n'est pas un manque : sa page et l'Explorer montrent déjà ces
+     * documents (équivalences V15), l'annoncer vide contredirait ce que l'étudiant voit en cliquant.
      */
     @Query("""
         SELECT c FROM Course c JOIN FETCH c.section
         WHERE c.approved = true
-          AND NOT EXISTS (SELECT 1 FROM Document d WHERE d.course = c)
+          AND NOT EXISTS (SELECT 1 FROM Document d JOIN d.course dc
+                          WHERE dc = c
+                             OR (c.equivalenceGroup IS NOT NULL AND dc.equivalenceGroup = c.equivalenceGroup))
         """)
     List<Course> findApprovedWithoutDocuments();
 

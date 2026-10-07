@@ -88,10 +88,15 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<FlashcardDeckSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
-        // Équivalences (V15) : les paquets de « Stats (Compta) » remontent aussi pour « Stats (Info) »
+        // Équivalences (V15) : les paquets de « Stats (Compta) » remontent aussi pour « Stats (Info) ».
+        // Une section seule inclut aussi les cours liés à ses cours, mais par un OU sur le filtre
+        // section : un quiz / paquet « toute la section » n'a pas de cours, une liste de cours seule
+        // l'exclurait. resolve() renvoie alors la section entière + ses liens, d'où le OU.
+        CourseEquivalenceService.Scope resolved = courseEquivalenceService.resolve(sectionId, courseId);
         Page<DeckListRow> page = deckRepository.findPublishedRows(
-                courseEquivalenceService.expand(courseId),
-                CourseEquivalenceService.scopeSection(sectionId, courseId), ownerId, pageable);
+                courseId != null ? resolved.courseIds() : null,
+                CourseEquivalenceService.scopeSection(sectionId, courseId),
+                courseId != null ? null : resolved.courseIds(), ownerId, pageable);
         return PageResponse.from(page,
                 page.getContent().stream().map(r -> FlashcardDeckMapper.toSummary(r, callerId)).toList());
     }

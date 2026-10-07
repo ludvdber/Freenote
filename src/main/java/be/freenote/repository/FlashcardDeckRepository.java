@@ -13,13 +13,16 @@ public interface FlashcardDeckRepository extends JpaRepository<FlashcardDeck, Lo
     /**
      * Bibliothèque : paquets PUBLIÉS, plus récents d'abord, en PROJECTION (sans la colonne JSONB
      * {@code cards}) — même logique anti-heap que {@link QuizRepository#findPublishedRows}.
-     * Filtre cours = collection depuis V15 (équivalences), même pattern.
+     * Filtre cours = collection depuis V15 (équivalences), même pattern. {@code linkedCourseIds} élargit un
+     * filtre SECTION par un OU (jamais un ET) : le contenu « toute la section » n'a pas de cours.
      */
     default Page<DeckListRow> findPublishedRows(java.util.Collection<Long> courseIds, Long sectionId,
+                                                java.util.Collection<Long> linkedCourseIds,
                                                 Long ownerId, Pageable pageable) {
         boolean allCourses = courseIds == null || courseIds.isEmpty();
+        boolean withLinked = linkedCourseIds != null && !linkedCourseIds.isEmpty();
         return findPublishedRowsByCourses(allCourses, allCourses ? java.util.List.of(-1L) : courseIds,
-                sectionId, ownerId, pageable);
+                sectionId, withLinked, withLinked ? linkedCourseIds : java.util.List.of(-1L), ownerId, pageable);
     }
 
     @Query("""
@@ -29,13 +32,15 @@ public interface FlashcardDeckRepository extends JpaRepository<FlashcardDeck, Lo
         FROM FlashcardDeck d LEFT JOIN d.owner o LEFT JOIN o.profile p LEFT JOIN d.course c LEFT JOIN d.section s
         WHERE d.published = true
           AND (:allCourses = true OR c.id IN :courseIds)
-          AND (:sectionId IS NULL OR s.id = :sectionId)
+          AND (:sectionId IS NULL OR s.id = :sectionId OR (:withLinked = true AND c.id IN :linkedCourseIds))
           AND (:ownerId IS NULL OR o.id = :ownerId)
         ORDER BY d.createdAt DESC
         """)
     Page<DeckListRow> findPublishedRowsByCourses(@Param("allCourses") boolean allCourses,
                                                  @Param("courseIds") java.util.Collection<Long> courseIds,
                                                  @Param("sectionId") Long sectionId,
+                                                 @Param("withLinked") boolean withLinked,
+                                                 @Param("linkedCourseIds") java.util.Collection<Long> linkedCourseIds,
                                                  @Param("ownerId") Long ownerId,
                                                  Pageable pageable);
 
