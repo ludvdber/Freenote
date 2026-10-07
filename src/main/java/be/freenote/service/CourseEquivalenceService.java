@@ -17,6 +17,21 @@ public interface CourseEquivalenceService {
     List<Long> expand(Long courseId);
 
     /**
+     * Périmètre complet d'un filtre Explorer (section et/ou cours), équivalences comprises.
+     *
+     * <p>Avec un cours : le groupe du cours, section neutralisée (voir {@link #scopeSection}).
+     * Avec une section seule : les cours de la section PLUS ceux qui leur sont liés ailleurs. Sans
+     * ce second cas, une section dont le seul cours alimenté est un cours lié (« Statistiques » en
+     * Marketing, documents déposés côté Informatique) affichait « aucun document » en vue globale,
+     * alors que choisir le cours les montrait : l'étudiant concluait qu'il n'y avait rien et
+     * s'arrêtait là. Une section sans aucun cours lié garde son filtre section tel quel.</p>
+     */
+    Scope resolve(Long sectionId, Long courseId);
+
+    /** {@code courseIds == null} = pas de filtre cours ; {@code sectionId == null} = pas de filtre section. */
+    record Scope(Long sectionId, List<Long> courseIds) {}
+
+    /**
      * Portée « section » à appliquer À CÔTÉ d'un filtre cours déjà étendu aux équivalences.
      *
      * <p>Un groupe d'équivalence traverse justement les sections (« Statistiques » en Informatique

@@ -43,6 +43,15 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c.id FROM Course c WHERE c.equivalenceGroup = :group")
     List<Long> findIdsByEquivalenceGroup(@Param("group") Long group);
 
+    /** Groupes d'équivalence touchant une section — vide si aucun de ses cours n'est lié. */
+    @Query("SELECT DISTINCT c.equivalenceGroup FROM Course c WHERE c.section.id = :sectionId AND c.equivalenceGroup IS NOT NULL")
+    List<Long> findEquivalenceGroupsBySectionId(@Param("sectionId") Long sectionId);
+
+    /** Cours d'une section + tous les membres des groupes donnés (section élargie aux équivalences). */
+    @Query("SELECT c.id FROM Course c WHERE c.section.id = :sectionId OR c.equivalenceGroup IN :groups")
+    List<Long> findIdsBySectionIdOrEquivalenceGroupIn(@Param("sectionId") Long sectionId,
+                                                     @Param("groups") List<Long> groups);
+
     /** Membres d'un groupe avec leur section (bandeau page cours + dialog admin — anti-N+1). */
     @Query("SELECT c FROM Course c JOIN FETCH c.section WHERE c.equivalenceGroup = :group ORDER BY c.name")
     List<Course> findByEquivalenceGroupWithSection(@Param("group") Long group);

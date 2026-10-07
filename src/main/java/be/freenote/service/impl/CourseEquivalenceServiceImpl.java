@@ -27,4 +27,22 @@ public class CourseEquivalenceServiceImpl implements CourseEquivalenceService {
         }
         return courseRepository.findIdsByEquivalenceGroup(group);
     }
+
+    @Override
+    public Scope resolve(Long sectionId, Long courseId) {
+        if (courseId != null) {
+            return new Scope(null, expand(courseId));
+        }
+        if (sectionId == null) {
+            return new Scope(null, null);
+        }
+        List<Long> groups = courseRepository.findEquivalenceGroupsBySectionId(sectionId);
+        if (groups.isEmpty()) {
+            // Aucun cours lié : le filtre section suffit (et reste une simple jointure, sans IN).
+            return new Scope(sectionId, null);
+        }
+        // La liste couvre déjà toute la section : le filtre section deviendrait une intersection
+        // qui excluerait justement les cours liés des autres sections.
+        return new Scope(null, courseRepository.findIdsBySectionIdOrEquivalenceGroupIn(sectionId, groups));
+    }
 }

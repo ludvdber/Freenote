@@ -206,10 +206,11 @@ public class DocumentServiceImpl implements DocumentService {
         // expression, sort into the sort array). Clean 400s without internal messages.
         Category cat = parseCategory(category);
         String safeSort = parseSort(sort);
-        // Équivalences (V15) : filtrer sur « Stats (Info) » inclut les docs de « Stats (Compta) »
-        List<Long> courseIds = courseEquivalenceService.expand(courseId);
-        // Un filtre cours actif neutralise le filtre section : le groupe traverse les sections.
-        Long scope = CourseEquivalenceService.scopeSection(sectionId, courseId);
+        // Équivalences (V15) : un cours inclut ses cours liés, une section inclut les cours liés
+        // à ses propres cours (voir CourseEquivalenceService.resolve).
+        CourseEquivalenceService.Scope resolved = courseEquivalenceService.resolve(sectionId, courseId);
+        List<Long> courseIds = resolved.courseIds();
+        Long scope = resolved.sectionId();
 
         if (query != null && !query.isBlank()) {
             MeilisearchService.SearchResult result = meilisearchService.search(
@@ -582,9 +583,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Map<String, Long> getCategoryCounts(Long sectionId, Long courseId) {
-        return documentRepository.countByCategory(
-                        CourseEquivalenceService.scopeSection(sectionId, courseId),
-                        courseEquivalenceService.expand(courseId)).stream()
+        CourseEquivalenceService.Scope resolved = courseEquivalenceService.resolve(sectionId, courseId);
+        return documentRepository.countByCategory(resolved.sectionId(), resolved.courseIds()).stream()
                 .collect(Collectors.toMap(
                         row -> ((Category) row[0]).name(),
                         row -> (Long) row[1]));
