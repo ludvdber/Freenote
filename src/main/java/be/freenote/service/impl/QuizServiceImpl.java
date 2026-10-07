@@ -57,6 +57,8 @@ public class QuizServiceImpl implements QuizService {
     private static final long MAX_DURATION_MS = 3L * 3600 * 1000;
     /** Préfixe Redis de l'horodatage de départ posé par {@code play} (anti-triche classement). */
     private static final String PLAY_START_PREFIX = "quiz:play-start:";
+    private static final String ANON_PLAY_PREFIX = "quiz:anon-play:";
+    private static final java.time.Duration ANON_PLAY_DEDUP = java.time.Duration.ofHours(24);
 
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository attemptRepository;
@@ -163,7 +165,7 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     @Transactional
-    public AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request) {
+    public AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request, String anonymousKey) {
         Quiz quiz = accessibleQuiz(quizId, userId, false);
         // Joueur anonyme (révision publique) : la partie est corrigée serveur comme les autres,
         // mais AUCUN essai n'est persisté — hors classement par construction, rang 0.
@@ -207,10 +209,14 @@ public class QuizServiceImpl implements QuizService {
             attemptRepository.save(QuizAttempt.builder()
                     .quiz(quiz).user(user).score(score).total(total).durationMs(duration).build());
         }
-        quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
-        // Série journalière « parties de quiz » (panel admin) — l'attemptCount par quiz est cumulatif ;
-        // la cible porte l'id du quiz, d'où un top sur la période demandée.
-        trackingService.increment(be.freenote.service.TrackingService.METRIC_QUIZ_PLAY, String.valueOf(quizId));
+        // Une partie anonyme n'est comptée qu'une fois par quiz, par IP et par 24 h : la route est
+        // publique, et sans ça 60 envois par heure gonflaient le compteur affiché sur le quiz.
+        if (user != null || firstAnonymousPlay(quizId, anonymousKey)) {
+            quizRepository.incrementAttemptCount(quizId); // atomic, concurrency-safe
+            // Série journalière « parties de quiz » (panel admin) — l'attemptCount par quiz est
+            // cumulatif ; la cible porte l'id du quiz, d'où un top sur la période demandée.
+            trackingService.increment(be.freenote.service.TrackingService.METRIC_QUIZ_PLAY, String.valueOf(quizId));
+        }
 
         int rank = user == null ? 0 : rankOf(quizId, userId);
         return new AttemptResultResponse(score, total, duration, correct, correctAnswers, explanations, rank);
@@ -313,6 +319,18 @@ public class QuizServiceImpl implements QuizService {
             return course.getSection();
         }
         return sectionId == null ? null : Repositories.findByIdOrThrow(sectionRepository, sectionId, "Section");
+    }
+
+    private boolean firstAnonymousPlay(Long quizId, String anonymousKey) {
+        if (anonymousKey == null) {
+            return true;
+        }
+        try {
+            return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(
+                    ANON_PLAY_PREFIX + quizId + ":" + anonymousKey, "1", ANON_PLAY_DEDUP));
+        } catch (Exception e) {
+            return true; // Redis indisponible : compter plutôt que perdre la partie
+        }
     }
 
     private static String playKey(Long quizId, Long userId) {

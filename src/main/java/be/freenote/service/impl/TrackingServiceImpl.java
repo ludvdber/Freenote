@@ -40,6 +40,21 @@ public class TrackingServiceImpl implements TrackingService {
     private static final Pattern SLUG = Pattern.compile("^[a-z0-9][a-z0-9-]{0,99}$");
     private static final Pattern NUMERIC = Pattern.compile("^\\d{1,18}$");
 
+    /**
+     * Plafond de cibles DISTINCTES par jour pour les métriques dont la cible vient du client. La
+     * whitelist ne vérifie que la FORME (un slug, un nombre) : sans plafond, n'importe qui — le
+     * collecteur est public et sans CSRF — créait 60 lignes par minute et par IP dans daily_stats,
+     * gardées 400 jours et affichées dans le panneau Campagnes. Une cible déjà vue dans la journée
+     * passe toujours : seul un afflux de NOUVELLES cibles est coupé. Large au-dessus du réel
+     * (11 outils, quelques campagnes, quelques centaines de guides et de profils actifs).
+     */
+    private static final Map<String, Integer> DAILY_TARGET_CAP = Map.of(
+            METRIC_CAMPAIGN, 50,
+            METRIC_TOOL, 50,
+            METRIC_GUIDE, 500,
+            METRIC_PROFILE, 5000);
+    private static final String TARGETS_PREFIX = "stats:targets:";
+
     /** Requête de recherche normalisée : lettres, chiffres, espaces et tirets, 60 caractères max. */
     private static final int SEARCH_MISS_MAX_LENGTH = 60;
     private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9 -]");
@@ -80,17 +95,17 @@ public class TrackingServiceImpl implements TrackingService {
             case METRIC_CAMPAIGN -> {
                 // Même whitelist que les slugs d'outils : une valeur de ?src= forgée ne crée pas
                 // de ligne arbitraire dans la table.
-                if (SLUG.matcher(target).matches()) {
+                if (SLUG.matcher(target).matches() && withinDailyTargetCap(METRIC_CAMPAIGN, target)) {
                     increment(METRIC_CAMPAIGN, target);
                 }
             }
             case METRIC_TOOL, METRIC_GUIDE -> {
-                if (SLUG.matcher(target).matches()) {
+                if (SLUG.matcher(target).matches() && withinDailyTargetCap(metric, target)) {
                     increment(metric, target);
                 }
             }
             case METRIC_PROFILE -> {
-                if (!NUMERIC.matcher(target).matches()) {
+                if (!NUMERIC.matcher(target).matches() || !withinDailyTargetCap(METRIC_PROFILE, target)) {
                     return;
                 }
                 // Une vue de profil par (profil, viewer) par 24 h — sinon F5 gonfle le compteur.
@@ -101,6 +116,31 @@ public class TrackingServiceImpl implements TrackingService {
                 }
             }
             default -> { /* métrique inconnue — ignorée */ }
+        }
+    }
+
+    /** Vrai si la cible est déjà connue aujourd'hui, ou s'il reste de la place sous le plafond. */
+    boolean withinDailyTargetCap(String metric, String target) {
+        Integer cap = DAILY_TARGET_CAP.get(metric);
+        if (cap == null) {
+            return true;
+        }
+        try {
+            String key = TARGETS_PREFIX + LocalDate.now() + ":" + metric;
+            Long added = redisTemplate.opsForSet().add(key, target);
+            redisTemplate.expire(key, BUFFER_TTL);
+            if (added == null || added == 0) {
+                return true;
+            }
+            Long size = redisTemplate.opsForSet().size(key);
+            if (size != null && size > cap) {
+                redisTemplate.opsForSet().remove(key, target);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            // Même règle que increment : les stats ne cassent rien (et sans Redis, rien n'est compté).
+            return true;
         }
     }
 

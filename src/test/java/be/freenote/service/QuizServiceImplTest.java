@@ -203,6 +203,24 @@ class QuizServiceImplTest {
         verify(quizRepository, never()).save(any());
     }
 
+    /**
+     * La route des parties est publique : un anonyme ne compte qu'une partie par quiz, par IP et par
+     * 24 h — avant, 60 envois par heure gonflaient le compteur affiché sur le quiz.
+     */
+    @Test
+    void anonymousReplaysFromTheSameIpCountOnce() {
+        Quiz quiz = Quiz.builder().id(7L).questionCount(1).questions(List.of(mcqJson("Q1", 0, "a", "b"))).build();
+        when(quizRepository.findById(7L)).thenReturn(Optional.of(quiz));
+        when(valueOps.setIfAbsent(eq("quiz:anon-play:7:203.0.113.9"), eq("1"), any(java.time.Duration.class)))
+                .thenReturn(true, false);
+
+        service.submit(null, 7L, new SubmitAttemptRequest(List.of("0"), 1000), "203.0.113.9");
+        service.submit(null, 7L, new SubmitAttemptRequest(List.of("0"), 1000), "203.0.113.9");
+
+        verify(quizRepository, times(1)).incrementAttemptCount(7L);
+        verify(attemptRepository, never()).save(any());
+    }
+
     @Test
     void shouldGradeMcqServerSideAndClampDuration() {
         Quiz quiz = Quiz.builder().id(7L).questionCount(3)

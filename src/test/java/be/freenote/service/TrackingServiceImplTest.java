@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -25,6 +26,7 @@ class TrackingServiceImplTest {
     @Mock private DailyStatRepository dailyStatRepository;
     @Mock private HashOperations<String, Object, Object> hashOps;
     @Mock private ValueOperations<String, String> valueOps;
+    @Mock private SetOperations<String, String> setOps;
 
     @InjectMocks private TrackingServiceImpl trackingService;
 
@@ -165,5 +167,31 @@ class TrackingServiceImplTest {
 
         verify(hashOps).increment(todayKey(), "campaign|qr-rentree-2026", 1);
         verify(hashOps, never()).increment(todayKey(), "campaign|QR Rentrée", 1);
+    }
+
+    /** Le collecteur est public et sans CSRF : au-delà du plafond, une NOUVELLE campagne est ignorée. */
+    @Test
+    void ignoresANewCampaignOnceTheDailyCapIsReached() {
+        String key = "stats:targets:" + LocalDate.now() + ":campaign";
+        when(redisTemplate.opsForSet()).thenReturn(setOps);
+        when(setOps.add(key, "spam-51")).thenReturn(1L);
+        when(setOps.size(key)).thenReturn(51L);
+
+        trackingService.trackClientEvent("campaign", "spam-51", "1");
+
+        verify(hashOps, never()).increment(eq(todayKey()), eq("campaign|spam-51"), anyLong());
+        verify(setOps).remove(key, "spam-51");
+    }
+
+    /** Une campagne déjà vue aujourd'hui passe toujours, plafond atteint ou non. */
+    @Test
+    void stillCountsACampaignAlreadySeenToday() {
+        when(redisTemplate.opsForSet()).thenReturn(setOps);
+        when(setOps.add(anyString(), eq("qr-rentree-2026"))).thenReturn(0L);
+
+        trackingService.trackClientEvent("campaign", "qr-rentree-2026", "1");
+
+        verify(hashOps).increment(todayKey(), "campaign|qr-rentree-2026", 1);
+        verify(setOps, never()).size(anyString());
     }
 }

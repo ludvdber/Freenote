@@ -291,6 +291,8 @@ class UserServiceImplTest {
 
         assertThat(user.isVerified()).isFalse();
         assertThat(user.getRole()).isEqualTo("USER");
+        // ROLE_VERIFIED vit dans le jeton : sans révocation, l'accès aux contenus survivait 24 h.
+        verify(jwtRevocationService).revokeAllForUser(1L);
     }
 
     @Test
@@ -327,6 +329,8 @@ class UserServiceImplTest {
 
         assertThat(user.getRole()).isEqualTo("ADMIN");
         assertThat(user.isVerified()).isTrue();
+        // Une promotion ne coupe pas la session : le filtre staff accorde le rôle en direct.
+        verify(jwtRevocationService, never()).revokeAllForUser(any());
     }
 
     @Test
@@ -344,6 +348,26 @@ class UserServiceImplTest {
 
         assertThat(user.getRole()).isEqualTo("USER");
         assertThat(user.isVerified()).isFalse();
+        verify(jwtRevocationService).revokeAllForUser(1L);
+    }
+
+    /**
+     * Admin repassé VERIFIED : il reste vérifié, mais son jeton portait ROLE_ADMIN pour 24 h — il
+     * gardait la main sur les contenus des autres, actuator et les limites de débit.
+     */
+    @Test
+    void adminUpdateRole_shouldRevokeTokensWhenAnAdminIsDemoted() {
+        User user = userWithProfile();
+        user.setRole("ADMIN");
+        user.setVerified(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user, 0L)).thenReturn(stubResponse());
+
+        userService.adminUpdateRole(1L, "VERIFIED");
+
+        assertThat(user.isVerified()).isTrue();
+        verify(jwtRevocationService).revokeAllForUser(1L);
     }
 
     @Test

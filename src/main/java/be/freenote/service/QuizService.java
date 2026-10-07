@@ -36,8 +36,15 @@ public interface QuizService {
     QuizFullResponse full(Long id, Long callerId, boolean isAdmin);
 
     /** Grade a finished play server-side and persist the attempt. {@code userId} null = joueur
-     *  anonyme : corrigé mais rien n'est persisté (pas d'essai, rang 0 — hors classement). */
-    AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request);
+     *  anonyme : corrigé mais rien n'est persisté (pas d'essai, rang 0 — hors classement).
+     *  {@code anonymousKey} (l'IP) déduplique le compteur de parties d'un anonyme : une par quiz et
+     *  par 24 h. Un joueur vérifié compte à chaque partie. */
+    AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request, String anonymousKey);
+
+    /** Partie d'un joueur identifié (aucune clé anonyme nécessaire). */
+    default AttemptResultResponse submit(Long userId, Long quizId, SubmitAttemptRequest request) {
+        return submit(userId, quizId, request, null);
+    }
 
     /** Best attempt per user, ranked (score DESC, duration ASC), capped to {@code size}. */
     List<QuizLeaderboardEntry> leaderboard(Long quizId, int size, Long callerId, boolean isAdmin);

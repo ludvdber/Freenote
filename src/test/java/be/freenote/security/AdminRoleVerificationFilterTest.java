@@ -69,18 +69,65 @@ class AdminRoleVerificationFilterTest {
     // --- Périmètre ---
 
     @Test
-    void ignoreToutCeQuiNEstPasUneRouteAdmin() {
-        assertThat(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/documents/1"))).isTrue();
-        assertThat(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/admin/users"))).isFalse();
+    void reconnaitLesRoutesAdmin() {
+        assertThat(AdminRoleVerificationFilter.isAdminPath(new MockHttpServletRequest("GET", "/api/documents/1"))).isFalse();
+        assertThat(AdminRoleVerificationFilter.isAdminPath(new MockHttpServletRequest("GET", "/api/admin/users"))).isTrue();
+    }
+
+    /** « /api/administration » n'est pas une route du panel. */
+    @Test
+    void neConfondPasUnCheminQuiCommenceParAdminSansSlash() {
+        assertThat(AdminRoleVerificationFilter.isAdminPath(new MockHttpServletRequest("GET", "/api/administration"))).isFalse();
     }
 
     /**
-     * Un chemin qui COMMENCE par « /api/admin » sans le slash (ex. « /api/administration ») ne doit
-     * pas être pris pour une route du panel — d'où le préfixe avec slash final dans le filtre.
+     * Spring décode le chemin avant de router : « /api/%61dmin/… » atteint le panel. Le filtre
+     * comparait l'adresse BRUTE et laissait passer un admin rétrogradé (vu en test d'intégration).
      */
     @Test
-    void neConfondPasUnCheminQuiCommenceParAdminSansSlash() {
-        assertThat(filter.shouldNotFilter(new MockHttpServletRequest("GET", "/api/administration"))).isTrue();
+    void reconnaitUneRouteAdminEncodee() {
+        MockHttpServletRequest encoded = new MockHttpServletRequest("GET", "/api/%61dmin/analytics");
+        assertThat(AdminRoleVerificationFilter.isAdminPath(encoded)).isTrue();
+    }
+
+    /** Hors du panel, un jeton sans ROLE_ADMIN ne coûte aucune requête en base. */
+    @Test
+    void neConsultePasLaBaseHorsDuPanelPourUnNonAdmin() throws Exception {
+        authenticateAs(5L, "ROLE_USER", "ROLE_VERIFIED");
+
+        filter.doFilter(new MockHttpServletRequest("GET", "/api/quizzes/3"), response, filterChain);
+
+        verify(userRepository, never()).findById(anyLong());
+        verify(filterChain).doFilter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    /**
+     * Hors du panel, le ROLE_ADMIN d'un jeton périmé ouvrait encore les contenus des autres, actuator
+     * et l'exemption de limites de débit : il est retiré, sans bloquer la requête elle-même.
+     */
+    @Test
+    void retireLeRoleAdminDUnJetonPerimeHorsDuPanel() throws Exception {
+        authenticateAs(5L, "ROLE_USER", "ROLE_VERIFIED", "ROLE_ADMIN");
+        when(userRepository.findById(5L)).thenReturn(Optional.of(staff(5L, "VERIFIED", false, false)));
+
+        filter.doFilter(new MockHttpServletRequest("DELETE", "/api/quizzes/3"), response, filterChain);
+
+        assertThat(currentAuthorities()).containsExactly("ROLE_USER", "ROLE_VERIFIED");
+        verify(filterChain).doFilter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    /**
+     * Admin rétrogradé mais resté modérateur : il passe le filtre (il est staff), et son ancien
+     * ROLE_ADMIN restait en place — tout le panel, jusqu'à se repromouvoir lui-même.
+     */
+    @Test
+    void unAdminRetrogradeResteModerateurPerdSonRoleAdmin() throws Exception {
+        authenticateAs(5L, "ROLE_USER", "ROLE_VERIFIED", "ROLE_ADMIN");
+        when(userRepository.findById(5L)).thenReturn(Optional.of(staff(5L, "VERIFIED", true, false)));
+
+        filter.doFilter(adminRequest(), response, filterChain);
+
+        assertThat(currentAuthorities()).containsExactly("ROLE_MODERATOR", "ROLE_USER", "ROLE_VERIFIED");
     }
 
     // --- Refus ---

@@ -11,6 +11,7 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.security.SecurityUtils;
 import be.freenote.security.ratelimit.RateLimit;
 import be.freenote.service.QuizService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -93,14 +94,17 @@ public class QuizController {
     /** Correction serveur d'une partie. Sans compte VÉRIFIÉ ({@code userId} null) : corrigé mais
      *  RIEN n'est enregistré — pas d'essai, pas de rang (le classement reste réservé aux étudiants ;
      *  un compte pré-onboarding joue comme un anonyme, son pseudo placeholder n'y apparaît jamais).
-     *  Le compteur de popularité est bumpé dans tous les cas. */
+     *  Le compteur de popularité compte chaque partie d'un vérifié, et une partie anonyme par quiz,
+     *  par IP et par 24 h. */
     @PostMapping("/{id}/attempts")
     @RateLimit(max = 60, window = 3600)
     public ResponseEntity<AttemptResultResponse> submit(Authentication authentication,
                                                         @PathVariable Long id,
-                                                        @Valid @RequestBody SubmitAttemptRequest request) {
+                                                        @Valid @RequestBody SubmitAttemptRequest request,
+                                                        HttpServletRequest httpRequest) {
         Long userId = isVerified(authentication) ? SecurityUtils.currentUserIdOrNull(authentication) : null;
-        return ResponseEntity.ok(service.submit(userId, id, request));
+        String anonymousKey = userId == null ? httpRequest.getRemoteAddr() : null;
+        return ResponseEntity.ok(service.submit(userId, id, request, anonymousKey));
     }
 
     @GetMapping("/{id}/leaderboard")

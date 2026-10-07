@@ -355,11 +355,16 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse adminUnverifyUser(Long userId) {
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        boolean wasVerified = user.isVerified();
         user.setVerified(false);
         if ("VERIFIED".equals(user.getRole())) {
             user.setRole("USER");
         }
         User saved = userRepository.save(user);
+        if (wasVerified) {
+            // ROLE_VERIFIED vit dans le jeton : sans ça, l'accès aux contenus survivait 24 h.
+            jwtRevocationService.revokeAllForUser(userId);
+        }
         long docCount = documentRepository.countByUserId(userId);
         log.info("Admin revoked verification for user: id={}, username={}", userId, user.getUsername());
         return userMapper.toResponse(saved, docCount);
@@ -429,6 +434,8 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Role must be USER, VERIFIED or ADMIN");
         }
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
+        boolean wasAdmin = "ADMIN".equals(user.getRole());
+        boolean wasVerified = user.isVerified();
         user.setRole(role);
         if (role.equals("VERIFIED") || role.equals("ADMIN")) {
             user.setVerified(true);
@@ -438,6 +445,12 @@ public class UserServiceImpl implements UserService {
             user.setVerified(false);
         }
         User saved = userRepository.save(user);
+        // Le rôle et la vérification voyagent dans le jeton (24 h) : sans révocation, un admin
+        // rétrogradé gardait ROLE_ADMIN partout où le jeton fait foi (contenus des autres, actuator,
+        // limites de débit). Une promotion, elle, n'a pas besoin de couper la session.
+        if ((wasAdmin && !"ADMIN".equals(role)) || (wasVerified && !saved.isVerified())) {
+            jwtRevocationService.revokeAllForUser(userId);
+        }
         long docCount = documentRepository.countByUserId(userId);
         log.info("Admin updated role for user: id={}, role={}", userId, role);
         return userMapper.toResponse(saved, docCount);
