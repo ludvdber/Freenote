@@ -51,7 +51,7 @@ export default function LibraryShell<T extends ShellItem>({
   // (pattern render-adjust — pas d'effet pour un ajustement dérivé des données).
   if (items && !scopeInit) {
     setScopeInit(true);
-    if (!forceAllScope && mySectionId != null && items.some((it) => it.sectionId === mySectionId)) {
+    if (!forceAllScope && mySectionId != null && filterByScope(items, mySectionId).length > 0) {
       setScope(mySectionId);
     }
   }

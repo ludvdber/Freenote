@@ -52,3 +52,37 @@ describe('matchesQuery', () => {
     expect(matchesQuery('Java', '  ')).toBe(true);
   });
 });
+
+// Cas réel : « Statistiques » lié entre Informatique (4) et Marketing (6), quiz déposé côté Informatique.
+describe('équivalences de cours', () => {
+  const statsQuiz = {
+    ...item(4, 'Informatique', 30, 'Statistiques', 'Quiz stats'),
+    linkedCourses: [{ courseId: 31, courseName: 'Statistiques', sectionId: 6, sectionName: 'Marketing' }],
+  };
+  const items = [statsQuiz, item(6, 'Marketing', 20, 'Communication', 'Quiz com')];
+
+  it('range le quiz aussi sous la section liée, présenté sous le cours équivalent', () => {
+    const marketing = filterByScope(items, 6);
+    expect(marketing.map((i) => i.title)).toEqual(['Quiz stats', 'Quiz com']);
+    expect(marketing[0]).toMatchObject({ sectionId: 6, courseId: 31, courseName: 'Statistiques' });
+    expect(groupByCourse(marketing).map((g) => g.courseName)).toEqual(['Communication', 'Statistiques']);
+  });
+
+  it('compte le quiz dans la chip de la section liée', () => {
+    expect(sectionCounts(items)).toEqual(
+      expect.arrayContaining([
+        { id: 4, name: 'Informatique', count: 1 },
+        { id: 6, name: 'Marketing', count: 2 },
+      ]),
+    );
+  });
+
+  it('ne le duplique pas dans la vue « Tout »', () => {
+    expect(filterByScope(items, 'all')).toHaveLength(2);
+    expect(groupBySection(filterByScope(items, 'all')).map((g) => g.items.length)).toEqual([1, 1]);
+  });
+
+  it('garde sa présentation propre dans sa section d\'origine', () => {
+    expect(filterByScope(items, 4)).toEqual([statsQuiz]);
+  });
+});

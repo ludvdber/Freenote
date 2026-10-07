@@ -52,6 +52,14 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Long> findIdsBySectionIdOrEquivalenceGroupIn(@Param("sectionId") Long sectionId,
                                                      @Param("groups") List<Long> groups);
 
+    /** Couples (id, groupe) des cours donnés qui appartiennent à un groupe d'équivalence. */
+    @Query("SELECT c.id, c.equivalenceGroup FROM Course c WHERE c.id IN :ids AND c.equivalenceGroup IS NOT NULL")
+    List<Object[]> findEquivalenceGroupsByIds(@Param("ids") List<Long> ids);
+
+    /** Membres de plusieurs groupes avec leur section (anti-N+1 des bibliothèques de révision). */
+    @Query("SELECT c FROM Course c JOIN FETCH c.section WHERE c.equivalenceGroup IN :groups")
+    List<Course> findWithSectionByEquivalenceGroupIn(@Param("groups") List<Long> groups);
+
     /** Membres d'un groupe avec leur section (bandeau page cours + dialog admin — anti-N+1). */
     @Query("SELECT c FROM Course c JOIN FETCH c.section WHERE c.equivalenceGroup = :group ORDER BY c.name")
     List<Course> findByEquivalenceGroupWithSection(@Param("group") Long group);
@@ -63,13 +71,16 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
      * documenté dans CLAUDE.md), et la section est justement fetch-jointe ici pour le groupage.
      * Un cours LIÉ à un cours alimenté n'est pas un manque : sa page et l'Explorer montrent déjà ces
      * documents (équivalences V15), l'annoncer vide contredirait ce que l'étudiant voit en cliquant.
+     * Deux NOT EXISTS séparés et non un OU dans un seul : un OU dans la sous-requête corrélée empêche
+     * PostgreSQL d'en faire une anti-jointure indexée, il rebalaierait les documents pour chaque cours.
      */
     @Query("""
         SELECT c FROM Course c JOIN FETCH c.section
         WHERE c.approved = true
-          AND NOT EXISTS (SELECT 1 FROM Document d JOIN d.course dc
-                          WHERE dc = c
-                             OR (c.equivalenceGroup IS NOT NULL AND dc.equivalenceGroup = c.equivalenceGroup))
+          AND NOT EXISTS (SELECT 1 FROM Document d WHERE d.course = c)
+          AND (c.equivalenceGroup IS NULL
+               OR NOT EXISTS (SELECT 1 FROM Document d2 JOIN d2.course dc
+                              WHERE dc.equivalenceGroup = c.equivalenceGroup))
         """)
     List<Course> findApprovedWithoutDocuments();
 

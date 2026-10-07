@@ -443,6 +443,14 @@ export interface PublishDeckRequest {
   published: boolean;
 }
 
+/** Cours équivalent (V15) d'un quiz / paquet dans une autre section — rangement des bibliothèques. */
+export interface LinkedCourseRef {
+  courseId: number;
+  courseName: string;
+  sectionId: number;
+  sectionName: string;
+}
+
 export interface FlashcardDeckSummary {
   id: number;
   title: string;
@@ -458,6 +466,8 @@ export interface FlashcardDeckSummary {
   published: boolean;
   /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
   owned: boolean;
+  /** Équivalents du cours ailleurs : le paquet apparaît aussi sous ces sections. */
+  linkedCourses?: LinkedCourseRef[];
 }
 
 export interface FlashcardDeckResponse extends FlashcardDeckSummary {
@@ -515,6 +525,8 @@ export interface QuizSummary {
   published: boolean;
   /** Calcule pour l'appelant — pilote les actions editer/supprimer. */
   owned: boolean;
+  /** Équivalents du cours ailleurs : le quiz apparaît aussi sous ces sections. */
+  linkedCourses?: LinkedCourseRef[];
 }
 
 /** Vue complete d'un quiz, REPONSES INCLUSES — edition (proprietaire) ou import (quiz publie). */

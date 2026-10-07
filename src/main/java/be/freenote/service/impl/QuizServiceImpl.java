@@ -8,6 +8,7 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.dto.response.QuizFullResponse;
 import be.freenote.dto.response.QuizLeaderboardEntry;
 import be.freenote.dto.response.QuizListRow;
+import be.freenote.dto.response.LinkedCourseRef;
 import be.freenote.dto.response.QuizPlayResponse;
 import be.freenote.dto.response.QuizSummary;
 import be.freenote.entity.Course;
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -115,16 +117,18 @@ public class QuizServiceImpl implements QuizService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<QuizSummary> list(Long courseId, Long sectionId, Long ownerId, Pageable pageable, Long callerId) {
-        // Équivalences (V15) : les quiz de « Stats (Compta) » remontent aussi pour « Stats (Info) ».
-        // Une section seule inclut aussi les cours liés à ses cours, mais par un OU sur le filtre
-        // section : un quiz / paquet « toute la section » n'a pas de cours, une liste de cours seule
-        // l'exclurait. resolve() renvoie alors la section entière + ses liens, d'où le OU.
-        CourseEquivalenceService.Scope resolved = courseEquivalenceService.resolve(sectionId, courseId);
+        // Équivalences (V15) : les quiz de « Stats (Compta) » remontent aussi pour « Stats (Info) »
         Page<QuizListRow> page = quizRepository.findPublishedRows(
-                courseId != null ? resolved.courseIds() : null,
-                CourseEquivalenceService.scopeSection(sectionId, courseId),
-                courseId != null ? null : resolved.courseIds(), ownerId, pageable);
-        return PageResponse.from(page, page.getContent().stream().map(r -> QuizMapper.toSummary(r, callerId)).toList());
+                courseEquivalenceService.expand(courseId),
+                CourseEquivalenceService.scopeSection(sectionId, courseId), ownerId, pageable);
+        List<QuizSummary> content = page.getContent().stream().map(r -> QuizMapper.toSummary(r, callerId)).toList();
+        // La bibliothèque range par section dans le navigateur : chaque élément y porte ses cours
+        // équivalents, pour apparaître aussi sous les sections où le même cours existe.
+        Map<Long, List<LinkedCourseRef>> linked = courseEquivalenceService.linkedCourses(
+                content.stream().map(QuizSummary::courseId).toList());
+        return PageResponse.from(page, content.stream()
+                .map(s -> s.courseId() == null ? s : s.withLinkedCourses(linked.getOrDefault(s.courseId(), List.of())))
+                .toList());
     }
 
     @Override

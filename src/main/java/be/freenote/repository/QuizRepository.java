@@ -41,12 +41,10 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      * {@link DocumentRepository#findFiltered}.
      */
     default Page<QuizListRow> findPublishedRows(java.util.Collection<Long> courseIds, Long sectionId,
-                                                java.util.Collection<Long> linkedCourseIds,
                                                 Long ownerId, Pageable pageable) {
         boolean allCourses = courseIds == null || courseIds.isEmpty();
-        boolean withLinked = linkedCourseIds != null && !linkedCourseIds.isEmpty();
         return findPublishedRowsByCourses(allCourses, allCourses ? java.util.List.of(-1L) : courseIds,
-                sectionId, withLinked, withLinked ? linkedCourseIds : java.util.List.of(-1L), ownerId, pageable);
+                sectionId, ownerId, pageable);
     }
 
     @Query("""
@@ -56,15 +54,13 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
         FROM Quiz q LEFT JOIN q.owner o LEFT JOIN o.profile p LEFT JOIN q.course c LEFT JOIN q.section s
         WHERE q.published = true
           AND (:allCourses = true OR c.id IN :courseIds)
-          AND (:sectionId IS NULL OR s.id = :sectionId OR (:withLinked = true AND c.id IN :linkedCourseIds))
+          AND (:sectionId IS NULL OR s.id = :sectionId)
           AND (:ownerId IS NULL OR o.id = :ownerId)
         ORDER BY q.createdAt DESC
         """)
     Page<QuizListRow> findPublishedRowsByCourses(@Param("allCourses") boolean allCourses,
                                                  @Param("courseIds") java.util.Collection<Long> courseIds,
                                                  @Param("sectionId") Long sectionId,
-                                                 @Param("withLinked") boolean withLinked,
-                                                 @Param("linkedCourseIds") java.util.Collection<Long> linkedCourseIds,
                                                  @Param("ownerId") Long ownerId,
                                                  Pageable pageable);
 

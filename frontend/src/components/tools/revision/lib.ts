@@ -13,6 +13,21 @@ export interface RevisionLink {
   sectionName?: string | null;
   courseId?: number | null;
   courseName?: string | null;
+  /** Même cours dans d'autres sections (équivalences V15) : l'élément y est aussi rangé. */
+  linkedCourses?: LinkedCourse[] | null;
+}
+
+export interface LinkedCourse {
+  courseId: number;
+  courseName: string;
+  sectionId: number;
+  sectionName: string;
+}
+
+/** Le lien vers la section donnée, s'il existe et n'est pas la section propre de l'élément. */
+function linkIn(it: RevisionLink, sectionId: number): LinkedCourse | undefined {
+  if (it.sectionId === sectionId) return undefined;
+  return it.linkedCourses?.find((l) => l.sectionId === sectionId);
 }
 
 /** Périmètre de la bibliothèque : toutes sections, une section, ou « sans section ». */
@@ -38,7 +53,9 @@ export interface SectionGroup<T> {
   items: T[];
 }
 
-/** Compteurs par section, plus fournies d'abord ; « sans section » (id null) toujours en dernier. */
+/** Compteurs par section, plus fournies d'abord ; « sans section » (id null) toujours en dernier.
+ *  Un élément compte aussi dans les sections où son cours a un équivalent : le compteur d'une chip
+ *  doit annoncer ce qu'on verra en cliquant dessus. */
 export function sectionCounts<T extends RevisionLink>(items: T[]): SectionCount[] {
   const map = new Map<number | null, SectionCount>();
   for (const it of items) {
@@ -49,6 +66,17 @@ export function sectionCounts<T extends RevisionLink>(items: T[]): SectionCount[
     } else {
       map.set(key, { id: key, name: it.sectionName ?? null, count: 1 });
     }
+    const seen = new Set<number>();
+    for (const link of it.linkedCourses ?? []) {
+      if (link.sectionId === key || seen.has(link.sectionId)) continue;
+      seen.add(link.sectionId);
+      const linked = map.get(link.sectionId);
+      if (linked) {
+        linked.count++;
+      } else {
+        map.set(link.sectionId, { id: link.sectionId, name: link.sectionName, count: 1 });
+      }
+    }
   }
   return [...map.values()].sort((a, b) => {
     if (a.id === null) return 1;
@@ -57,10 +85,33 @@ export function sectionCounts<T extends RevisionLink>(items: T[]): SectionCount[
   });
 }
 
+/**
+ * Éléments d'un périmètre. Dans une section, un élément dont le cours y a un équivalent est inclus
+ * et PRÉSENTÉ sous ce cours équivalent : le quiz de « Statistiques » (Informatique) se range sous
+ * « Statistiques » de Marketing, à côté des quiz déposés là. Les vues « Tout » et « sans section »
+ * ne montrent chaque élément qu'une fois, sous sa section propre.
+ */
 export function filterByScope<T extends RevisionLink>(items: T[], scope: SectionScope): T[] {
   if (scope === 'all') return items;
   if (scope === 'none') return items.filter((it) => it.sectionId == null);
-  return items.filter((it) => it.sectionId === scope);
+  const result: T[] = [];
+  for (const it of items) {
+    if (it.sectionId === scope) {
+      result.push(it);
+      continue;
+    }
+    const link = linkIn(it, scope);
+    if (link) {
+      result.push({
+        ...it,
+        sectionId: link.sectionId,
+        sectionName: link.sectionName,
+        courseId: link.courseId,
+        courseName: link.courseName,
+      });
+    }
+  }
+  return result;
 }
 
 /** Groupes par cours d'un périmètre section : « toute la section » (cours null) D'ABORD,

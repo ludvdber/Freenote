@@ -1,6 +1,10 @@
 package be.freenote.service;
 
+import be.freenote.dto.response.LinkedCourseRef;
+
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Expansion des groupes d'équivalence de cours (V15) : un filtre « par cours » devient un filtre
@@ -27,6 +31,13 @@ public interface CourseEquivalenceService {
      * s'arrêtait là. Une section sans aucun cours lié garde son filtre section tel quel.</p>
      */
     Scope resolve(Long sectionId, Long courseId);
+
+    /**
+     * Pour chaque cours donné, les AUTRES cours de son groupe avec leur section (absent de la map si
+     * non lié). Deux requêtes quel que soit le nombre de cours : sert aux bibliothèques de révision,
+     * qui rangent quiz et paquets par section dans le navigateur.
+     */
+    Map<Long, List<LinkedCourseRef>> linkedCourses(Collection<Long> courseIds);
 
     /** {@code courseIds == null} = pas de filtre cours ; {@code sectionId == null} = pas de filtre section. */
     record Scope(Long sectionId, List<Long> courseIds) {}

@@ -30,7 +30,7 @@ public final class QuizMapper {
         return new QuizSummary(
                 r.id(), r.title(), r.description(), r.questionCount(), r.attemptCount(),
                 ownerName, r.courseId(), r.courseName(), r.sectionId(), r.sectionName(),
-                r.createdAt(), r.published(), owned);
+                r.createdAt(), r.published(), owned, List.of());
     }
 
     /** From the entity (create/update responses, where the row is already in memory). */
@@ -39,7 +39,7 @@ public final class QuizMapper {
         return new QuizSummary(
                 q.getId(), q.getTitle(), q.getDescription(), q.getQuestionCount(), q.getAttemptCount(),
                 ownerName(q), courseId(q), courseName(q), sectionId(q), sectionName(q),
-                q.getCreatedAt(), q.isPublished(), owned);
+                q.getCreatedAt(), q.isPublished(), owned, List.of());
     }
 
     public static QuizPlayResponse toPlay(Quiz q) {

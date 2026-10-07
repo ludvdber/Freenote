@@ -26,7 +26,7 @@ public final class FlashcardDeckMapper {
         return new FlashcardDeckSummary(
                 r.id(), r.title(), r.description(), r.cardCount(),
                 ownerName, r.courseId(), r.courseName(), r.sectionId(), r.sectionName(),
-                r.createdAt(), r.published(), owned);
+                r.createdAt(), r.published(), owned, List.of());
     }
 
     public static FlashcardDeckResponse toResponse(FlashcardDeck d, Long callerId) {

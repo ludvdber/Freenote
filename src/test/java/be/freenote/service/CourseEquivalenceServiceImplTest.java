@@ -1,5 +1,8 @@
 package be.freenote.service;
 
+import be.freenote.dto.response.LinkedCourseRef;
+import be.freenote.entity.Course;
+import be.freenote.entity.Section;
 import be.freenote.repository.CourseRepository;
 import be.freenote.service.impl.CourseEquivalenceServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -8,7 +11,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,6 +59,29 @@ class CourseEquivalenceServiceImplTest {
 
         assertThat(service.resolve(2L, 20L))
                 .isEqualTo(new CourseEquivalenceService.Scope(null, List.of(20L, 10L)));
+    }
+
+    @Test
+    void lesCoursLiesExcluentLeCoursLuiMeme() {
+        Section info = Section.builder().id(1L).name("Informatique").build();
+        Section marketing = Section.builder().id(2L).name("Marketing").build();
+        Course statsInfo = Course.builder().id(30L).name("Statistiques").section(info).equivalenceGroup(7L).build();
+        Course statsMkt = Course.builder().id(31L).name("Statistiques").section(marketing).equivalenceGroup(7L).build();
+        when(courseRepository.findEquivalenceGroupsByIds(List.of(30L, 40L)))
+                .thenReturn(List.<Object[]>of(new Object[]{30L, 7L}));
+        when(courseRepository.findWithSectionByEquivalenceGroupIn(List.of(7L))).thenReturn(List.of(statsInfo, statsMkt));
+
+        // 40L : cours non lié (absent de la map) ; null : quiz sans cours, ignoré ; 30L en double, dédoublonné.
+        Map<Long, List<LinkedCourseRef>> linked = service.linkedCourses(Arrays.asList(30L, 40L, null, 30L));
+
+        assertThat(linked).containsOnlyKeys(30L);
+        assertThat(linked.get(30L)).containsExactly(new LinkedCourseRef(31L, "Statistiques", 2L, "Marketing"));
+    }
+
+    @Test
+    void aucunCoursNeTouchePasLaBase() {
+        assertThat(service.linkedCourses(Arrays.asList(null, null))).isEmpty();
+        verifyNoInteractions(courseRepository);
     }
 
     @Test
