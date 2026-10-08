@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Chip, Alert } from '@mui/material';
-import { MailOutline, ReceiptLong } from '@mui/icons-material';
+import { MailOutlined, ReceiptLong } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +67,7 @@ export default function AdminAttention() {
         </Alert>
       )}
 
-      <Alert severity={severity} icon={<MailOutline />}>
+      <Alert severity={severity} icon={<MailOutlined />}>
         {smtp.daysSinceLastSent < 0
           ? t('admin.attention.smtpNever')
           : t('admin.attention.smtpLast', { count: smtp.daysSinceLastSent })}

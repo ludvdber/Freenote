@@ -1,5 +1,7 @@
 import api from './axiosInstance';
 import type {
+  AdminAttention,
+  OnboardingReminderResult,
   StatsResponse,
   DocumentResponse,
   PageResponse,

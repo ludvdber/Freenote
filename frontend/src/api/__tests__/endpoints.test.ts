@@ -114,6 +114,16 @@ describe('endpoints — GET', () => {
       params: { page: 0, size: 50, type: 'EMAIL_*', actor: 'spike' },
     });
   });
+
+  it('admin attention: overview, alert acknowledgement and onboarding reminder', async () => {
+    await ep.getAdminAttention();
+    expect(get).toHaveBeenCalledWith('/admin/attention');
+    await ep.acknowledgeAlerts();
+    expect(put).toHaveBeenCalledWith('/admin/alerts/acknowledge');
+    post.mockResolvedValueOnce({ data: { result: 'SENT' } });
+    await expect(ep.sendOnboardingReminder(9)).resolves.toBe('SENT');
+    expect(post).toHaveBeenCalledWith('/admin/users/9/onboarding-reminder');
+  });
 });
 
 describe('endpoints — POST/PUT/PATCH/DELETE', () => {

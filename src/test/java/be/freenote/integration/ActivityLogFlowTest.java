@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +33,8 @@ class ActivityLogFlowTest extends AbstractIntegrationTest {
                 row("EMAIL_CODE_SENT", "Spike", "Code accepté"),
                 row("EMAIL_CODE_REJECTED", "Spike", "Code incorrect"),
                 row("EMAIL_CODE_SENT", "Luxy", "Code accepté"),
-                row("UPLOAD", "Spike", "Synthèse")));
+                row("UPLOAD", "Spike", "Synthèse"),
+                row("STAFF_ACTION", "Chaimaa", "Rôle Modérateur accordé à Spike")));
     }
 
     private static ActivityLog row(String type, String actor, String message) {
@@ -53,7 +55,20 @@ class ActivityLogFlowTest extends AbstractIntegrationTest {
 
     @Test
     void pseudoSeulInsensibleALaCasse() {
-        assertThat(list(null, "SPIKE")).hasSize(3);
+        assertThat(list(null, "SPIKE")).hasSize(4);
+    }
+
+    /** Le texte cherche aussi dans le message : un pseudo remonte les actions du staff qui le visent. */
+    @Test
+    void texteTrouveLesActionsDuStaffQuiVisentLeCompte() {
+        assertThat(list("STAFF_ACTION", "spike")).containsExactly("STAFF_ACTION/Chaimaa");
+    }
+
+    @Test
+    void purgeManuelleEpargneLesActionsDuStaff() {
+        activityLogService.purgeBefore(LocalDateTime.now().plusMinutes(1));
+
+        assertThat(activityLogRepository.findAll()).extracting(ActivityLog::getType).containsExactly("STAFF_ACTION");
     }
 
     @Test
@@ -69,6 +84,6 @@ class ActivityLogFlowTest extends AbstractIntegrationTest {
     @Test
     void sansFiltre() {
         assertThat(activityLogService.list(null, null, PageRequest.of(0, 50)).content())
-                .extracting(ActivityLogResponse::type).hasSize(4);
+                .extracting(ActivityLogResponse::type).hasSize(5);
     }
 }
