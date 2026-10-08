@@ -41,6 +41,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u JOIN FETCH u.profile p WHERE p.showInCarousel = true ORDER BY u.xp DESC")
     List<User> findFeaturedProfiles(Pageable pageable);
 
+    /** Comptes connectés mais jamais vérifiés, créés dans la fenêtre donnée (file « inscriptions bloquées »). */
+    List<User> findTop30ByVerifiedFalseAndCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime from, LocalDateTime to);
+
     /** Colonne trusted seule — évite de charger l'entité User complète à chaque appel rate-limité. */
     @Query("SELECT u.trusted FROM User u WHERE u.id = :id")
     Optional<Boolean> findTrustedById(Long id);

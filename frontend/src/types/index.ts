@@ -174,6 +174,33 @@ export interface AdminOverviewResponse extends ModerationQueue {
 
 export type LabelCount = { label: string; count: number; id: number | null };
 
+export interface SmtpStatus {
+  lastSentEpochMs: number | null;
+  /** -1 = aucun envoi enregistré */
+  daysSinceLastSent: number;
+  keepAliveEnabled: boolean;
+  thresholdDays: number;
+}
+
+export interface StuckAccount {
+  id: number;
+  username: string;
+  usernameChosen: boolean;
+  createdAt: string;
+  lastEmailEvent: string | null;
+  lastEmailMessage: string | null;
+  lastEmailEventAt: string | null;
+  reminded: boolean;
+}
+
+export interface AdminAttention {
+  smtp: SmtpStatus;
+  systemAlerts: number;
+  stuckAccounts: StuckAccount[];
+}
+
+export type OnboardingReminderResult = 'SENT' | 'UNREACHABLE' | 'DISABLED' | 'FAILED';
+
 export interface AnalyticsResponse {
   days: number;
   /* Dernier jour inclus dans les KPI (= hier) : les fenêtres portent sur des jours COMPLETS. */

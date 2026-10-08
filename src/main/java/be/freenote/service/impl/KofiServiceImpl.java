@@ -7,6 +7,7 @@ import be.freenote.repository.DonationRepository;
 import be.freenote.repository.UserRepository;
 import be.freenote.service.KofiService;
 import be.freenote.service.SupporterPerksService;
+import be.freenote.service.SystemAlertService;
 import be.freenote.util.HashUtil;
 import be.freenote.util.KofiCode;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class KofiServiceImpl implements KofiService {
     private final UserRepository userRepository;
     private final DonationRepository donationRepository;
     private final SupporterPerksService supporterPerksService;
+    private final SystemAlertService systemAlertService;
 
     @Value("${app.kofi.verification-token:}")
     private String expectedToken;
@@ -39,6 +41,9 @@ public class KofiServiceImpl implements KofiService {
     public void processWebhook(KofiWebhookPayload payload) {
         if (expectedToken.isBlank() || !constantTimeEquals(expectedToken, payload.getVerificationToken())) {
             log.warn("Ko-fi webhook rejected: invalid verification token");
+            systemAlertService.raise("kofi", expectedToken.isBlank()
+                    ? "Webhook Ko-fi reçu mais KOFI_VERIFICATION_TOKEN est vide : tous les dons sont rejetés"
+                    : "Webhook Ko-fi rejeté (jeton invalide) : jeton changé côté Ko-fi, ou faux appel");
             return;
         }
 

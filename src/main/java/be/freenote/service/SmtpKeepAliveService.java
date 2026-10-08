@@ -35,6 +35,7 @@ public class SmtpKeepAliveService {
 
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
+    private final SystemAlertService systemAlertService;
 
     @Value("${app.email.from:noreply@freenote.be}")
     private String from;
@@ -48,17 +49,14 @@ public class SmtpKeepAliveService {
     @Value("${spring.mail.host:}")
     private String smtpHost;
 
-    /**
-     * Le keep-alive se désactive en SILENCE quand {@code MAIL_KEEPALIVE_TO} est vide — et la variable
-     * manquait au modèle de déploiement : en prod il n'a jamais tourné, et Brevo a marqué la clé
-     * inactive après 3 mois (2026-10-08). Avertir au démarrage dès que le SMTP pointe vers Brevo
-     * (pas en dev, où un SMTP local n'expire jamais).
-     */
+    /** Un keep-alive vide est silencieux — il a manqué en prod jusqu'au 2026-10-08. Avertir si le SMTP est Brevo. */
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void warnIfDisabled() {
         if (!isEnabled() && smtpHost != null && smtpHost.contains("brevo")) {
             log.warn("SMTP keep-alive DISABLED (MAIL_KEEPALIVE_TO is empty): Brevo deactivates an SMTP key "
                     + "after 3 months without use. Set MAIL_KEEPALIVE_TO in the environment.");
+            systemAlertService.raise("smtp-keepalive",
+                    "MAIL_KEEPALIVE_TO est vide : Brevo désactivera la clé SMTP après 3 mois sans envoi");
         }
     }
 
@@ -112,6 +110,7 @@ public class SmtpKeepAliveService {
             log.info("SMTP keep-alive sent to {} after {} day(s) of inactivity.", keepAliveTo, days);
         } catch (Exception e) {
             log.warn("SMTP keep-alive could not be sent: {}", e.getMessage());
+            systemAlertService.raise("smtp-keepalive", "Le mail de maintenance SMTP n'a pas pu partir : " + e.getMessage());
         }
     }
 }

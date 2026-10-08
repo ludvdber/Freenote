@@ -1,5 +1,6 @@
 package be.freenote.controller;
 
+import be.freenote.enums.ActivityType;
 import be.freenote.security.SecurityUtils;
 import be.freenote.dto.request.CreateCourseRequest;
 import be.freenote.dto.request.CreateProfessorRequest;
@@ -95,7 +96,9 @@ public class AdminController {
     @PutMapping("/documents/{id}")
     public ResponseEntity<DocumentResponse> updateDocument(@PathVariable Long id,
                                                             @Valid @RequestBody UpdateDocumentRequest request) {
-        return ResponseEntity.ok(documentService.adminUpdate(id, request));
+        DocumentResponse updated = documentService.adminUpdate(id, request);
+        staff("Document modifié : " + updated.title());
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/documents/{id}")
@@ -135,6 +138,7 @@ public class AdminController {
     @DeleteMapping("/courses/{id}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.adminDelete(id);
+        staff("Cours #" + id + " supprimé");
         return ResponseEntity.noContent().build();
     }
 
@@ -147,7 +151,9 @@ public class AdminController {
     @PutMapping("/courses/{id}/equivalents")
     public ResponseEntity<List<CourseResponse>> setCourseEquivalents(@PathVariable Long id,
                                                                      @RequestBody List<Long> courseIds) {
-        return ResponseEntity.ok(courseService.setEquivalents(id, courseIds));
+        List<CourseResponse> linked = courseService.setEquivalents(id, courseIds);
+        staff("Équivalences du cours #" + id + " : " + (courseIds.isEmpty() ? "délié" : "lié à " + courseIds));
+        return ResponseEntity.ok(linked);
     }
 
     // --- Professors ---
@@ -175,6 +181,7 @@ public class AdminController {
     @DeleteMapping("/professors/{id}")
     public ResponseEntity<Void> deleteProfessor(@PathVariable Long id) {
         professorService.delete(id);
+        staff("Professeur #" + id + " supprimé");
         return ResponseEntity.noContent().build();
     }
 
@@ -206,6 +213,7 @@ public class AdminController {
     @DeleteMapping("/sections/{id}")
     public ResponseEntity<Void> deleteSection(@PathVariable Long id) {
         sectionService.adminDelete(id);
+        staff("Section #" + id + " supprimée");
         return ResponseEntity.noContent().build();
     }
 
@@ -252,8 +260,9 @@ public class AdminController {
     public ResponseEntity<Void> resolveReport(@PathVariable Long id,
                                               @Valid @RequestBody(required = false) ResolveReportRequest request,
                                               Authentication authentication) {
-        reportService.decide(id, SecurityUtils.currentUserId(authentication),
-                request == null ? new ResolveReportRequest() : request);
+        ResolveReportRequest decision = request == null ? new ResolveReportRequest() : request;
+        reportService.decide(id, SecurityUtils.currentUserId(authentication), decision);
+        staff("Signalement #" + id + " tranché : " + decision.getResolution());
         return ResponseEntity.ok().build();
     }
 
@@ -265,6 +274,7 @@ public class AdminController {
         ResolveReportRequest body = request == null ? new ResolveReportRequest() : request;
         body.setResolution(ReportResolution.REJECTED.name());
         reportService.decide(id, SecurityUtils.currentUserId(authentication), body);
+        staff("Signalement #" + id + " rejeté");
         return ResponseEntity.ok().build();
     }
 
@@ -292,55 +302,55 @@ public class AdminController {
 
     @PutMapping("/users/{id}/verify")
     public ResponseEntity<UserResponse> verifyUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminVerifyUser(id));
+        return staff(userService.adminVerifyUser(id), "Vérification manuelle de %s");
     }
 
     @PutMapping("/users/{id}/unverify")
     public ResponseEntity<UserResponse> unverifyUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminUnverifyUser(id));
+        return staff(userService.adminUnverifyUser(id), "Vérification retirée à %s");
     }
 
     @PutMapping("/users/{id}/trust")
     public ResponseEntity<UserResponse> trustUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetTrusted(id, true));
+        return staff(userService.adminSetTrusted(id, true), "Confiance accordée à %s");
     }
 
     @PutMapping("/users/{id}/untrust")
     public ResponseEntity<UserResponse> untrustUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetTrusted(id, false));
+        return staff(userService.adminSetTrusted(id, false), "Confiance retirée à %s");
     }
 
     /** Rôles staff V18 (Modérateur / Rédacteur) — PUT accorde, DELETE retire (pattern lifetime-palettes).
      *  Sous /api/admin/users/** : réservé ADMIN (un modérateur ne distribue pas les rôles). */
     @PutMapping("/users/{id}/moderator")
     public ResponseEntity<UserResponse> grantModerator(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetModerator(id, true));
+        return staff(userService.adminSetModerator(id, true), "Rôle Modérateur accordé à %s");
     }
 
     @DeleteMapping("/users/{id}/moderator")
     public ResponseEntity<UserResponse> revokeModerator(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetModerator(id, false));
+        return staff(userService.adminSetModerator(id, false), "Rôle Modérateur retiré à %s");
     }
 
     @PutMapping("/users/{id}/editor")
     public ResponseEntity<UserResponse> grantEditor(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetEditor(id, true));
+        return staff(userService.adminSetEditor(id, true), "Rôle Rédacteur accordé à %s");
     }
 
     @DeleteMapping("/users/{id}/editor")
     public ResponseEntity<UserResponse> revokeEditor(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetEditor(id, false));
+        return staff(userService.adminSetEditor(id, false), "Rôle Rédacteur retiré à %s");
     }
 
     /** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
     @PutMapping("/users/{id}/lifetime-palettes")
     public ResponseEntity<UserResponse> grantLifetimePalettes(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetLifetimePalettes(id, true));
+        return staff(userService.adminSetLifetimePalettes(id, true), "Palettes à vie accordées à %s");
     }
 
     @DeleteMapping("/users/{id}/lifetime-palettes")
     public ResponseEntity<UserResponse> revokeLifetimePalettes(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.adminSetLifetimePalettes(id, false));
+        return staff(userService.adminSetLifetimePalettes(id, false), "Palettes à vie retirées à %s");
     }
 
     @PatchMapping("/users/{id}/role")
@@ -351,7 +361,7 @@ public class AdminController {
         if (id.equals(SecurityUtils.currentUserId(authentication)) && !"ADMIN".equals(role)) {
             throw new be.freenote.exception.ForbiddenException("Un admin ne peut pas se retirer lui-même le rôle admin");
         }
-        return ResponseEntity.ok(userService.adminUpdateRole(id, role));
+        return staff(userService.adminUpdateRole(id, role), "Rôle de %s → " + role);
     }
 
     @DeleteMapping("/users/{id}")
@@ -389,7 +399,9 @@ public class AdminController {
                                                          @RequestParam int days,
                                                          Authentication authentication) {
         Long adminId = SecurityUtils.currentUserId(authentication);
-        return ResponseEntity.ok(donationService.grantAdFree(id, days, adminId));
+        DonationResponse grant = donationService.grantAdFree(id, days, adminId);
+        staff(days + " jour(s) sans pub offerts à " + grant.username());
+        return ResponseEntity.ok(grant);
     }
 
     /** Rattache un don Ko-fi orphelin (donateur sans code « FN-… ») à un compte et lui applique
@@ -397,13 +409,26 @@ public class AdminController {
     @PutMapping("/donations/{id}/attach")
     public ResponseEntity<DonationResponse> attachDonation(@PathVariable Long id,
                                                            @RequestParam Long userId) {
-        return ResponseEntity.ok(donationService.attach(id, userId));
+        DonationResponse attached = donationService.attach(id, userId);
+        staff("Don #" + id + " (" + attached.amount() + " €) rattaché à " + attached.username());
+        return ResponseEntity.ok(attached);
     }
 
     /** Supprime une ligne de don (purge des dons de test) — les avantages déjà appliqués restent. */
     @DeleteMapping("/donations/{id}")
     public ResponseEntity<Void> deleteDonation(@PathVariable Long id) {
         donationService.delete(id);
+        staff("Don #" + id + " supprimé");
         return ResponseEntity.noContent().build();
+    }
+
+    /** Trace une décision du staff sous le nom de son auteur réel ({@code %s} = pseudo du compte visé). */
+    private ResponseEntity<UserResponse> staff(UserResponse target, String template) {
+        staff(template.formatted(target.username()));
+        return ResponseEntity.ok(target);
+    }
+
+    private void staff(String message) {
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, message);
     }
 }

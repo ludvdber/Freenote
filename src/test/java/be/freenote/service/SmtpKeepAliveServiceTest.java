@@ -44,6 +44,8 @@ class SmtpKeepAliveServiceTest {
     @Mock private JavaMailSender mailSender;
     @Mock private MimeMessage mimeMessage;
 
+    @Mock private be.freenote.service.SystemAlertService systemAlertService;
+
     @InjectMocks private SmtpKeepAliveService service;
 
     @BeforeEach

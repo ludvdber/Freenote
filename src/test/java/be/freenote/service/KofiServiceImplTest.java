@@ -31,6 +31,8 @@ class KofiServiceImplTest {
     @Mock private DonationRepository donationRepository;
     @Mock private SupporterPerksService supporterPerksService;
 
+    @Mock private be.freenote.service.SystemAlertService systemAlertService;
+
     @InjectMocks private KofiServiceImpl kofiService;
 
     @BeforeEach

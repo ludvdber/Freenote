@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
-import { getAdminOverview, getModerationQueue } from '@/api/endpoints';
+import { getAdminAttention, getAdminOverview, getModerationQueue } from '@/api/endpoints';
 import type { ModerationQueue } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -78,11 +78,13 @@ const PANES: Record<AdminPane, ComponentType<any>> = {
 /** Qui voit quoi (V18) : 'admin' = admin seul ; 'moderator' / 'editor' = admin OU ce rôle. */
 type PaneAccess = 'admin' | 'moderator' | 'editor';
 
+type BadgeCounts = ModerationQueue & { systemAlerts: number };
+
 interface NavItem {
   id: AdminPane;
   icon: ReactNode;
   access?: PaneAccess; // défaut : celui du groupe
-  badge?: (o: ModerationQueue) => number;
+  badge?: (o: BadgeCounts) => number;
 }
 
 /** Groupes = périmètres de rôles : un Modérateur ne voit que « Modération », un Rédacteur que
@@ -136,7 +138,7 @@ const GROUPS: { labelKey: string | null; access: PaneAccess; items: NavItem[] }[
     labelKey: 'admin.nav.system',
     access: 'admin',
     items: [
-      { id: 'logs', icon: <ReceiptLong /> },
+      { id: 'logs', icon: <ReceiptLong />, badge: (o) => o.systemAlerts },
       { id: 'settings', icon: <Settings /> },
     ],
   },
@@ -171,6 +173,8 @@ export default function Admin() {
   const pane: AdminPane = allowedPanes.has(raw as AdminPane) ? (raw as AdminPane) : home;
   const setPane = (next: AdminPane) => {
     const params = new URLSearchParams(searchParams);
+    params.delete('type'); // filtres du journal posés par un lien profond
+    params.delete('q');
     if (next === home) params.delete('pane');
     else params.set('pane', next);
     setSearchParams(params, { replace: false });
@@ -187,6 +191,15 @@ export default function Admin() {
     enabled: canModerate,
   });
 
+  // Alertes système (admin seul) : même queryKey que la vue d'ensemble, l'acquittement rafraîchit les deux.
+  const { data: attention } = useQuery({
+    queryKey: ['admin-attention'],
+    queryFn: getAdminAttention,
+    refetchInterval: 60_000,
+    enabled: isAdmin,
+  });
+  const counts: BadgeCounts | undefined = overview && { ...overview, systemAlerts: attention?.systemAlerts ?? 0 };
+
   const Panel = PANES[pane];
 
   return (
@@ -200,7 +213,7 @@ export default function Admin() {
           {groups.flatMap((group) => [
             ...(group.labelKey ? [<ListSubheader key={group.labelKey}>{t(group.labelKey)}</ListSubheader>] : []),
             ...group.items.map((item) => {
-              const count = overview && item.badge ? item.badge(overview) : 0;
+              const count = counts && item.badge ? item.badge(counts) : 0;
               return (
                 <MenuItem key={item.id} value={item.id}>
                   {t(`admin.tabs.${item.id}`)}{count > 0 ? ` (${count})` : ''}
@@ -219,7 +232,7 @@ export default function Admin() {
                 <Typography sx={s.groupTitle}>{t(group.labelKey)}</Typography>
               )}
               {group.items.map((item) => {
-                const count = overview && item.badge ? item.badge(overview) : 0;
+                const count = counts && item.badge ? item.badge(counts) : 0;
                 return (
                   <Box
                     key={item.id}

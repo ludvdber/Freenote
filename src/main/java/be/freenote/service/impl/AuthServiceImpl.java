@@ -17,6 +17,7 @@ import be.freenote.service.ActivityLogService;
 import be.freenote.service.AuthService;
 import be.freenote.service.DiscordRoleService;
 import be.freenote.service.SmtpKeepAliveService;
+import be.freenote.service.SystemAlertService;
 import be.freenote.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private final SmtpKeepAliveService smtpKeepAliveService;
     private final ActivityLogService activityLogService;
     private final DiscordRoleService discordRoleService;
+    private final SystemAlertService systemAlertService;
 
     @Value("${app.email.hash-salt}")
     private String emailHashSalt;
@@ -222,6 +224,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (ServiceUnavailableException e) {
             String cause = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
             audit(ActivityType.EMAIL_SEND_FAILED, userId, "Refus du serveur SMTP (" + masked + ") : " + cause);
+            systemAlertService.raise("smtp", "Le serveur SMTP refuse les mails de vérification : " + cause);
             throw e;
         }
         // Le serveur SMTP (Brevo) a accepté le message : au-delà, la livraison ne dépend plus de

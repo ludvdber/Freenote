@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { DeleteSweep } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getActivityLogs, purgeActivityLogs } from '@/api/endpoints';
 import { extractApiError } from '@/lib/utils';
@@ -25,6 +26,8 @@ const TYPE_COLORS: Record<string, ChipColor> = {
   DOC_VERIFY: 'success',
   DOC_DELETE: 'warning',
   USER_BAN: 'error',
+  STAFF_ACTION: 'primary',
+  SYSTEM_ALERT: 'error',
   EMAIL_CODE_SENT: 'info',
   EMAIL_CODE_BLOCKED: 'warning',
   EMAIL_SEND_FAILED: 'error',
@@ -36,17 +39,20 @@ const TYPE_COLORS: Record<string, ChipColor> = {
 /** « EMAIL_* » = tout le parcours de vérification e-mail (famille de types côté serveur). */
 const EMAIL_FAMILY = 'EMAIL_*';
 const TYPES = [
-  '', EMAIL_FAMILY, 'EMAIL_CODE_SENT', 'EMAIL_CODE_BLOCKED', 'EMAIL_SEND_FAILED', 'EMAIL_CODE_REJECTED',
-  'EMAIL_VERIFIED', 'LOGIN', 'SIGNUP', 'UPLOAD', 'DOC_VERIFY', 'DOC_DELETE', 'USER_BAN', 'RATE_LIMITED',
+  '', 'SYSTEM_ALERT', 'STAFF_ACTION', EMAIL_FAMILY, 'EMAIL_CODE_SENT', 'EMAIL_CODE_BLOCKED', 'EMAIL_SEND_FAILED',
+  'EMAIL_CODE_REJECTED', 'EMAIL_VERIFIED', 'LOGIN', 'SIGNUP', 'UPLOAD', 'DOC_VERIFY', 'DOC_DELETE', 'USER_BAN',
+  'RATE_LIMITED',
 ];
 const PURGE_OPTIONS = [7, 30, 90];
 
 export default function AdminActivityLogs() {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
+  // Liens profonds depuis la vue d'ensemble : ?type=SYSTEM_ALERT, ?q=<pseudo>.
+  const [params] = useSearchParams();
   const [page, setPage] = useState(0);
-  const [type, setType] = useState('');
-  const [actorInput, setActorInput] = useState('');
+  const [type, setType] = useState(params.get('type') ?? '');
+  const [actorInput, setActorInput] = useState(params.get('q') ?? '');
   // Le pseudo se tape lettre par lettre : la requête suit la valeur différée, pas chaque frappe.
   const actor = useDeferredValue(actorInput.trim());
   const [purgeDays, setPurgeDays] = useState(90);
@@ -147,6 +153,8 @@ export default function AdminActivityLogs() {
           {t('admin.activity.purge')}
         </Button>
       </GlassCard>
+
+      <Typography variant="caption" color="text.secondary">{t('admin.activity.retention')}</Typography>
 
       {type.startsWith('EMAIL_') && (
         <Alert severity="info" variant="outlined">

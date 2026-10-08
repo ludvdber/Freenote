@@ -4,6 +4,7 @@ import be.freenote.config.MeilisearchConfig;
 import be.freenote.entity.Document;
 import be.freenote.repository.DocumentRepository;
 import be.freenote.service.MeilisearchService;
+import be.freenote.service.SystemAlertService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -36,6 +37,7 @@ public class MeilisearchServiceImpl implements MeilisearchService {
     private final MeilisearchConfig meilisearchConfig;
     private final ObjectMapper objectMapper;
     private final DocumentRepository documentRepository;
+    private final SystemAlertService systemAlertService;
     private static final int MAX_RETRIES = 3;
     private static final long[] RETRY_DELAYS_MS = {1000, 3000, 10000};
 
@@ -115,6 +117,7 @@ public class MeilisearchServiceImpl implements MeilisearchService {
             // NB : il n'y a PAS de fallback DB pour la recherche avec `q` (par design) — index KO
             // signifie recherche vide jusqu'au prochain initIndex/dailyResync réussi.
             log.warn("Meilisearch index init failed (search with a query will return empty until re-init): {}", e.getMessage());
+            systemAlertService.raise("meilisearch", "Index de recherche non initialisé — toute recherche texte est vide : " + e.getMessage());
         }
     }
 
@@ -221,6 +224,8 @@ public class MeilisearchServiceImpl implements MeilisearchService {
                     } else {
                         log.error("Meilisearch {} failed after {} retries: HTTP {}",
                                 operation, MAX_RETRIES, response.statusCode());
+                        systemAlertService.raise("meilisearch", "Échec Meilisearch (" + operation
+                                + ", HTTP " + response.statusCode() + ") : le document est introuvable en recherche");
                     }
                 })
                 .exceptionally(ex -> {
@@ -231,6 +236,8 @@ public class MeilisearchServiceImpl implements MeilisearchService {
                     } else {
                         log.error("Meilisearch {} failed after {} retries: {}",
                                 operation, MAX_RETRIES, ex.getMessage());
+                        systemAlertService.raise("meilisearch", "Échec Meilisearch (" + operation
+                                + ") : " + ex.getMessage());
                     }
                     return null;
                 });

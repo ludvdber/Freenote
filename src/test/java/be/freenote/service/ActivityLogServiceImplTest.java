@@ -4,7 +4,9 @@ import be.freenote.dto.response.ActivityLogResponse;
 import be.freenote.dto.response.PageResponse;
 import be.freenote.entity.ActivityLog;
 import be.freenote.enums.ActivityType;
+import be.freenote.entity.User;
 import be.freenote.repository.ActivityLogRepository;
+import be.freenote.repository.UserRepository;
 import be.freenote.service.impl.ActivityLogServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,14 +16,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,6 +45,7 @@ import static org.mockito.Mockito.when;
 class ActivityLogServiceImplTest {
 
     @Mock private ActivityLogRepository repository;
+    @Mock private UserRepository userRepository;
 
     @InjectMocks private ActivityLogServiceImpl service;
 
@@ -110,7 +118,6 @@ class ActivityLogServiceImplTest {
 
         assertThat(page.content()).hasSize(1);
         assertThat(page.content().getFirst().type()).isEqualTo("LOGIN");
-        verify(repository, never()).findByTypeOrderByCreatedAtDesc(any(), any());
     }
 
     /** Une chaîne vide vaut « pas de filtre » : le Select de l'UI envoie "" pour « Tous ». */
@@ -121,61 +128,87 @@ class ActivityLogServiceImplTest {
         service.list("   ", null, PageRequest.of(0, 20));
 
         verify(repository).findAllByOrderByCreatedAtDesc(any());
-        verify(repository, never()).findByTypeOrderByCreatedAtDesc(any(), any());
     }
 
     @Test
     void filtreParTypeQuandIlEstFourni() {
-        when(repository.findByTypeOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.eq("UPLOAD"), any()))
-                .thenReturn(new PageImpl<>(List.of()));
+        when(repository.search(eq(false), eq(List.of("UPLOAD")), isNull(), any())).thenReturn(new PageImpl<>(List.of()));
 
         service.list("UPLOAD", null, PageRequest.of(0, 20));
 
-        verify(repository).findByTypeOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.eq("UPLOAD"), any());
         verify(repository, never()).findAllByOrderByCreatedAtDesc(any());
-    }
-
-    @Test
-    void purgeManuelleRenvoieLeNombreSupprime() {
-        LocalDateTime before = LocalDateTime.now().minusDays(30);
-        when(repository.deleteByCreatedAtBefore(before)).thenReturn(42);
-
-        assertThat(service.purgeBefore(before)).isEqualTo(42);
-    }
-
-    @Test
-    void purgeAutomatiqueSurLaRetentionConfiguree() {
-        retention(90);
-        when(repository.deleteByCreatedAtBefore(any())).thenReturn(3);
-
-        service.autoPrune();
-
-        ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(repository).deleteByCreatedAtBefore(captor.capture());
-        assertThat(captor.getValue()).isBefore(LocalDateTime.now().minusDays(89));
-    }
-
-    /** Rétention à 0 ou négative = purge désactivée (conservation illimitée assumée). */
-    @Test
-    void purgeAutomatiqueDesactivableParLaConfiguration() {
-        retention(0);
-        service.autoPrune();
-        retention(-1);
-        service.autoPrune();
-
-        verify(repository, never()).deleteByCreatedAtBefore(any());
     }
 
     /** Suivre UN étudiant à travers tout le parcours e-mail : famille de types + pseudo. */
     @Test
-    void list_familyAndActorUseTheCombinedSearch() {
-        when(repository.search(isNull(), org.mockito.ArgumentMatchers.eq("EMAIL_%"),
-                org.mockito.ArgumentMatchers.eq("%spike%"), any())).thenReturn(new PageImpl<>(List.of()));
+    void list_familyAndTextUseTheCombinedSearch() {
+        List<String> email = List.of("EMAIL_CODE_SENT", "EMAIL_CODE_BLOCKED", "EMAIL_SEND_FAILED",
+                "EMAIL_CODE_REJECTED", "EMAIL_VERIFIED");
+        when(repository.search(eq(false), eq(email), eq("%spike%"), any())).thenReturn(new PageImpl<>(List.of()));
 
         service.list("EMAIL_*", " Spike ", PageRequest.of(0, 20));
 
-        verify(repository).search(isNull(), org.mockito.ArgumentMatchers.eq("EMAIL_%"),
-                org.mockito.ArgumentMatchers.eq("%spike%"), any());
-        verify(repository, never()).findAllByOrderByCreatedAtDesc(any());
+        verify(repository).search(eq(false), eq(email), eq("%spike%"), any());
+    }
+
+    /** Une purge manuelle ne doit pas pouvoir effacer la trace d'une décision du staff. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void purgeManuelleEpargneLesActionsDuStaff() {
+        LocalDateTime before = LocalDateTime.now().minusDays(7);
+        when(repository.deleteByTypeInAndCreatedAtBefore(any(), eq(before))).thenReturn(42);
+
+        assertThat(service.purgeBefore(before)).isEqualTo(42);
+
+        ArgumentCaptor<Collection<String>> types = ArgumentCaptor.forClass(Collection.class);
+        verify(repository).deleteByTypeInAndCreatedAtBefore(types.capture(), eq(before));
+        assertThat(types.getValue()).contains("LOGIN", "EMAIL_CODE_SENT")
+                .doesNotContain("STAFF_ACTION", "USER_BAN", "DOC_DELETE", "DOC_VERIFY");
+    }
+
+    @Test
+    void purgeAutomatiqueParClasseDeConservation() {
+        ReflectionTestUtils.setField(service, "shortRetentionDays", 30);
+        retention(90);
+        ReflectionTestUtils.setField(service, "auditRetentionDays", 365);
+
+        service.autoPrune();
+
+        ArgumentCaptor<LocalDateTime> cutoff = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(repository).deleteByTypeInAndCreatedAtBefore(eq(List.of("LOGIN", "RATE_LIMITED")), cutoff.capture());
+        assertThat(cutoff.getValue()).isBefore(LocalDateTime.now().minusDays(29)).isAfter(LocalDateTime.now().minusDays(31));
+        verify(repository).deleteByTypeInAndCreatedAtBefore(
+                eq(List.of("DOC_DELETE", "DOC_VERIFY", "USER_BAN", "STAFF_ACTION")), cutoff.capture());
+        assertThat(cutoff.getValue()).isBefore(LocalDateTime.now().minusDays(364));
+    }
+
+    /** Rétention à 0 ou négative = purge de la classe désactivée (conservation illimitée assumée). */
+    @Test
+    void purgeAutomatiqueDesactivableParLaConfiguration() {
+        ReflectionTestUtils.setField(service, "shortRetentionDays", 0);
+        retention(-1);
+        ReflectionTestUtils.setField(service, "auditRetentionDays", 0);
+
+        service.autoPrune();
+
+        verify(repository, never()).deleteByTypeInAndCreatedAtBefore(any(), any());
+    }
+
+    /** L'auteur d'une action du staff est l'utilisateur de la requête, plus un « Admin » anonyme. */
+    @Test
+    void logStaffResolutLAuteurReel() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(3L, null, List.of()));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(User.builder().id(3L).username("Chaimaa").build()));
+        try {
+            service.logStaff(ActivityType.STAFF_ACTION, "Rôle Modérateur accordé à Spike");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        ArgumentCaptor<ActivityLog> captor = ArgumentCaptor.forClass(ActivityLog.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getActorId()).isEqualTo(3L);
+        assertThat(captor.getValue().getActorName()).isEqualTo("Chaimaa");
     }
 }

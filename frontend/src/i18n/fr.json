@@ -527,7 +527,7 @@
     },
     "activity": {
       "title": "Journal d'activité",
-      "subtitle": "Connexions, inscriptions, uploads, suppressions, bannissements, vérification e-mail et limites atteintes. Purge automatique après 90 jours.",
+      "subtitle": "Connexions, inscriptions, uploads, actions du staff (avec leur auteur), alertes système, vérification e-mail et limites atteintes.",
       "filterType": "Type",
       "allTypes": "Tous",
       "purgeOlderThan": "Supprimer au-delà de",
@@ -547,11 +547,14 @@
         "EMAIL_SEND_FAILED": "Échec d'envoi",
         "EMAIL_CODE_REJECTED": "Code refusé",
         "EMAIL_VERIFIED": "E-mail vérifié",
-        "RATE_LIMITED": "Limite atteinte"
+        "RATE_LIMITED": "Limite atteinte",
+        "STAFF_ACTION": "Action du staff",
+        "SYSTEM_ALERT": "Alerte système"
       },
-      "filterActor": "Pseudo",
+      "filterActor": "Pseudo ou texte",
       "emailAll": "Vérification e-mail (tout)",
-      "emailHint": "« Code envoyé » veut dire que Brevo a accepté le mail : s'il n'arrive pas, la suite se lit dans les logs Brevo (quarantaine, rebond, adresse bloquée). Les adresses n'apparaissent que masquées."
+      "emailHint": "« Code envoyé » veut dire que Brevo a accepté le mail : s'il n'arrive pas, la suite se lit dans les logs Brevo (quarantaine, rebond, adresse bloquée). Les adresses n'apparaissent que masquées.",
+      "retention": "Conservation : 30 jours pour les connexions et limites, 90 jours pour le reste, 1 an pour les actions du staff — la purge manuelle ne les touche jamais."
     },
     "toolsPanel": {
       "hint": "Contenus partagés via les outils d'étude (quiz, paquets de cartes, projets Gantt). Supprime ce qui est inapproprié : l'auteur garde sa copie locale.",
@@ -654,6 +657,30 @@
       "attemptsCount_other": "{{count}} parties",
       "cardsCount_one": "{{count}} carte",
       "cardsCount_other": "{{count}} cartes"
+    },
+    "attention": {
+      "alerts_one": "{{count}} alerte système non vue (7 derniers jours)",
+      "alerts_other": "{{count}} alertes système non vues (7 derniers jours)",
+      "alertsSee": "Voir",
+      "alertsAck": "Marquer comme vues",
+      "smtpLast_one": "Mails : dernier envoi il y a {{count}} jour",
+      "smtpLast_other": "Mails : dernier envoi il y a {{count}} jours",
+      "smtpNever": "Mails : aucun envoi enregistré depuis le dernier redémarrage de Redis",
+      "keepAliveOn": "keep-alive actif (mail de maintenance après {{days}} jours sans envoi)",
+      "keepAliveOff": "keep-alive DÉSACTIVÉ : Brevo coupera la clé SMTP après 3 mois sans envoi (MAIL_KEEPALIVE_TO vide)",
+      "stuckTitle_one": "{{count}} inscription bloquée",
+      "stuckTitle_other": "{{count}} inscriptions bloquées",
+      "stuckHint": "Comptes connectés via Discord mais jamais vérifiés, depuis plus de 48 h (30 jours max). Aucune adresse n'est stockée avant vérification : la relance part en message privé du bot Discord.",
+      "joined": "inscrit le {{date}}",
+      "stepUsername": "Pseudo pas encore choisi",
+      "stepNoCode": "N'a jamais demandé de code",
+      "journal": "Journal",
+      "remind": "Relancer sur Discord",
+      "reminded": "Relancé",
+      "remindSENT": "Message privé envoyé sur Discord.",
+      "remindUNREACHABLE": "Impossible de lui écrire : il bloque les messages privés ou n'est pas sur le serveur Discord.",
+      "remindDISABLED": "Le bot Discord n'est pas configuré (DISCORD_BOT_TOKEN vide).",
+      "remindFAILED": "Discord a refusé l'envoi — voir les alertes système."
     }
   },
   "upload": {

@@ -6,6 +6,8 @@ import be.freenote.service.FlashcardDeckService;
 import be.freenote.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import be.freenote.enums.ActivityType;
+import be.freenote.service.ActivityLogService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,6 +30,7 @@ public class AdminModerationController {
     private final AnalyticsService analyticsService;
     private final QuizService quizService;
     private final FlashcardDeckService deckService;
+    private final ActivityLogService activityLogService;
 
     /** Badges de la sidebar pour un modérateur (l'admin les tire de la vue d'ensemble complète). */
     @GetMapping("/moderation/queue")
@@ -38,12 +41,14 @@ public class AdminModerationController {
     @PutMapping("/quizzes/{id}/unpublish")
     public ResponseEntity<Void> unpublishQuiz(@PathVariable Long id) {
         quizService.unpublish(id);
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, "Quiz #" + id + " dépublié");
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/flashcard-decks/{id}/unpublish")
     public ResponseEntity<Void> unpublishDeck(@PathVariable Long id) {
         deckService.unpublish(id);
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, "Paquet #" + id + " dépublié");
         return ResponseEntity.noContent().build();
     }
 }

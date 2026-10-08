@@ -241,6 +241,7 @@ public class UserServiceImpl implements UserService {
         // JWT since it's not the admin's own session.
         User user = Repositories.findByIdOrThrow(userRepository, userId, "User");
         anonymizeAndDelete(user);
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, "Compte supprimé : " + user.getUsername());
         log.info("Admin deleted account: userId={}, username={}, documents anonymized", userId, user.getUsername());
     }
 
@@ -270,7 +271,8 @@ public class UserServiceImpl implements UserService {
         }
 
         anonymizeAndDelete(user);
-        activityLogService.log(ActivityType.USER_BAN, adminId, "Admin", "Bannissement: " + user.getUsername());
+        activityLogService.logStaff(ActivityType.USER_BAN, "Bannissement : " + user.getUsername()
+                + (safeReason == null ? "" : " (" + safeReason + ")"));
         log.warn("Admin {} banned and wiped user: id={}, username={}", adminId, targetUserId, user.getUsername());
     }
 

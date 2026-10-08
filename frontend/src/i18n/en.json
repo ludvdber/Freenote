@@ -527,7 +527,7 @@
     },
     "activity": {
       "title": "Activity log",
-      "subtitle": "Logins, sign-ups, uploads, deletions, bans, email verification and rate limits. Auto-purged after 90 days.",
+      "subtitle": "Logins, sign-ups, uploads, staff actions (with their author), system alerts, email verification and rate limits.",
       "filterType": "Type",
       "allTypes": "All",
       "purgeOlderThan": "Delete older than",
@@ -547,11 +547,14 @@
         "EMAIL_SEND_FAILED": "Send failure",
         "EMAIL_CODE_REJECTED": "Code rejected",
         "EMAIL_VERIFIED": "Email verified",
-        "RATE_LIMITED": "Rate limited"
+        "RATE_LIMITED": "Rate limited",
+        "STAFF_ACTION": "Staff action",
+        "SYSTEM_ALERT": "System alert"
       },
-      "filterActor": "Username",
+      "filterActor": "Username or text",
       "emailAll": "Email verification (all)",
-      "emailHint": "“Code sent” means Brevo accepted the email: if it never arrives, look at the Brevo logs (quarantine, bounce, blocked address). Addresses are only shown masked."
+      "emailHint": "“Code sent” means Brevo accepted the email: if it never arrives, look at the Brevo logs (quarantine, bounce, blocked address). Addresses are only shown masked.",
+      "retention": "Retention: 30 days for logins and rate limits, 90 days for the rest, 1 year for staff actions — a manual purge never touches them."
     },
     "toolsPanel": {
       "hint": "Content shared through the study tools (quizzes, flashcard decks, Gantt projects). Delete anything inappropriate: the author keeps their local copy.",
@@ -654,6 +657,30 @@
       "attemptsCount_other": "{{count}} attempts",
       "cardsCount_one": "{{count}} card",
       "cardsCount_other": "{{count}} cards"
+    },
+    "attention": {
+      "alerts_one": "{{count}} unseen system alert (last 7 days)",
+      "alerts_other": "{{count}} unseen system alerts (last 7 days)",
+      "alertsSee": "See",
+      "alertsAck": "Mark as seen",
+      "smtpLast_one": "Email: last sent {{count}} day ago",
+      "smtpLast_other": "Email: last sent {{count}} days ago",
+      "smtpNever": "Email: nothing sent since Redis last restarted",
+      "keepAliveOn": "keep-alive on (maintenance email after {{days}} days without sending)",
+      "keepAliveOff": "keep-alive OFF: Brevo will disable the SMTP key after 3 months without sending (MAIL_KEEPALIVE_TO empty)",
+      "stuckTitle_one": "{{count}} stuck sign-up",
+      "stuckTitle_other": "{{count}} stuck sign-ups",
+      "stuckHint": "Accounts signed in with Discord but never verified, for more than 48 h (30 days max). No address is stored before verification: the reminder goes out as a Discord bot direct message.",
+      "joined": "joined {{date}}",
+      "stepUsername": "Username not chosen yet",
+      "stepNoCode": "Never requested a code",
+      "journal": "Log",
+      "remind": "Remind on Discord",
+      "reminded": "Reminded",
+      "remindSENT": "Direct message sent on Discord.",
+      "remindUNREACHABLE": "Can't reach them: they block direct messages or aren't on the Discord server.",
+      "remindDISABLED": "The Discord bot isn't configured (DISCORD_BOT_TOKEN empty).",
+      "remindFAILED": "Discord refused the message — see the system alerts."
     }
   },
   "upload": {

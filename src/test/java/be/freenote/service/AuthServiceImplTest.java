@@ -47,6 +47,8 @@ class AuthServiceImplTest {
     @Mock private ValueOperations<String, String> valueOps;
     @Mock private MimeMessage mimeMessage;
 
+    @Mock private be.freenote.service.SystemAlertService systemAlertService;
+
     @InjectMocks private AuthServiceImpl authService;
 
     @BeforeEach

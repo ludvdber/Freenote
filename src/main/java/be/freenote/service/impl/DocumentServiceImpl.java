@@ -412,7 +412,7 @@ public class DocumentServiceImpl implements DocumentService {
             eventPublisher.publishEvent(new XpEvent.DocumentVerified(document.getUser().getId(), documentId, document.getTitle()));
         }
         statsService.invalidateCache();
-        activityLogService.log(ActivityType.DOC_VERIFY, null, "Admin", document.getTitle());
+        activityLogService.logStaff(ActivityType.DOC_VERIFY, document.getTitle());
 
         return documentMapper.toResponse(saved);
     }
@@ -509,7 +509,7 @@ public class DocumentServiceImpl implements DocumentService {
         documentRepository.delete(document);
         cleanupStorageAfterCommit(document.getFileKey(), document.getId());
         statsService.invalidateCache();
-        activityLogService.log(ActivityType.DOC_DELETE, null, "Admin", document.getTitle());
+        activityLogService.logStaff(ActivityType.DOC_DELETE, document.getTitle());
     }
 
     // --- Download with Redis buffer ---

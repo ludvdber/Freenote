@@ -1,5 +1,7 @@
 package be.freenote.controller;
 
+import be.freenote.enums.ActivityType;
+import be.freenote.service.ActivityLogService;
 import be.freenote.dto.request.UpdateCountdownRequest;
 import be.freenote.dto.request.UpdateFundingRequest;
 import be.freenote.dto.response.CountdownResponse;
@@ -20,6 +22,7 @@ public class AdminSettingsController {
 
     private final SettingsService settingsService;
     private final DonationService donationService;
+    private final ActivityLogService activityLogService;
 
     @GetMapping("/countdown")
     public ResponseEntity<CountdownResponse> getCountdown() {
@@ -30,6 +33,7 @@ public class AdminSettingsController {
     @PutMapping("/countdown")
     public ResponseEntity<CountdownResponse> setCountdown(@Valid @RequestBody UpdateCountdownRequest request) {
         settingsService.setCountdown(request.date(), request.label());
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, "Compte à rebours : " + request.date() + " « " + request.label() + " »");
         return ResponseEntity.ok(settingsService.getCountdown());
     }
 
@@ -42,6 +46,7 @@ public class AdminSettingsController {
     @PutMapping("/funding")
     public ResponseEntity<FundingResponse> setFunding(@Valid @RequestBody UpdateFundingRequest request) {
         settingsService.setFundingCost(request.monthlyCost());
+        activityLogService.logStaff(ActivityType.STAFF_ACTION, "Coût mensuel du thermomètre : " + request.monthlyCost());
         return ResponseEntity.ok(donationService.getFunding());
     }
 }

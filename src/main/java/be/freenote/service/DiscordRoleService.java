@@ -21,4 +21,12 @@ public interface DiscordRoleService {
      * {@code app.discord.supporter-role-id} est vide — le palier reste utilisable sans bot.
      */
     void assignSupporterRole(String discordUserId);
+
+    enum DmResult { SENT, DISABLED, UNREACHABLE, FAILED }
+
+    /**
+     * Message privé du bot, SYNCHRONE (l'admin attend le résultat). UNREACHABLE = MP fermés ou pas de
+     * serveur commun avec le bot ; DISABLED = pas de jeton de bot. Never throws.
+     */
+    DmResult sendDirectMessage(String discordUserId, String content);
 }

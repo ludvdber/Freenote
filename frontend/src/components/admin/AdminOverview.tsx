@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/utils';
 import { reportTypeMeta } from '@/lib/reports';
 import GlassCard from '@/components/ui/GlassCard';
 import { KpiTile, DayBars, type DayPoint } from './charts';
+import AdminAttention from './AdminAttention';
 import type { AdminPane } from '@/pages/Admin';
 
 const QUEUE_DOCS = 4;
@@ -64,6 +65,8 @@ export default function AdminOverview({ onNavigate }: { onNavigate: (pane: Admin
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <AdminAttention />
+
       {/* KPI 7 jours */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
         <KpiTile label={t('admin.overview.kpiVisits')} value={overview.visits7d.value}

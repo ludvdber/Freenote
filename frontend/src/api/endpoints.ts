@@ -464,7 +464,7 @@ export const adminDeleteDonation = (donationId: number) =>
   api.delete(`/admin/donations/${donationId}`);
 
 // --- Admin: Activity logs ---
-/** `type` : exact, ou famille terminée par « * » (« EMAIL_* ») ; `actor` : sous-chaîne du pseudo. */
+/** `type` : exact, ou famille terminée par « * » (« EMAIL_* ») ; `actor` : texte cherché dans le pseudo ou le message. */
 export const getActivityLogs = (page = 0, size = 50, type?: string, actor?: string) =>
   api
     .get<PageResponse<ActivityLog>>('/admin/activity-logs', {
@@ -474,6 +474,15 @@ export const getActivityLogs = (page = 0, size = 50, type?: string, actor?: stri
 
 export const purgeActivityLogs = (days: number) =>
   api.delete<{ deleted: number }>('/admin/activity-logs', { params: { days } }).then((r) => r.data);
+
+// --- Admin: à surveiller (SMTP, alertes système, inscriptions bloquées) ---
+export const getAdminAttention = () =>
+  api.get<AdminAttention>('/admin/attention').then((r) => r.data);
+
+export const acknowledgeAlerts = () => api.put('/admin/alerts/acknowledge').then(() => undefined);
+
+export const sendOnboardingReminder = (userId: number) =>
+  api.post<{ result: OnboardingReminderResult }>(`/admin/users/${userId}/onboarding-reminder`).then((r) => r.data.result);
 
 // --- Notifications ---
 export const getNotificationsUnreadCount = () =>
