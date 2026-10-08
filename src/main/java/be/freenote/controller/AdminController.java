@@ -293,55 +293,55 @@ public class AdminController {
 
     @PutMapping("/users/{id}/verify")
     public ResponseEntity<UserResponse> verifyUser(@PathVariable Long id) {
-        return staff(userService.adminVerifyUser(id), "Vérification manuelle de %s");
+        return staff(userService.adminVerifyUser(id), "Vérification manuelle");
     }
 
     @PutMapping("/users/{id}/unverify")
     public ResponseEntity<UserResponse> unverifyUser(@PathVariable Long id) {
-        return staff(userService.adminUnverifyUser(id), "Vérification retirée à %s");
+        return staff(userService.adminUnverifyUser(id), "Vérification retirée");
     }
 
     @PutMapping("/users/{id}/trust")
     public ResponseEntity<UserResponse> trustUser(@PathVariable Long id) {
-        return staff(userService.adminSetTrusted(id, true), "Confiance accordée à %s");
+        return staff(userService.adminSetTrusted(id, true), "Confiance accordée");
     }
 
     @PutMapping("/users/{id}/untrust")
     public ResponseEntity<UserResponse> untrustUser(@PathVariable Long id) {
-        return staff(userService.adminSetTrusted(id, false), "Confiance retirée à %s");
+        return staff(userService.adminSetTrusted(id, false), "Confiance retirée");
     }
 
     /** Rôles staff V18 (Modérateur / Rédacteur) — PUT accorde, DELETE retire (pattern lifetime-palettes).
      *  Sous /api/admin/users/** : réservé ADMIN (un modérateur ne distribue pas les rôles). */
     @PutMapping("/users/{id}/moderator")
     public ResponseEntity<UserResponse> grantModerator(@PathVariable Long id) {
-        return staff(userService.adminSetModerator(id, true), "Rôle Modérateur accordé à %s");
+        return staff(userService.adminSetModerator(id, true), "Rôle Modérateur accordé");
     }
 
     @DeleteMapping("/users/{id}/moderator")
     public ResponseEntity<UserResponse> revokeModerator(@PathVariable Long id) {
-        return staff(userService.adminSetModerator(id, false), "Rôle Modérateur retiré à %s");
+        return staff(userService.adminSetModerator(id, false), "Rôle Modérateur retiré");
     }
 
     @PutMapping("/users/{id}/editor")
     public ResponseEntity<UserResponse> grantEditor(@PathVariable Long id) {
-        return staff(userService.adminSetEditor(id, true), "Rôle Rédacteur accordé à %s");
+        return staff(userService.adminSetEditor(id, true), "Rôle Rédacteur accordé");
     }
 
     @DeleteMapping("/users/{id}/editor")
     public ResponseEntity<UserResponse> revokeEditor(@PathVariable Long id) {
-        return staff(userService.adminSetEditor(id, false), "Rôle Rédacteur retiré à %s");
+        return staff(userService.adminSetEditor(id, false), "Rôle Rédacteur retiré");
     }
 
     /** Palettes d'accent à vie (flag lifetime_supporter — même avantage qu'un don ≥ 5 €). */
     @PutMapping("/users/{id}/lifetime-palettes")
     public ResponseEntity<UserResponse> grantLifetimePalettes(@PathVariable Long id) {
-        return staff(userService.adminSetLifetimePalettes(id, true), "Palettes à vie accordées à %s");
+        return staff(userService.adminSetLifetimePalettes(id, true), "Palettes à vie accordées");
     }
 
     @DeleteMapping("/users/{id}/lifetime-palettes")
     public ResponseEntity<UserResponse> revokeLifetimePalettes(@PathVariable Long id) {
-        return staff(userService.adminSetLifetimePalettes(id, false), "Palettes à vie retirées à %s");
+        return staff(userService.adminSetLifetimePalettes(id, false), "Palettes à vie retirées");
     }
 
     @PatchMapping("/users/{id}/role")
@@ -352,7 +352,7 @@ public class AdminController {
         if (id.equals(SecurityUtils.currentUserId(authentication)) && !"ADMIN".equals(role)) {
             throw new be.freenote.exception.ForbiddenException("Un admin ne peut pas se retirer lui-même le rôle admin");
         }
-        return staff(userService.adminUpdateRole(id, role), "Rôle de %s → " + role);
+        return staff(userService.adminUpdateRole(id, role), "Rôle → " + role);
     }
 
     @DeleteMapping("/users/{id}")
@@ -413,9 +413,9 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Trace une décision du staff sous le nom de son auteur réel ({@code %s} = pseudo du compte visé). */
-    private ResponseEntity<UserResponse> staff(UserResponse target, String template) {
-        staff(template.formatted(target.username()));
+    /** Trace une décision du staff sous le nom de son auteur réel, suivie du pseudo du compte visé. */
+    private ResponseEntity<UserResponse> staff(UserResponse target, String action) {
+        staff(action + " : " + target.username());
         return ResponseEntity.ok(target);
     }
 
