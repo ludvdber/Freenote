@@ -1,7 +1,7 @@
 package be.freenote.dto.response;
 
 /**
- * SMTP keep-alive health, surfaced to admins via {@code GET /api/admin/smtp-status}.
+ * SMTP keep-alive health, shown on the admin overview via {@code GET /api/admin/attention}.
  *
  * @param lastSentEpochMs   epoch millis of the last outbound email, or null if none recorded yet
  * @param daysSinceLastSent days since the last email (-1 if none ever recorded)

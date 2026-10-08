@@ -20,6 +20,9 @@
     { "name": "app.discord.verified-role-id", "type": "java.lang.String", "description": "Discord role ID granted to verified members" },
     { "name": "app.discord.supporter-role-id", "type": "java.lang.String", "description": "Discord role ID granted to Ko-fi supporters (donation >= 5 EUR). Blank disables." },
     { "name": "app.discord.announce-channel-id", "type": "java.lang.String", "description": "Discord channel ID for the hourly new-documents digest. Blank disables announcements." },
+    { "name": "app.activity-log.short-retention-days", "type": "java.lang.Integer", "description": "Days kept for noise entries of the admin activity log (LOGIN, RATE_LIMITED). 0 disables the prune", "defaultValue": 30 },
+    { "name": "app.activity-log.retention-days", "type": "java.lang.Integer", "description": "Days kept for standard admin activity log entries (sign-ups, uploads, email verification, system alerts). 0 disables the prune", "defaultValue": 90 },
+    { "name": "app.activity-log.audit-retention-days", "type": "java.lang.Integer", "description": "Days kept for staff decisions in the admin activity log (never touched by the manual purge). 0 disables the prune", "defaultValue": 365 },
     { "name": "app.analytics.retention-days", "type": "java.lang.Integer", "description": "Days of daily_stats rows kept by the nightly prune (anonymous usage counters)", "defaultValue": 400 },
     { "name": "app.frontend.url", "type": "java.lang.String", "description": "Frontend base URL for OAuth redirects", "defaultValue": "http://localhost:3000" },
     { "name": "freenote.cors.allowed-origins", "type": "java.lang.String", "description": "Comma-separated CORS allowed origins", "defaultValue": "http://localhost:3000" }

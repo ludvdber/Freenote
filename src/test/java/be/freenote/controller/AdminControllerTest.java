@@ -49,7 +49,6 @@ class AdminControllerTest {
     @MockitoBean private SectionService sectionService;
     @MockitoBean private UserService userService;
     @MockitoBean private DonationService donationService;
-    @MockitoBean private SmtpKeepAliveService smtpKeepAliveService;
     @MockitoBean private ActivityLogService activityLogService;
     @MockitoBean private JwtAuthFilter jwtAuthFilter;
     @MockitoBean private AdminRoleVerificationFilter adminRoleVerificationFilter;
@@ -412,16 +411,6 @@ class AdminControllerTest {
 
     @Nested
     class SystemeEtDons {
-
-        @Test
-        void exposeLeStatutSmtp() throws Exception {
-            when(smtpKeepAliveService.getStatus())
-                    .thenReturn(new SmtpStatusResponse(123L, 12, true, 80));
-
-            mockMvc.perform(get("/api/admin/smtp-status"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.daysSinceLastSent").value(12));
-        }
 
         @Test
         void listeEtPurgeLeJournalDActivite() throws Exception {

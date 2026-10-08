@@ -14,7 +14,6 @@ import be.freenote.dto.response.PageResponse;
 import be.freenote.dto.response.ProfessorResponse;
 import be.freenote.dto.response.ReportResponse;
 import be.freenote.dto.response.SectionResponse;
-import be.freenote.dto.response.SmtpStatusResponse;
 import be.freenote.dto.response.UserResponse;
 import be.freenote.enums.ReportResolution;
 import be.freenote.enums.ReportStatus;
@@ -44,15 +43,7 @@ public class AdminController {
     private final SectionService sectionService;
     private final UserService userService;
     private final DonationService donationService;
-    private final SmtpKeepAliveService smtpKeepAliveService;
     private final ActivityLogService activityLogService;
-
-    // --- System / SMTP keep-alive (the "compteur" of days since the last sent email) ---
-
-    @GetMapping("/smtp-status")
-    public ResponseEntity<SmtpStatusResponse> getSmtpStatus() {
-        return ResponseEntity.ok(smtpKeepAliveService.getStatus());
-    }
 
     // --- Activity logs (admin audit trail) ---
 
