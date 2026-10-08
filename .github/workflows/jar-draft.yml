@@ -1,0 +1,56 @@
+# Jar déployable déposé dans une release BROUILLON, à lancer à la main (onglet Actions → Run workflow).
+# Un brouillon n'est visible et téléchargeable que par les comptes ayant un accès en écriture au dépôt,
+# même public (un artefact de workflow, lui, l'est pour tout le monde), et aucun tag n'est créé tant
+# qu'il n'est pas publié. Ne jamais le publier : il sert uniquement à récupérer le jar.
+name: Jar (release brouillon)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jar-draft
+  cancel-in-progress: true
+
+jobs:
+  jar:
+    name: Build du jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # bootJar lance aussi le build du frontend (npm install + npm run build) et l'embarque.
+      - name: Build du jar
+        run: ./gradlew bootJar --no-daemon
+
+      - name: Brouillon de release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"$/\1/p' build.gradle.kts)
+          JAR="build/libs/freenote-${VERSION}.jar"
+          test -f "$JAR"
+          # Un seul brouillon par version : relancer le workflow remplace l'ancien au lieu d'empiler.
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq ".[] | select(.draft and .tag_name == \"v${VERSION}\") | .id" |
+            while read -r id; do gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/${id}"; done
+          gh release create "v${VERSION}" "$JAR" --draft --target "$GITHUB_SHA" \
+            --title "Freenote ${VERSION} (${GITHUB_SHA::7})" \
+            --notes "Jar construit depuis ${GITHUB_SHA::7}. Brouillon privé : ne pas publier."
