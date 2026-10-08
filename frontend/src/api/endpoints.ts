@@ -464,9 +464,12 @@ export const adminDeleteDonation = (donationId: number) =>
   api.delete(`/admin/donations/${donationId}`);
 
 // --- Admin: Activity logs ---
-export const getActivityLogs = (page = 0, size = 50, type?: string) =>
+/** `type` : exact, ou famille terminée par « * » (« EMAIL_* ») ; `actor` : sous-chaîne du pseudo. */
+export const getActivityLogs = (page = 0, size = 50, type?: string, actor?: string) =>
   api
-    .get<PageResponse<ActivityLog>>('/admin/activity-logs', { params: { page, size, ...(type ? { type } : {}) } })
+    .get<PageResponse<ActivityLog>>('/admin/activity-logs', {
+      params: { page, size, ...(type ? { type } : {}), ...(actor ? { actor } : {}) },
+    })
     .then((r) => r.data);
 
 export const purgeActivityLogs = (days: number) =>

@@ -527,7 +527,7 @@
     },
     "activity": {
       "title": "Journal d'activité",
-      "subtitle": "Connexions, inscriptions, uploads, suppressions et bannissements. Purge automatique après 90 jours.",
+      "subtitle": "Connexions, inscriptions, uploads, suppressions, bannissements, vérification e-mail et limites atteintes. Purge automatique après 90 jours.",
       "filterType": "Type",
       "allTypes": "Tous",
       "purgeOlderThan": "Supprimer au-delà de",
@@ -541,8 +541,17 @@
         "UPLOAD": "Upload",
         "DOC_VERIFY": "Vérification",
         "DOC_DELETE": "Suppression",
-        "USER_BAN": "Bannissement"
-      }
+        "USER_BAN": "Bannissement",
+        "EMAIL_CODE_SENT": "Code envoyé",
+        "EMAIL_CODE_BLOCKED": "Code non envoyé",
+        "EMAIL_SEND_FAILED": "Échec d'envoi",
+        "EMAIL_CODE_REJECTED": "Code refusé",
+        "EMAIL_VERIFIED": "E-mail vérifié",
+        "RATE_LIMITED": "Limite atteinte"
+      },
+      "filterActor": "Pseudo",
+      "emailAll": "Vérification e-mail (tout)",
+      "emailHint": "« Code envoyé » veut dire que Brevo a accepté le mail : s'il n'arrive pas, la suite se lit dans les logs Brevo (quarantaine, rebond, adresse bloquée). Les adresses n'apparaissent que masquées."
     },
     "toolsPanel": {
       "hint": "Contenus partagés via les outils d'étude (quiz, paquets de cartes, projets Gantt). Supprime ce qui est inapproprié : l'auteur garde sa copie locale.",

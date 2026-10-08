@@ -49,10 +49,22 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ActivityLogResponse> list(String type, Pageable pageable) {
-        Page<ActivityLog> page = (type == null || type.isBlank())
-                ? repository.findAllByOrderByCreatedAtDesc(pageable)
-                : repository.findByTypeOrderByCreatedAtDesc(type, pageable);
+    public PageResponse<ActivityLogResponse> list(String type, String actor, Pageable pageable) {
+        String t = type == null || type.isBlank() ? null : type.trim();
+        String a = actor == null || actor.isBlank() ? null : actor.trim();
+        boolean family = t != null && t.endsWith("*");
+        Page<ActivityLog> page;
+        if (t == null && a == null) {
+            page = repository.findAllByOrderByCreatedAtDesc(pageable);
+        } else if (t != null && !family && a == null) {
+            page = repository.findByTypeOrderByCreatedAtDesc(t, pageable);
+        } else {
+            page = repository.search(
+                    family ? null : t,
+                    family ? t.substring(0, t.length() - 1) + "%" : null,
+                    a == null ? null : "%" + a.toLowerCase(java.util.Locale.ROOT) + "%",
+                    pageable);
+        }
         List<ActivityLogResponse> content = page.getContent().stream().map(this::toResponse).toList();
         return PageResponse.from(page, content);
     }

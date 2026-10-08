@@ -58,9 +58,10 @@ public class AdminController {
     @GetMapping("/activity-logs")
     public ResponseEntity<PageResponse<ActivityLogResponse>> listActivityLogs(
             @RequestParam(required = false) String type,
+            @RequestParam(required = false) String actor,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return ResponseEntity.ok(activityLogService.list(type, PageRequest.of(page, size)));
+        return ResponseEntity.ok(activityLogService.list(type, actor, PageRequest.of(page, size)));
     }
 
     @DeleteMapping("/activity-logs")

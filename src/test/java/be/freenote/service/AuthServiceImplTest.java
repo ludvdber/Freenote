@@ -1,5 +1,6 @@
 package be.freenote.service;
 
+import be.freenote.enums.ActivityType;
 import be.freenote.entity.User;
 import be.freenote.entity.UserOauthLink;
 import be.freenote.exception.RateLimitExceededException;
@@ -134,6 +135,8 @@ class AuthServiceImplTest {
 
         verify(valueOps).set(eq("verify:1"), anyString(), eq(Duration.ofMinutes(15)));
         verify(mailSender).send(mimeMessage);
+        // Le panel admin voit que le serveur SMTP a pris le mail, avec l'adresse MASQUÉE.
+        verify(activityLogService).log(eq(ActivityType.EMAIL_CODE_SENT), eq(1L), any(), contains("st***@isfce.be"));
     }
 
     @Test
@@ -166,6 +169,7 @@ class AuthServiceImplTest {
 
         assertThatThrownBy(() -> authService.requestVerification(1L, "student@isfce.be"))
                 .isInstanceOf(be.freenote.exception.ServiceUnavailableException.class);
+        verify(activityLogService).log(eq(ActivityType.EMAIL_SEND_FAILED), eq(1L), any(), contains("SMTP down"));
     }
 
     @Test
@@ -173,6 +177,7 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.requestVerification(1L, "user@gmail.com"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ISFCE");
+        verify(activityLogService).log(eq(ActivityType.EMAIL_CODE_BLOCKED), eq(1L), any(), contains("us***@gmail.com"));
     }
 
     @Test
@@ -195,13 +200,16 @@ class AuthServiceImplTest {
     void shouldSilentlyNoopWhenEmailHashAlreadyExists() {
         // Returning a distinct error would leak which emails are already registered (enumeration attack).
         // The service should silently return without sending an email or storing a verification code.
-        User existing = User.builder().id(99L).build();
+        User existing = User.builder().id(99L).username("autre-compte").build();
         when(userRepository.findByEmailHash(anyString())).thenReturn(Optional.of(existing));
 
         authService.requestVerification(1L, "student@isfce.be");
 
         verifyNoInteractions(mailSender);
         verifyNoInteractions(redisTemplate);
+        // Silence pour l'étudiant, mais l'admin doit savoir QUI détient déjà l'adresse.
+        verify(activityLogService).log(eq(ActivityType.EMAIL_CODE_BLOCKED), eq(1L), any(),
+                contains("autre-compte"));
     }
 
     // ---- confirmVerification ----
@@ -225,6 +233,7 @@ class AuthServiceImplTest {
         assertThat(user.getEmailHash()).isEqualTo(emailHash);
         verify(redisTemplate).delete("verify:1");
         verify(redisTemplate).delete("verify-attempts:1");
+        verify(activityLogService).log(eq(ActivityType.EMAIL_VERIFIED), eq(1L), eq("test"), anyString());
     }
 
     @Test
@@ -256,6 +265,7 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.confirmVerification(1L, "000000"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("incorrect");
+        verify(activityLogService).log(eq(ActivityType.EMAIL_CODE_REJECTED), eq(1L), any(), contains("1/5"));
     }
 
     @Test

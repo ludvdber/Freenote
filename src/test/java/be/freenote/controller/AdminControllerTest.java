@@ -425,7 +425,7 @@ class AdminControllerTest {
 
         @Test
         void listeEtPurgeLeJournalDActivite() throws Exception {
-            when(activityLogService.list(any(), any())).thenReturn(emptyPage());
+            when(activityLogService.list(any(), any(), any())).thenReturn(emptyPage());
             when(activityLogService.purgeBefore(any())).thenReturn(7);
 
             mockMvc.perform(get("/api/admin/activity-logs").param("type", "LOGIN"))

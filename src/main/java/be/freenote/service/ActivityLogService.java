@@ -12,7 +12,11 @@ public interface ActivityLogService {
     /** Records an event. Never throws — a logging failure must not break the action it records. */
     void log(ActivityType type, Long actorId, String actorName, String message);
 
-    PageResponse<ActivityLogResponse> list(String type, Pageable pageable);
+    /**
+     * {@code type} : un type exact, ou une famille terminée par « * » (« EMAIL_* »). {@code actor} :
+     * sous-chaîne du pseudo. Vides = pas de filtre.
+     */
+    PageResponse<ActivityLogResponse> list(String type, String actor, Pageable pageable);
 
     /** Deletes every log strictly older than {@code before}. Returns the number of rows removed. */
     int purgeBefore(LocalDateTime before);

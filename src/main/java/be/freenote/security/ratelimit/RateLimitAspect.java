@@ -1,7 +1,10 @@
 package be.freenote.security.ratelimit;
 
+import be.freenote.entity.User;
+import be.freenote.enums.ActivityType;
 import be.freenote.exception.RateLimitExceededException;
 import be.freenote.repository.UserRepository;
+import be.freenote.service.ActivityLogService;
 import be.freenote.service.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ public class RateLimitAspect {
 
     private final RateLimitService rateLimitService;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     @Around("@annotation(rateLimit)")
     public Object enforce(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
@@ -33,9 +37,32 @@ public class RateLimitAspect {
         if (!rateLimitService.isAllowed(key, rateLimit.max(), rateLimit.window())) {
             long retryAfter = rateLimitService.retryAfterSeconds(key);
             log.warn("Rate limit exceeded: key={} (retryAfter={}s)", key, retryAfter);
+            reportToAdmin(joinPoint, key, retryAfter);
             throw new RateLimitExceededException("Rate limit exceeded. Try again later.", retryAfter);
         }
         return joinPoint.proceed();
+    }
+
+    /**
+     * Journal du panel : un compte CONNECTÉ bloqué par une limite (une ligne par fenêtre). Les
+     * anonymes sont exclus — le collecteur public et le jeu de quiz en rempliraient la table pour
+     * rien. Un étudiant qui redemande son code 4 fois en une heure était jusqu'ici invisible.
+     * Ne doit jamais empêcher le 429 de partir.
+     */
+    private void reportToAdmin(ProceedingJoinPoint joinPoint, String key, long retryAfter) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !(auth.getPrincipal() instanceof Long userId)
+                    || !rateLimitService.firstRejectionInWindow(key)) {
+                return;
+            }
+            String username = userRepository.findById(userId).map(User::getUsername).orElse(null);
+            activityLogService.log(ActivityType.RATE_LIMITED, userId, username,
+                    "Limite atteinte sur " + joinPoint.getSignature().toShortString()
+                            + " — débloqué dans " + Math.max(1, retryAfter / 60) + " min");
+        } catch (Exception e) {
+            log.warn("Could not report rate limit to the activity log: {}", e.getMessage());
+        }
     }
 
     /** Admins bypass every rate limit (authorities check, no DB hit). The "trusted" flag only

@@ -29,11 +29,14 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -177,9 +180,11 @@ public class AuthServiceImpl implements AuthService {
         // « je ne reçois jamais le mail » était indiagnosticable — un envoi réussi ne laissait
         // aucune ligne, impossible de distinguer une demande jamais arrivée d'un mail perdu après
         // l'envoi.
-        log.info("Verification requested (userId={}, address={})", userId, maskEmail(email));
+        String masked = maskEmail(email);
+        log.info("Verification requested (userId={}, address={})", userId, masked);
         if (!ISFCE_EMAIL_PATTERN.matcher(email).matches()) {
             log.info("Verification request rejected: not an @isfce.be address (userId={})", userId);
+            audit(ActivityType.EMAIL_CODE_BLOCKED, userId, "Pas une adresse @isfce.be : " + masked);
             throw new IllegalArgumentException("Email must be an ISFCE email address (@isfce.be)");
         }
 
@@ -191,23 +196,60 @@ public class AuthServiceImpl implements AuthService {
         // profondeur de confirmVerification re-vérifie de toute façon le ban avant de valider.
         if (banRepository.existsByEmailHash(emailHash)) {
             log.info("Verification request for a banned email (userId={}). Silently ignored.", userId);
+            audit(ActivityType.EMAIL_CODE_BLOCKED, userId, "Adresse bannie, aucun code envoyé : " + masked);
             return;
         }
 
         // Silently no-op if this email is already claimed by another account.
         // Returning a distinct error would let an attacker enumerate registered @isfce.be emails.
-        if (userRepository.findByEmailHash(emailHash).isPresent()) {
+        // Le silence vaut pour l'ÉTUDIANT ; l'admin, lui, doit savoir qui détient l'adresse.
+        Optional<User> holder = userRepository.findByEmailHash(emailHash);
+        if (holder.isPresent()) {
             log.info("Verification request for an already-claimed email (userId={}). Silently ignored.", userId);
+            String owner = holder.get().getId().equals(userId)
+                    ? "ce même compte"
+                    : "le compte « " + holder.get().getUsername() + " » (id " + holder.get().getId() + ")";
+            audit(ActivityType.EMAIL_CODE_BLOCKED, userId,
+                    "Adresse déjà liée à " + owner + ", aucun code envoyé : " + masked);
             return;
         }
 
         String code = generateCode();
         redisTemplate.opsForValue().set("verify:" + userId, code + ":" + emailHash, Duration.ofMinutes(15));
 
-        sendVerificationEmail(email, code);
+        try {
+            sendVerificationEmail(email, code);
+        } catch (ServiceUnavailableException e) {
+            String cause = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            audit(ActivityType.EMAIL_SEND_FAILED, userId, "Refus du serveur SMTP (" + masked + ") : " + cause);
+            throw e;
+        }
         // Le serveur SMTP (Brevo) a accepté le message : au-delà, la livraison ne dépend plus de
         // l'app (spam, quarantaine Microsoft 365 côté ISFCE) — à voir dans les logs Brevo.
         log.info("Verification email accepted by the SMTP server (userId={})", userId);
+        audit(ActivityType.EMAIL_CODE_SENT, userId, "Code accepté par le serveur SMTP pour " + masked);
+    }
+
+    /**
+     * Ligne du journal d'activité du panel (parcours de vérification e-mail). REQUIRES_NEW côté
+     * service : écrite même quand la requête échoue ensuite — c'est justement ce qu'on veut voir.
+     */
+    private void audit(ActivityType type, Long userId, String message) {
+        String username = userRepository.findById(userId).map(User::getUsername).orElse(null);
+        activityLogService.log(type, userId, username, message);
+    }
+
+    private static void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 
     /** « sp***@isfce.be » : assez pour repérer une faute de frappe, pas pour retrouver l'adresse. */
@@ -234,6 +276,7 @@ public class AuthServiceImpl implements AuthService {
             redisTemplate.delete("verify:" + userId);
             redisTemplate.delete(attemptsKey);
             log.warn("Verification rate limit reached for userId={}", userId);
+            audit(ActivityType.EMAIL_CODE_REJECTED, userId, "Plus de 5 essais : code annulé, il doit en redemander un");
             throw new RateLimitExceededException("Trop de tentatives, veuillez redemander un code");
         }
 
@@ -245,6 +288,7 @@ public class AuthServiceImpl implements AuthService {
             // code is a bad request, not a session failure. A 401 here would trip the SPA's axios
             // interceptor into logging the user out and bouncing them to the home page.
             log.info("Verification code expired or never requested (userId={})", userId);
+            audit(ActivityType.EMAIL_CODE_REJECTED, userId, "Code expiré (15 min) ou jamais demandé");
             throw new IllegalArgumentException("Ce code a expiré. Demande un nouveau code.");
         }
 
@@ -254,6 +298,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!storedCode.equals(code)) {
             log.info("Verification code mismatch (userId={}, attempt={}/5)", userId, attempts);
+            audit(ActivityType.EMAIL_CODE_REJECTED, userId, "Code incorrect (essai " + attempts + "/5)");
             throw new IllegalArgumentException("Code incorrect. Vérifie les 6 chiffres et réessaie.");
         }
 
@@ -284,6 +329,11 @@ public class AuthServiceImpl implements AuthService {
         redisTemplate.delete(redisKey);
         redisTemplate.delete(attemptsKey);
         log.info("Email verified (userId={})", userId);
+        // APRÈS le commit : la ligne du journal (transaction séparée) référence users par clé
+        // étrangère, et la mise à jour de email_hash (colonne unique) verrouille cette ligne
+        // jusqu'au commit — écrire le journal avant attendrait un verrou que nous tenons nous-mêmes.
+        String username = user.getUsername();
+        runAfterCommit(() -> activityLogService.log(ActivityType.EMAIL_VERIFIED, userId, username, "Adresse @isfce.be vérifiée"));
 
         return jwtTokenProvider.generateToken(user);
     }

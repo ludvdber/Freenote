@@ -22,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -105,7 +106,7 @@ class ActivityLogServiceImplTest {
                 .actorName("Sophie_M").message("m").createdAt(LocalDateTime.now()).build();
         when(repository.findAllByOrderByCreatedAtDesc(any())).thenReturn(new PageImpl<>(List.of(a)));
 
-        PageResponse<ActivityLogResponse> page = service.list(null, PageRequest.of(0, 20));
+        PageResponse<ActivityLogResponse> page = service.list(null, null, PageRequest.of(0, 20));
 
         assertThat(page.content()).hasSize(1);
         assertThat(page.content().getFirst().type()).isEqualTo("LOGIN");
@@ -117,7 +118,7 @@ class ActivityLogServiceImplTest {
     void traiteUnFiltreVideCommeAbsent() {
         when(repository.findAllByOrderByCreatedAtDesc(any())).thenReturn(new PageImpl<>(List.of()));
 
-        service.list("   ", PageRequest.of(0, 20));
+        service.list("   ", null, PageRequest.of(0, 20));
 
         verify(repository).findAllByOrderByCreatedAtDesc(any());
         verify(repository, never()).findByTypeOrderByCreatedAtDesc(any(), any());
@@ -128,7 +129,7 @@ class ActivityLogServiceImplTest {
         when(repository.findByTypeOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.eq("UPLOAD"), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
-        service.list("UPLOAD", PageRequest.of(0, 20));
+        service.list("UPLOAD", null, PageRequest.of(0, 20));
 
         verify(repository).findByTypeOrderByCreatedAtDesc(org.mockito.ArgumentMatchers.eq("UPLOAD"), any());
         verify(repository, never()).findAllByOrderByCreatedAtDesc(any());
@@ -163,5 +164,18 @@ class ActivityLogServiceImplTest {
         service.autoPrune();
 
         verify(repository, never()).deleteByCreatedAtBefore(any());
+    }
+
+    /** Suivre UN étudiant à travers tout le parcours e-mail : famille de types + pseudo. */
+    @Test
+    void list_familyAndActorUseTheCombinedSearch() {
+        when(repository.search(isNull(), org.mockito.ArgumentMatchers.eq("EMAIL_%"),
+                org.mockito.ArgumentMatchers.eq("%spike%"), any())).thenReturn(new PageImpl<>(List.of()));
+
+        service.list("EMAIL_*", " Spike ", PageRequest.of(0, 20));
+
+        verify(repository).search(isNull(), org.mockito.ArgumentMatchers.eq("EMAIL_%"),
+                org.mockito.ArgumentMatchers.eq("%spike%"), any());
+        verify(repository, never()).findAllByOrderByCreatedAtDesc(any());
     }
 }

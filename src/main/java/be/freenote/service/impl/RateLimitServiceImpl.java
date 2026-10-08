@@ -28,4 +28,12 @@ public class RateLimitServiceImpl implements RateLimitService {
         Long ttl = redisTemplate.getExpire("rate:" + key);
         return ttl != null && ttl > 0 ? ttl : 0;
     }
+
+    @Override
+    public boolean firstRejectionInWindow(String key) {
+        long ttl = retryAfterSeconds(key);
+        Boolean first = redisTemplate.opsForValue().setIfAbsent(
+                "rate-reported:" + key, "1", Duration.ofSeconds(Math.max(ttl, 1)));
+        return Boolean.TRUE.equals(first);
+    }
 }

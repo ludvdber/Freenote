@@ -16,6 +16,21 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
 
     Page<ActivityLog> findByTypeOrderByCreatedAtDesc(String type, Pageable pageable);
 
+    /**
+     * Filtres combinés du panel : type exact OU famille de types (préfixe, ex. « EMAIL_% » pour tout
+     * le parcours de vérification), et pseudo de l'acteur (sous-chaîne, insensible à la casse) —
+     * suivre UN étudiant à travers ses demandes de code. Chaque paramètre null = pas de filtre.
+     */
+    @Query("""
+        SELECT a FROM ActivityLog a
+        WHERE (:type IS NULL OR a.type = :type)
+          AND (:typePrefix IS NULL OR a.type LIKE :typePrefix)
+          AND (:actor IS NULL OR LOWER(a.actorName) LIKE :actor)
+        ORDER BY a.createdAt DESC
+        """)
+    Page<ActivityLog> search(@Param("type") String type, @Param("typePrefix") String typePrefix,
+                             @Param("actor") String actor, Pageable pageable);
+
     @Modifying
     @Query("DELETE FROM ActivityLog a WHERE a.createdAt < :before")
     int deleteByCreatedAtBefore(@Param("before") LocalDateTime before);

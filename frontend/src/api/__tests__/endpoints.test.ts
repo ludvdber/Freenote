@@ -109,6 +109,10 @@ describe('endpoints — GET', () => {
     expect(get).toHaveBeenCalledWith('/admin/activity-logs', { params: { page: 1, size: 25, type: 'LOGIN' } });
     await ep.getActivityLogs();
     expect(get).toHaveBeenCalledWith('/admin/activity-logs', { params: { page: 0, size: 50 } });
+    await ep.getActivityLogs(0, 50, 'EMAIL_*', 'spike');
+    expect(get).toHaveBeenCalledWith('/admin/activity-logs', {
+      params: { page: 0, size: 50, type: 'EMAIL_*', actor: 'spike' },
+    });
   });
 });
 

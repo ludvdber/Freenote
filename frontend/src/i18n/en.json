@@ -527,7 +527,7 @@
     },
     "activity": {
       "title": "Activity log",
-      "subtitle": "Logins, sign-ups, uploads, deletions and bans. Auto-pruned after 90 days.",
+      "subtitle": "Logins, sign-ups, uploads, deletions, bans, email verification and rate limits. Auto-purged after 90 days.",
       "filterType": "Type",
       "allTypes": "All",
       "purgeOlderThan": "Delete older than",
@@ -541,8 +541,17 @@
         "UPLOAD": "Upload",
         "DOC_VERIFY": "Verification",
         "DOC_DELETE": "Deletion",
-        "USER_BAN": "Ban"
-      }
+        "USER_BAN": "Ban",
+        "EMAIL_CODE_SENT": "Code sent",
+        "EMAIL_CODE_BLOCKED": "Code not sent",
+        "EMAIL_SEND_FAILED": "Send failure",
+        "EMAIL_CODE_REJECTED": "Code rejected",
+        "EMAIL_VERIFIED": "Email verified",
+        "RATE_LIMITED": "Rate limited"
+      },
+      "filterActor": "Username",
+      "emailAll": "Email verification (all)",
+      "emailHint": "“Code sent” means Brevo accepted the email: if it never arrives, look at the Brevo logs (quarantine, bounce, blocked address). Addresses are only shown masked."
     },
     "toolsPanel": {
       "hint": "Content shared through the study tools (quizzes, flashcard decks, Gantt projects). Delete anything inappropriate: the author keeps their local copy.",
