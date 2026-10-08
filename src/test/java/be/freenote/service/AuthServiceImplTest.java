@@ -312,4 +312,13 @@ class AuthServiceImplTest {
 
         verify(redisTemplate, never()).expire(eq("verify-attempts:1"), any(Duration.class));
     }
+
+    /** Les logs du parcours de vérification ne doivent JAMAIS contenir l'adresse en clair. */
+    @Test
+    void maskEmailKeepsOnlyTwoCharactersAndTheDomain() {
+        assertThat(AuthServiceImpl.maskEmail("spike.martin@isfce.be")).isEqualTo("sp***@isfce.be");
+        assertThat(AuthServiceImpl.maskEmail("a@isfce.be")).isEqualTo("a***@isfce.be");
+        assertThat(AuthServiceImpl.maskEmail("sans-arobase")).isEqualTo("***");
+        assertThat(AuthServiceImpl.maskEmail(null)).isEqualTo("null");
+    }
 }

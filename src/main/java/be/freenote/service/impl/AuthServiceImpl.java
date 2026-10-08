@@ -173,7 +173,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void requestVerification(Long userId, String email) {
+        // Chaque étape du parcours est tracée (adresse MASQUÉE, jamais le code) : sans ça, un
+        // « je ne reçois jamais le mail » était indiagnosticable — un envoi réussi ne laissait
+        // aucune ligne, impossible de distinguer une demande jamais arrivée d'un mail perdu après
+        // l'envoi.
+        log.info("Verification requested (userId={}, address={})", userId, maskEmail(email));
         if (!ISFCE_EMAIL_PATTERN.matcher(email).matches()) {
+            log.info("Verification request rejected: not an @isfce.be address (userId={})", userId);
             throw new IllegalArgumentException("Email must be an ISFCE email address (@isfce.be)");
         }
 
@@ -199,6 +205,21 @@ public class AuthServiceImpl implements AuthService {
         redisTemplate.opsForValue().set("verify:" + userId, code + ":" + emailHash, Duration.ofMinutes(15));
 
         sendVerificationEmail(email, code);
+        // Le serveur SMTP (Brevo) a accepté le message : au-delà, la livraison ne dépend plus de
+        // l'app (spam, quarantaine Microsoft 365 côté ISFCE) — à voir dans les logs Brevo.
+        log.info("Verification email accepted by the SMTP server (userId={})", userId);
+    }
+
+    /** « sp***@isfce.be » : assez pour repérer une faute de frappe, pas pour retrouver l'adresse. */
+    public static String maskEmail(String email) {
+        if (email == null) {
+            return "null";
+        }
+        int at = email.indexOf('@');
+        if (at <= 0) {
+            return "***";
+        }
+        return email.substring(0, Math.min(2, at)) + "***" + email.substring(at);
     }
 
     @Override
@@ -223,6 +244,7 @@ public class AuthServiceImpl implements AuthService {
             // 400, not 401: the user IS authenticated (provisional account) — an expired/missing
             // code is a bad request, not a session failure. A 401 here would trip the SPA's axios
             // interceptor into logging the user out and bouncing them to the home page.
+            log.info("Verification code expired or never requested (userId={})", userId);
             throw new IllegalArgumentException("Ce code a expiré. Demande un nouveau code.");
         }
 
@@ -231,6 +253,7 @@ public class AuthServiceImpl implements AuthService {
         String emailHash = parts[1];
 
         if (!storedCode.equals(code)) {
+            log.info("Verification code mismatch (userId={}, attempt={}/5)", userId, attempts);
             throw new IllegalArgumentException("Code incorrect. Vérifie les 6 chiffres et réessaie.");
         }
 
@@ -260,6 +283,7 @@ public class AuthServiceImpl implements AuthService {
 
         redisTemplate.delete(redisKey);
         redisTemplate.delete(attemptsKey);
+        log.info("Email verified (userId={})", userId);
 
         return jwtTokenProvider.generateToken(user);
     }

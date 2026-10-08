@@ -45,6 +45,23 @@ public class SmtpKeepAliveService {
     @Value("${app.email.keepalive.threshold-days:80}")
     private int thresholdDays;
 
+    @Value("${spring.mail.host:}")
+    private String smtpHost;
+
+    /**
+     * Le keep-alive se désactive en SILENCE quand {@code MAIL_KEEPALIVE_TO} est vide — et la variable
+     * manquait au modèle de déploiement : en prod il n'a jamais tourné, et Brevo a marqué la clé
+     * inactive après 3 mois (2026-10-08). Avertir au démarrage dès que le SMTP pointe vers Brevo
+     * (pas en dev, où un SMTP local n'expire jamais).
+     */
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void warnIfDisabled() {
+        if (!isEnabled() && smtpHost != null && smtpHost.contains("brevo")) {
+            log.warn("SMTP keep-alive DISABLED (MAIL_KEEPALIVE_TO is empty): Brevo deactivates an SMTP key "
+                    + "after 3 months without use. Set MAIL_KEEPALIVE_TO in the environment.");
+        }
+    }
+
     /** Resets the inactivity timer — call after every successful outbound email. */
     public void recordEmailSent() {
         redisTemplate.opsForValue().set(LAST_SENT_KEY, String.valueOf(Instant.now().toEpochMilli()));
