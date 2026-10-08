@@ -7,7 +7,8 @@ function getCsrfToken(): string | null {
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // Défaut '/api' : un build sans frontend/.env (CI, release GitHub) ne doit pas viser la racine.
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
