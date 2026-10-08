@@ -292,7 +292,8 @@
       "analytics": "Analytics",
       "duplicates": "Duplicates",
       "logs": "Logs",
-      "revision": "Quizzes & decks"
+      "revision": "Quizzes & decks",
+      "system": "System"
     },
     "settings": {
       "countdownTitle": "Home page countdown",
@@ -554,7 +555,8 @@
       "filterActor": "Username or text",
       "emailAll": "Email verification (all)",
       "emailHint": "“Code sent” means Brevo accepted the email: if it never arrives, look at the Brevo logs (quarantine, bounce, blocked address). Addresses are only shown masked.",
-      "retention": "Retention: 30 days for logins and rate limits, 90 days for the rest, 1 year for staff actions — a manual purge never touches them."
+      "retention": "Retention: 30 days for logins and rate limits, 90 days for the rest, 1 year for staff actions — a manual purge never touches them.",
+      "notable": "Notable actions (no logins or emails)"
     },
     "toolsPanel": {
       "hint": "Content shared through the study tools (quizzes, flashcard decks, Gantt projects). Delete anything inappropriate: the author keeps their local copy.",
@@ -681,6 +683,60 @@
       "remindUNREACHABLE": "Can't reach them: they block direct messages or aren't on the Discord server.",
       "remindDISABLED": "The Discord bot isn't configured (DISCORD_BOT_TOKEN empty).",
       "remindFAILED": "Discord refused the message — see the system alerts."
+    },
+    "sheet": {
+      "open": "Details",
+      "title": "Account details",
+      "joined": "Signed up",
+      "lastLogin": "Last login",
+      "noLogin": "None in the last 30 days",
+      "step": "Step",
+      "stepDone": "Verified account",
+      "stepEmail": "Must verify their @isfce.be address",
+      "stepCode": "Code sent, waiting for input",
+      "termsPending": "Terms not accepted yet",
+      "lastEmail": "Last email event",
+      "code": "Pending code",
+      "codePending": "Expires in {{minutes}} min · {{attempts}}/{{max}} wrong attempts",
+      "noCode": "None",
+      "cancelCode": "Cancel the code",
+      "resetAttempts": "Reset attempts",
+      "limits": "Rate limits",
+      "limitLine_one": "{{count}} call, lifts in {{minutes}} min",
+      "limitLine_other": "{{count}} calls, lifts in {{minutes}} min",
+      "noLimits": "None active",
+      "clearLimits": "Lift the limits",
+      "codeCancelled": "Code cancelled: the student can request a new one.",
+      "attemptsReset": "Attempts reset: the code is still valid.",
+      "limitsCleared": "Limits lifted."
+    },
+    "system": {
+      "title": "System",
+      "loadError": "Could not read the system status.",
+      "running": "Version {{version}} · started {{since}} ({{uptime}}) · Java {{java}}",
+      "uptimeDays": "{{d}} d {{h}} h",
+      "uptimeHours": "{{h}} h {{m}} min",
+      "uptimeMinutes": "{{m}} min",
+      "services": {
+        "db": "PostgreSQL",
+        "redis": "Redis",
+        "minio": "MinIO (files)",
+        "meilisearch": "Meilisearch (search)"
+      },
+      "down": "Not responding",
+      "searchTitle": "Search index",
+      "searchSync": "In sync",
+      "searchDown": "Meilisearch unreachable",
+      "searchGap_one": "{{count}} document apart",
+      "searchGap_other": "{{count}} documents apart",
+      "searchCounts": "{{db}} documents in the database, {{indexed}} in the index. Resync also runs at startup and every night at 4 am.",
+      "resync": "Resync",
+      "resyncDone": "Index checked and reindexed if needed.",
+      "heap": "JVM memory (heap)",
+      "disk": "Disk",
+      "unitMb": "MB",
+      "unitGb": "GB",
+      "memoryHint": "The heap is capped by -Xmx: a value close to the maximum continuously (not just in spikes) is the signal to watch. The disk is the one the application runs on."
     }
   },
   "upload": {

@@ -292,7 +292,8 @@
       "analytics": "Analytics",
       "duplicates": "Doublons",
       "logs": "Logs",
-      "revision": "Quiz & paquets"
+      "revision": "Quiz & paquets",
+      "system": "Système"
     },
     "settings": {
       "countdownTitle": "Compte à rebours de l'accueil",
@@ -554,7 +555,8 @@
       "filterActor": "Pseudo ou texte",
       "emailAll": "Vérification e-mail (tout)",
       "emailHint": "« Code envoyé » veut dire que Brevo a accepté le mail : s'il n'arrive pas, la suite se lit dans les logs Brevo (quarantaine, rebond, adresse bloquée). Les adresses n'apparaissent que masquées.",
-      "retention": "Conservation : 30 jours pour les connexions et limites, 90 jours pour le reste, 1 an pour les actions du staff — la purge manuelle ne les touche jamais."
+      "retention": "Conservation : 30 jours pour les connexions et limites, 90 jours pour le reste, 1 an pour les actions du staff — la purge manuelle ne les touche jamais.",
+      "notable": "Actions notables (sans connexions ni e-mails)"
     },
     "toolsPanel": {
       "hint": "Contenus partagés via les outils d'étude (quiz, paquets de cartes, projets Gantt). Supprime ce qui est inapproprié : l'auteur garde sa copie locale.",
@@ -681,6 +683,60 @@
       "remindUNREACHABLE": "Impossible de lui écrire : il bloque les messages privés ou n'est pas sur le serveur Discord.",
       "remindDISABLED": "Le bot Discord n'est pas configuré (DISCORD_BOT_TOKEN vide).",
       "remindFAILED": "Discord a refusé l'envoi — voir les alertes système."
+    },
+    "sheet": {
+      "open": "Fiche",
+      "title": "Fiche du compte",
+      "joined": "Inscription",
+      "lastLogin": "Dernière connexion",
+      "noLogin": "Aucune dans les 30 derniers jours",
+      "step": "Étape",
+      "stepDone": "Compte vérifié",
+      "stepEmail": "Doit vérifier son adresse @isfce.be",
+      "stepCode": "Code envoyé, en attente de saisie",
+      "termsPending": "CGU pas encore acceptées",
+      "lastEmail": "Dernier événement e-mail",
+      "code": "Code en attente",
+      "codePending": "Expire dans {{minutes}} min · {{attempts}}/{{max}} essais faux",
+      "noCode": "Aucun",
+      "cancelCode": "Annuler le code",
+      "resetAttempts": "Remettre les essais à zéro",
+      "limits": "Limites de débit",
+      "limitLine_one": "{{count}} appel, se lève dans {{minutes}} min",
+      "limitLine_other": "{{count}} appels, se lève dans {{minutes}} min",
+      "noLimits": "Aucune active",
+      "clearLimits": "Lever les limites",
+      "codeCancelled": "Code annulé : l'étudiant peut en redemander un.",
+      "attemptsReset": "Essais remis à zéro : le code reste valable.",
+      "limitsCleared": "Limites levées."
+    },
+    "system": {
+      "title": "Système",
+      "loadError": "Impossible de lire l'état du système.",
+      "running": "Version {{version}} · démarrée {{since}} ({{uptime}}) · Java {{java}}",
+      "uptimeDays": "{{d}} j {{h}} h",
+      "uptimeHours": "{{h}} h {{m}} min",
+      "uptimeMinutes": "{{m}} min",
+      "services": {
+        "db": "PostgreSQL",
+        "redis": "Redis",
+        "minio": "MinIO (fichiers)",
+        "meilisearch": "Meilisearch (recherche)"
+      },
+      "down": "Ne répond pas",
+      "searchTitle": "Index de recherche",
+      "searchSync": "Synchronisé",
+      "searchDown": "Meilisearch injoignable",
+      "searchGap_one": "{{count}} document d’écart",
+      "searchGap_other": "{{count}} documents d’écart",
+      "searchCounts": "{{db}} documents en base, {{indexed}} dans l’index. La resynchronisation tourne aussi au démarrage et chaque nuit à 4 h.",
+      "resync": "Resynchroniser",
+      "resyncDone": "Index vérifié et réindexé si besoin.",
+      "heap": "Mémoire de la JVM (tas)",
+      "disk": "Disque",
+      "unitMb": "Mo",
+      "unitGb": "Go",
+      "memoryHint": "Le tas est borné par -Xmx : une valeur proche du maximum en continu (pas seulement par pics) est le signal à surveiller. Le disque est celui où tourne l'application."
     }
   },
   "upload": {

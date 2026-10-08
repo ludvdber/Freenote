@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
 
@@ -37,6 +38,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
 
     /** Badge des alertes système non acquittées. */
     long countByTypeAndCreatedAtGreaterThanEqual(String type, LocalDateTime after);
+
+    /** Dernière connexion d'un compte (fiche admin) — bornée par la conservation des LOGIN. */
+    Optional<ActivityLog> findFirstByActorIdAndTypeOrderByCreatedAtDesc(Long actorId, String type);
 
     /** Dernier événement du parcours e-mail de chaque compte bloqué à l'inscription (le plus récent d'abord). */
     @Query("""

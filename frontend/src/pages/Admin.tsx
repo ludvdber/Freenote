@@ -16,6 +16,7 @@ import {
   Group,
   Favorite,
   ReceiptLong,
+  MonitorHeart,
   Settings,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ const AdminGuides = lazy(() => import('@/components/admin/AdminGuides'));
 const AdminRevision = lazy(() => import('@/components/admin/AdminRevision'));
 const AdminTools = lazy(() => import('@/components/admin/AdminTools'));
 const AdminSettings = lazy(() => import('@/components/admin/AdminSettings'));
+const AdminSystem = lazy(() => import('@/components/admin/AdminSystem'));
 
 export type AdminPane =
   | 'overview' | 'analytics'
@@ -53,7 +55,7 @@ export type AdminPane =
   | 'guides' | 'tools'
   | 'sections' | 'courses' | 'professors' | 'delegates'
   | 'users' | 'donations'
-  | 'logs' | 'settings';
+  | 'system' | 'logs' | 'settings';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PANES: Record<AdminPane, ComponentType<any>> = {
@@ -71,6 +73,7 @@ const PANES: Record<AdminPane, ComponentType<any>> = {
   delegates: AdminDelegates,
   users: AdminUsers,
   donations: AdminDonations,
+  system: AdminSystem,
   logs: AdminActivityLogs,
   settings: AdminSettings,
 };
@@ -138,6 +141,7 @@ const GROUPS: { labelKey: string | null; access: PaneAccess; items: NavItem[] }[
     labelKey: 'admin.nav.system',
     access: 'admin',
     items: [
+      { id: 'system', icon: <MonitorHeart /> },
       { id: 'logs', icon: <ReceiptLong />, badge: (o) => o.systemAlerts },
       { id: 'settings', icon: <Settings /> },
     ],

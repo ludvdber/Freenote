@@ -13,7 +13,7 @@ import {
   MenuItem,
   Alert,
 } from '@mui/material';
-import { Verified, GppBad, Shield, DeleteForever, Block, Bolt, Palette, LocalPolice, HistoryEdu } from '@mui/icons-material';
+import { Verified, GppBad, Shield, DeleteForever, Block, Bolt, Palette, LocalPolice, HistoryEdu, ContactPage } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -35,6 +35,7 @@ import {
 } from '@/api/endpoints';
 import GlassCard from '@/components/ui/GlassCard';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import AdminUserSheet from './AdminUserSheet';
 import { extractApiError } from '@/lib/utils';
 import type { User } from '@/types';
 
@@ -53,6 +54,7 @@ export default function AdminUsers() {
   // Changement de rôle confirmé avant mutation — un mauvais clic dans le Select promouvait
   // ADMIN (ou retirait la vérification) immédiatement, sans garde-fou.
   const [roleCandidate, setRoleCandidate] = useState<{ user: User; role: Role } | null>(null);
+  const [sheetUserId, setSheetUserId] = useState<number | null>(null);
 
   const { data: sections = [] } = useQuery({ queryKey: ['sections'], queryFn: getSections });
   const { data: users, isLoading } = useQuery({
@@ -246,6 +248,12 @@ export default function AdminUsers() {
             </Tooltip>
           )}
 
+          <Tooltip title={t('admin.sheet.open')}>
+            <IconButton size="small" onClick={() => setSheetUserId(u.id)}>
+              <ContactPage fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>{t('admin.users.role')}</InputLabel>
             <Select
@@ -332,6 +340,8 @@ export default function AdminUsers() {
           </Tooltip>
         </GlassCard>
       ))}
+
+      <AdminUserSheet userId={sheetUserId} onClose={() => setSheetUserId(null)} />
 
       <ConfirmDialog
         open={Boolean(deleteCandidate)}

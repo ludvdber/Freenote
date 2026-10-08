@@ -31,6 +31,8 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class ActivityLogServiceImpl implements ActivityLogService {
 
+    private static final String NOTABLE = "NOTABLE";
+
     private final ActivityLogRepository repository;
     private final UserRepository userRepository;
 
@@ -91,8 +93,12 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         return PageResponse.from(page, content);
     }
 
-    /** « EMAIL_* » = tous les types du préfixe ; sinon le type tel quel (un type inconnu ne matche rien). */
+    /**
+     * « EMAIL_* » = tous les types du préfixe, « NOTABLE » = tout sauf le bruit ; sinon le type tel
+     * quel (un type inconnu ne matche rien).
+     */
     private static List<String> resolveTypes(String t) {
+        if (NOTABLE.equals(t)) return ActivityType.notableNames();
         if (!t.endsWith("*")) return List.of(t);
         String prefix = t.substring(0, t.length() - 1);
         return Arrays.stream(ActivityType.values()).map(Enum::name).filter(n -> n.startsWith(prefix)).toList();

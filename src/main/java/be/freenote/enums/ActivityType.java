@@ -47,6 +47,18 @@ public enum ActivityType {
         return retention;
     }
 
+    /**
+     * Ce qui mérite la « Dernière activité » de la vue d'ensemble : tout sauf le bruit quotidien
+     * (connexions, étapes du parcours e-mail, limites de débit), consultable dans les Logs.
+     */
+    public boolean notable() {
+        return this != LOGIN && this != RATE_LIMITED && !name().startsWith("EMAIL_");
+    }
+
+    public static List<String> notableNames() {
+        return Arrays.stream(values()).filter(ActivityType::notable).map(Enum::name).toList();
+    }
+
     public static List<String> namesWith(Retention retention) {
         return Arrays.stream(values()).filter(t -> t.retention == retention).map(Enum::name).toList();
     }

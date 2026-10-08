@@ -38,8 +38,10 @@ const TYPE_COLORS: Record<string, ChipColor> = {
 
 /** « EMAIL_* » = tout le parcours de vérification e-mail (famille de types côté serveur). */
 const EMAIL_FAMILY = 'EMAIL_*';
+/** Tout sauf le bruit (connexions, étapes e-mail, limites) — ce que montre la vue d'ensemble. */
+const NOTABLE = 'NOTABLE';
 const TYPES = [
-  '', 'SYSTEM_ALERT', 'STAFF_ACTION', EMAIL_FAMILY, 'EMAIL_CODE_SENT', 'EMAIL_CODE_BLOCKED', 'EMAIL_SEND_FAILED',
+  '', NOTABLE, 'SYSTEM_ALERT', 'STAFF_ACTION', EMAIL_FAMILY, 'EMAIL_CODE_SENT', 'EMAIL_CODE_BLOCKED', 'EMAIL_SEND_FAILED',
   'EMAIL_CODE_REJECTED', 'EMAIL_VERIFIED', 'LOGIN', 'SIGNUP', 'UPLOAD', 'DOC_VERIFY', 'DOC_DELETE', 'USER_BAN',
   'RATE_LIMITED',
 ];
@@ -81,6 +83,7 @@ export default function AdminActivityLogs() {
   const typeLabel = (ty: string) => {
     if (!ty) return t('admin.activity.allTypes');
     if (ty === EMAIL_FAMILY) return t('admin.activity.emailAll');
+    if (ty === NOTABLE) return t('admin.activity.notable');
     return t(`admin.activity.types.${ty}`);
   };
 

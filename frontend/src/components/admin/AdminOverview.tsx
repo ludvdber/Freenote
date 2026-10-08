@@ -41,7 +41,8 @@ export default function AdminOverview({ onNavigate }: { onNavigate: (pane: Admin
   });
   const { data: recentLogs } = useQuery({
     queryKey: ['admin-recent-logs'],
-    queryFn: () => getActivityLogs(0, RECENT_LOGS),
+    // Sans connexions, étapes e-mail ni limites de débit : ce bruit noyait les actions qui comptent.
+    queryFn: () => getActivityLogs(0, RECENT_LOGS, 'NOTABLE'),
   });
 
   const verifyMut = useMutation({
@@ -110,21 +111,19 @@ export default function AdminOverview({ onNavigate }: { onNavigate: (pane: Admin
           ))}
         </GlassCard>
 
-        {/* Dernière activité (journal existant, 8 entrées). */}
+        {/* Dernière activité notable (8 entrées) — le journal complet est dans Logs. */}
         <GlassCard sx={{ p: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {t('admin.overview.recentTitle')}
             </Typography>
-            <Button size="small" endIcon={<ArrowForward />} onClick={() => onNavigate('logs')}>
+            <Button size="small" endIcon={<ArrowForward />} component={Link} to="/admin?pane=logs&type=NOTABLE">
               {t('admin.overview.seeAll')}
             </Button>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {(recentLogs?.content ?? []).map((log) => {
               const typeLabel = t(`admin.activity.types.${log.type}`, log.type);
-              // Le message d'un LOGIN répète le libellé du type (« Connexion — Connexion ») : on ne
-              // l'ajoute que s'il apporte autre chose.
               const detail = log.message && log.message !== typeLabel ? ` — ${log.message}` : '';
               return (
                 <Box key={log.id} sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Chip, Alert } from '@mui/material';
-import { MailOutlined, ReceiptLong } from '@mui/icons-material';
+import { MailOutlined, ContactPage } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { acknowledgeAlerts, getAdminAttention, sendOnboardingReminder } from '@/api/endpoints';
 import { extractApiError, formatDate } from '@/lib/utils';
 import GlassCard from '@/components/ui/GlassCard';
+import AdminUserSheet from './AdminUserSheet';
 import type { SmtpStatus } from '@/types';
 
 /** Au-delà, la clé Brevo approche de sa désactivation (3 mois sans envoi). */
@@ -26,6 +27,7 @@ export default function AdminAttention() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [feedback, setFeedback] = useState<{ severity: 'success' | 'error'; text: string } | null>(null);
+  const [sheetUserId, setSheetUserId] = useState<number | null>(null);
 
   const { data } = useQuery({ queryKey: ['admin-attention'], queryFn: getAdminAttention, refetchInterval: 60_000 });
 
@@ -109,8 +111,8 @@ export default function AdminAttention() {
                 </Typography>
               </Box>
               {a.reminded && <Chip size="small" color="success" variant="outlined" label={t('admin.attention.reminded')} />}
-              <Button size="small" startIcon={<ReceiptLong />} onClick={() => openLogs(`q=${encodeURIComponent(a.username)}`)}>
-                {t('admin.attention.journal')}
+              <Button size="small" startIcon={<ContactPage />} onClick={() => setSheetUserId(a.id)}>
+                {t('admin.sheet.open')}
               </Button>
               <Button size="small" variant="outlined" disabled={a.reminded || remindMut.isPending}
                       onClick={() => remindMut.mutate(a.id)}>
@@ -120,6 +122,8 @@ export default function AdminAttention() {
           ))}
         </GlassCard>
       )}
+
+      <AdminUserSheet userId={sheetUserId} onClose={() => setSheetUserId(null)} />
     </Box>
   );
 }

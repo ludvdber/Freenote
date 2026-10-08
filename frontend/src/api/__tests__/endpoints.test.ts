@@ -124,6 +124,22 @@ describe('endpoints — GET', () => {
     await expect(ep.sendOnboardingReminder(9)).resolves.toBe('SENT');
     expect(post).toHaveBeenCalledWith('/admin/users/9/onboarding-reminder');
   });
+
+  it('hits the user sheet and system endpoints', async () => {
+    await ep.getUserSupport(9);
+    expect(get).toHaveBeenCalledWith('/admin/users/9/support');
+    await ep.cancelVerificationCode(9);
+    expect(del).toHaveBeenCalledWith('/admin/users/9/verification-code');
+    await ep.resetVerificationAttempts(9);
+    expect(del).toHaveBeenCalledWith('/admin/users/9/verification-attempts');
+    del.mockResolvedValueOnce({ data: { cleared: 2 } });
+    await expect(ep.clearUserRateLimits(9)).resolves.toBe(2);
+    expect(del).toHaveBeenCalledWith('/admin/users/9/rate-limits');
+    await ep.getSystemStatus();
+    expect(get).toHaveBeenCalledWith('/admin/system');
+    await ep.resyncSearchIndex();
+    expect(post).toHaveBeenCalledWith('/admin/system/search-resync');
+  });
 });
 
 describe('endpoints — POST/PUT/PATCH/DELETE', () => {

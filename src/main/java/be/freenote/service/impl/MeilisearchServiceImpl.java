@@ -135,17 +135,39 @@ public class MeilisearchServiceImpl implements MeilisearchService {
         }
     }
 
+    @Override
+    public Long indexedCount() {
+        try {
+            return fetchIndexedCount(true);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public void resyncIfNeeded() {
+        reindexIfNeeded();
+    }
+
+    /** {@code strict} : une erreur HTTP lève au lieu de compter 0 — 0 déclenche la réindexation du filet. */
+    private long fetchIndexedCount(boolean strict) throws Exception {
+        HttpRequest statsReq = HttpRequest.newBuilder()
+                .uri(URI.create(meilisearchConfig.getHost() + "/indexes/" + INDEX + "/stats"))
+                .header("Authorization", "Bearer " + meilisearchConfig.getApiKey())
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+        HttpResponse<String> statsResp = httpClient.send(statsReq, HttpResponse.BodyHandlers.ofString());
+        if (strict && statsResp.statusCode() >= 400) {
+            throw new IllegalStateException("HTTP " + statsResp.statusCode());
+        }
+        JsonNode statsNode = objectMapper.readTree(statsResp.body());
+        return statsNode.path("numberOfDocuments").asLong(0);
+    }
+
     private void reindexIfNeeded() {
         try {
-            HttpRequest statsReq = HttpRequest.newBuilder()
-                    .uri(URI.create(meilisearchConfig.getHost() + "/indexes/" + INDEX + "/stats"))
-                    .header("Authorization", "Bearer " + meilisearchConfig.getApiKey())
-                    .GET()
-                    .build();
-
-            HttpResponse<String> statsResp = httpClient.send(statsReq, HttpResponse.BodyHandlers.ofString());
-            JsonNode statsNode = objectMapper.readTree(statsResp.body());
-            long meiliCount = statsNode.path("numberOfDocuments").asLong(0);
+            long meiliCount = fetchIndexedCount(false);
             long dbCount = documentRepository.count();
 
             if (meiliCount == dbCount && dbCount > 0) {

@@ -2,6 +2,8 @@ import api from './axiosInstance';
 import type {
   AdminAttention,
   OnboardingReminderResult,
+  AdminUserSupport,
+  SystemStatus,
   StatsResponse,
   DocumentResponse,
   PageResponse,
@@ -485,6 +487,22 @@ export const acknowledgeAlerts = () => api.put('/admin/alerts/acknowledge').then
 
 export const sendOnboardingReminder = (userId: number) =>
   api.post<{ result: OnboardingReminderResult }>(`/admin/users/${userId}/onboarding-reminder`).then((r) => r.data.result);
+
+export const getUserSupport = (userId: number) =>
+  api.get<AdminUserSupport>(`/admin/users/${userId}/support`).then((r) => r.data);
+
+export const cancelVerificationCode = (userId: number) =>
+  api.delete(`/admin/users/${userId}/verification-code`).then(() => undefined);
+
+export const resetVerificationAttempts = (userId: number) =>
+  api.delete(`/admin/users/${userId}/verification-attempts`).then(() => undefined);
+
+export const clearUserRateLimits = (userId: number) =>
+  api.delete<{ cleared: number }>(`/admin/users/${userId}/rate-limits`).then((r) => r.data.cleared);
+
+export const getSystemStatus = () => api.get<SystemStatus>('/admin/system').then((r) => r.data);
+
+export const resyncSearchIndex = () => api.post('/admin/system/search-resync').then(() => undefined);
 
 // --- Notifications ---
 export const getNotificationsUnreadCount = () =>

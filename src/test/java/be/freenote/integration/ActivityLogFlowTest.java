@@ -77,6 +77,11 @@ class ActivityLogFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void notableEcarteLeBruit() {
+        assertThat(list("NOTABLE", null)).containsExactlyInAnyOrder("UPLOAD/Spike", "STAFF_ACTION/Chaimaa");
+    }
+
+    @Test
     void familleSeule() {
         assertThat(list("EMAIL_*", null)).hasSize(3);
     }

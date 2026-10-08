@@ -151,6 +151,21 @@ class ActivityLogServiceImplTest {
         verify(repository).search(eq(false), eq(email), eq("%spike%"), any());
     }
 
+    /** « Dernière activité » de la vue d'ensemble : ni connexions, ni étapes e-mail, ni limites. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void list_notableExcludesTheDailyNoise() {
+        when(repository.search(eq(false), any(), eq(null), any())).thenReturn(new PageImpl<>(List.of()));
+
+        service.list("NOTABLE", null, PageRequest.of(0, 8));
+
+        ArgumentCaptor<Collection<String>> types = ArgumentCaptor.forClass(Collection.class);
+        verify(repository).search(eq(false), types.capture(), eq(null), any());
+        assertThat(types.getValue())
+                .contains("SIGNUP", "UPLOAD", "DOC_VERIFY", "STAFF_ACTION", "SYSTEM_ALERT")
+                .doesNotContain("LOGIN", "RATE_LIMITED", "EMAIL_CODE_SENT", "EMAIL_VERIFIED");
+    }
+
     /** Une purge manuelle ne doit pas pouvoir effacer la trace d'une décision du staff. */
     @Test
     @SuppressWarnings("unchecked")

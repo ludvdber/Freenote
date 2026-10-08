@@ -199,6 +199,39 @@ export interface AdminAttention {
   stuckAccounts: StuckAccount[];
 }
 
+export interface AdminUserSupport {
+  id: number;
+  username: string;
+  usernameChosen: boolean;
+  verified: boolean;
+  termsAccepted: boolean;
+  discordLinked: boolean;
+  createdAt: string;
+  /* null = aucune connexion dans les 30 derniers jours (conservation des LOGIN). */
+  lastLoginAt: string | null;
+  pendingCode: { expiresInSeconds: number; attempts: number } | null;
+  lastEmailEvent: string | null;
+  lastEmailMessage: string | null;
+  lastEmailEventAt: string | null;
+  reminded: boolean;
+  rateLimits: { endpoint: string; count: number; retryAfterSeconds: number }[];
+}
+
+export interface SystemStatus {
+  version: string;
+  startedAt: string;
+  uptimeSeconds: number;
+  javaVersion: string;
+  heapUsed: number;
+  heapMax: number;
+  diskFree: number;
+  diskTotal: number;
+  services: { name: 'db' | 'redis' | 'minio' | 'meilisearch'; up: boolean; latencyMs: number }[];
+  dbDocuments: number;
+  /* null = Meilisearch injoignable. */
+  indexedDocuments: number | null;
+}
+
 export type OnboardingReminderResult = 'SENT' | 'UNREACHABLE' | 'DISABLED' | 'FAILED';
 
 export interface AnalyticsResponse {

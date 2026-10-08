@@ -10,11 +10,19 @@ group = "be"
 // SemVer : 1.x.0 = nouvelles fonctionnalités, 1.0.x = correctifs. Le jar est renommé freenote.jar
 // au déploiement (deploy/freenote.service), donc bumper la version ne casse pas systemd ; les scripts
 // locaux résolvent build/libs/freenote-*.jar par glob. Garder frontend/src/lib/constants.ts APP_VERSION synchro.
-version = "1.24.0"
+version = "1.25.0"
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// META-INF/build-info.properties → bean BuildProperties : version affichée dans le pane Système.
+// Sans l'horodatage, sinon la tâche ne serait jamais à jour et invaliderait le cache à chaque build.
+springBoot {
+    buildInfo {
+        excludes.set(setOf("time"))
     }
 }
 

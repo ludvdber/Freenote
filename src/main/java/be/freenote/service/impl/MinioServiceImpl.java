@@ -92,4 +92,13 @@ public class MinioServiceImpl implements MinioService {
             throw new FileStorageException("Failed to delete file from MinIO", e);
         }
     }
+
+    @Override
+    public boolean isReachable() {
+        try {
+            return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
