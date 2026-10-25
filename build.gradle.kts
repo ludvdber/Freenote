@@ -3,14 +3,14 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     java
     jacoco
-    id("org.springframework.boot") version "4.1.1"
+    id("org.springframework.boot") version "4.1.2"
 }
 
 group = "be"
 // SemVer : 1.x.0 = nouvelles fonctionnalités, 1.0.x = correctifs. Le jar est renommé freenote.jar
 // au déploiement (deploy/freenote.service), donc bumper la version ne casse pas systemd ; les scripts
 // locaux résolvent build/libs/freenote-*.jar par glob. Garder frontend/src/lib/constants.ts APP_VERSION synchro.
-version = "1.25.0"
+version = "1.25.1"
 
 java {
     toolchain {
@@ -64,7 +64,7 @@ dependencies {
     // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
     // metadata-extractor — read the EXIF Orientation tag so phone photos aren't rotated in the PDF
-    implementation("com.drewnoakes:metadata-extractor:2.21.0")
+    implementation("com.drewnoakes:metadata-extractor:2.22.0")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")

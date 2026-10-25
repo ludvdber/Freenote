@@ -12,6 +12,11 @@
 # `actions/checkout@v4` laisse quiconque contrôle ce dépôt modifier ce qui tourne dans notre CI,
 # lequel a accès au code — l'empreinte supprime cette confiance implicite, Dependabot en reprend
 # l'entretien.
+#
+# `cooldown` : une nouvelle version n'est proposée qu'après quelques jours. Les vers de 2025-2026 (Shai-Hulud,
+# dont la variante de mai 2026 a publié des versions piégées de paquets @tanstack/*) vivent dans la
+# fenêtre entre la publication d'une version compromise et son retrait, en général sous 48 h. Les
+# mises à jour de SÉCURITÉ ignorent ce délai : un correctif de faille arrive toujours tout de suite.
 version: 2
 
 updates:
@@ -23,6 +28,9 @@ updates:
       time: "06:00"
       timezone: Europe/Brussels
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -41,6 +49,9 @@ updates:
       time: "06:00"
       timezone: Europe/Brussels
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -57,6 +68,8 @@ updates:
       interval: monthly
       timezone: Europe/Brussels
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(ci)"
     groups:

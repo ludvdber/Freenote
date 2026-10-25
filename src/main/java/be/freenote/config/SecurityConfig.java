@@ -17,9 +17,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -213,16 +218,23 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Préfixes backend, comparés sur le chemin DÉCODÉ comme le fait le routage MVC. Faille corrigée
+     * le 2026-10-25 : l'ancienne version testait {@code getRequestURI()} (brut), si bien que
+     * « /%61pi/… » passait pour une route SPA (permitAll) puis atteignait le contrôleur
+     * /api/… sans authentification — tous les GET, PDF et panel admin compris.
+     */
+    private static final RequestMatcher BACKEND_PATHS = new OrRequestMatcher(
+            Stream.of("/api", "/api/**", "/actuator", "/actuator/**", "/oauth2/**", "/login", "/login/**")
+                    .map(p -> (RequestMatcher) PathPatternRequestMatcher.withDefaults().matcher(p))
+                    .toList());
+
     /** GET/HEAD hors préfixes backend = shell SPA ou asset statique (voir SpaForwardingConfig). */
     private static boolean isSpaOrStaticGet(jakarta.servlet.http.HttpServletRequest request) {
         String method = request.getMethod();
         if (!"GET".equals(method) && !"HEAD".equals(method)) {
             return false;
         }
-        String uri = request.getRequestURI();
-        return !uri.startsWith("/api/")
-                && !uri.startsWith("/actuator")
-                && !uri.startsWith("/oauth2")
-                && !uri.startsWith("/login");
+        return !BACKEND_PATHS.matches(request);
     }
 }
