@@ -28,11 +28,10 @@ export const GITHUB_URL =
 export const SITE_URL =
   (import.meta.env.VITE_SITE_URL ?? 'https://freenote.be').replace(/\/$/, '');
 
-// Google AdSense. The publisher (client) id is also hard-coded in index.html's loader.
-// A real <ins> ad unit only renders when a slot id is provided via VITE_ADSENSE_SLOT — otherwise
-// AdBanner falls back to the styled placeholder, so dev/preview never shows a broken/empty unit.
-// EEA consent is handled by Google's certified CMP (configured in the AdSense console, loaded by
-// adsbygoogle.js) via Consent Mode v2 — no slot-level consent JS needed here.
+// Google AdSense — DÉSACTIVÉ depuis 2026-10-25 : le chargeur adsbygoogle.js a été retiré
+// d'index.html et ses origines de la CSP (SecurityConfig). Sans VITE_ADSENSE_SLOT, AdBanner affiche
+// l'auto-promotion. Réactiver = remettre le chargeur (qui sert aussi la CMP RGPD de Google) ET
+// les origines exactes dans la CSP, sinon le navigateur bloque l'encart.
 export const ADSENSE_CLIENT =
   import.meta.env.VITE_ADSENSE_CLIENT ?? 'ca-pub-3398993252100042';
 export const ADSENSE_SLOT = import.meta.env.VITE_ADSENSE_SLOT ?? '';

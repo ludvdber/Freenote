@@ -91,27 +91,26 @@ public class SecurityConfig {
                 .contentSecurityPolicy(csp -> csp
                     .policyDirectives(
                         "default-src 'self'; " +
-                        // AdSense + Google CMP (Funding Choices) loaders. Manual <ins> ad units
-                        // work without 'unsafe-inline'; if an ad format is blocked, the browser
-                        // console logs the exact missing domain/directive to add here.
+                        // Aucun script tiers (2026-10-25) : les origines AdSense/CMP ont été retirées
+                        // avec le chargeur d'index.html — AdSense refusé, les encarts servent l'auto-
+                        // promotion. `https://*.google.com` en script-src ouvrait en plus la porte aux
+                        // points JSONP de Google, contournement classique d'une CSP. Réactiver une régie
+                        // = rajouter ici ses origines exactes, pas un joker.
                         // 'wasm-unsafe-eval' lets the Flashcards tool instantiate the sql.js
                         // WebAssembly module (Anki .apkg import) — it permits WASM compilation only,
                         // NOT arbitrary eval(), so it is a narrow, well-understood relaxation.
-                        "script-src 'self' 'wasm-unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
-                            "https://adservice.google.com https://*.googleadservices.com https://*.google.com " +
-                            "https://www.googletagservices.com https://fundingchoicesmessages.google.com; " +
+                        "script-src 'self' 'wasm-unsafe-eval'; " +
                         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                         "font-src 'self' https://fonts.gstatic.com; " +
+                        // Avatars DiceBear/Discord + images des billets du blog de l'école (news).
                         "img-src 'self' data: blob: https://api.dicebear.com https://cdn.discordapp.com " +
-                            "https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.gstatic.com " +
                             "https://*.googleusercontent.com https://*.bp.blogspot.com https://*.blogspot.com; " +
-                        "connect-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com " +
-                            "https://*.google.com https://*.doubleclick.net; " +
+                        "connect-src 'self'; " +
                         // pdf.js (PDF viewer) spawns its rendering Web Worker from a same-origin asset;
                         // 'blob:' covers the fallback worker some bundlers materialise as a blob URL.
                         "worker-src 'self' blob:; " +
-                        "frame-src 'self' https://googleads.g.doubleclick.net https://tpc.googlesyndication.com " +
-                            "https://*.googlesyndication.com https://*.doubleclick.net https://fundingchoicesmessages.google.com; " +
+                        "frame-src 'self'; " +
+                        "object-src 'none'; " +
                         "frame-ancestors 'self'; " +
                         "base-uri 'self'; " +
                         "form-action 'self'"
