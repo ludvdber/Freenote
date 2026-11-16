@@ -59,7 +59,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
 
     // MinIO
-    implementation("io.minio:minio:9.0.3")
+    implementation("io.minio:minio:9.0.4")
 
     // PDFBox — assemble uploaded images (JPG/PNG) into a single PDF server-side (no Ghostscript)
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
